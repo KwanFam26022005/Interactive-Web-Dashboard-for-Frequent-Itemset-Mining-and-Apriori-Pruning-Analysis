@@ -59,7 +59,17 @@ class MushroomParserTest
         }
         $assert('Empty categorical field rejected with EMPTY_FIELD error', $caughtEmptyField);
 
-        // 5. UTF-8 BOM support
+        // 5. Malformed quote rejected in Mushroom parser
+        $contentMalformed = "\"x\"y,z";
+        $caughtMalformed = false;
+        try {
+            $parser->parse($contentMalformed, 'mushroom.csv');
+        } catch (DatasetValidationException $e) {
+            $caughtMalformed = ($e->getIssues()[0]->getCode() === 'MALFORMED_CSV');
+        }
+        $assert('Mushroom parser rejects malformed balanced quote line as MALFORMED_CSV', $caughtMalformed);
+
+        // 6. UTF-8 BOM support
         $contentBOM = "\xEF\xBB\xBFa,b,c";
         $resBOM = $parser->parse($contentBOM, 'mushroom.csv');
         $assert('Mushroom parser strips leading UTF-8 BOM', $resBOM->getTransactions()[0]->getItems() === ['c1=a', 'c2=b', 'c3=c']);

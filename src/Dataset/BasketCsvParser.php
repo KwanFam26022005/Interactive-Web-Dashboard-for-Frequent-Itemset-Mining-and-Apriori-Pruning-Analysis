@@ -38,7 +38,7 @@ class BasketCsvParser extends AbstractDatasetParser
             }
 
             try {
-                $fields = $this->parseCsvFields($line, $lineNum);
+                $fields = CsvRecordDecoder::decode($line);
                 $rawItems = [];
                 $hasEmptyField = false;
 
@@ -73,22 +73,5 @@ class BasketCsvParser extends AbstractDatasetParser
         }
 
         return new ParseResult($transactions, $warnings);
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function parseCsvFields(string $line, int $lineNum): array
-    {
-        if (substr_count($line, '"') % 2 !== 0) {
-            throw new InvalidArgumentException("Malformed CSV record at line {$lineNum}: Unbalanced quotes.");
-        }
-
-        $fields = str_getcsv($line, ',', '"', '\\');
-        if ($fields === false || (count($fields) === 1 && $fields[0] === null)) {
-            throw new InvalidArgumentException("Malformed CSV record at line {$lineNum}.");
-        }
-
-        return $fields;
     }
 }

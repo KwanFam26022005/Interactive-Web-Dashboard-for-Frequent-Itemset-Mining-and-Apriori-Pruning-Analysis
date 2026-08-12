@@ -14,6 +14,8 @@ class CanonicalTransaction
     private array $membershipMap;
 
     /**
+     * Factory method: Normalizes raw items, deduplicates, sorts by strcmp, and validates canonical invariants.
+     *
      * @param int $ordinal 1-indexed transaction ordinal
      * @param array<int, string> $rawItems Source items to be normalized and added to transaction
      * @param list<ParserIssue> $warnings Warning collector array reference
@@ -55,17 +57,12 @@ class CanonicalTransaction
     }
 
     /**
+     * Sealed private constructor to prevent public instantiation into a non-canonical state.
+     *
      * @param array<string, true> $membershipMap Pre-sorted canonical membership map
      */
-    public function __construct(int $ordinal, string $transactionKey, array $membershipMap)
+    private function __construct(int $ordinal, string $transactionKey, array $membershipMap)
     {
-        if ($ordinal < 1) {
-            throw new InvalidArgumentException("Transaction ordinal must be positive integer.");
-        }
-        if (count($membershipMap) === 0) {
-            throw new InvalidArgumentException("Transaction must contain at least one item.");
-        }
-
         $this->ordinal = $ordinal;
         $this->transactionKey = $transactionKey;
         $this->membershipMap = $membershipMap;

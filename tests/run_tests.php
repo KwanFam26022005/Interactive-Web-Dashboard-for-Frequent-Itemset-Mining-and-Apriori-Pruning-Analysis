@@ -134,6 +134,18 @@ try {
     $failed++;
 }
 
+try {
+    $decoderRes = \App\Tests\Unit\CsvRecordDecoderTest::run();
+    foreach ($decoderRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $decoderRes['passed'];
+    $failed += $decoderRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] CsvRecordDecoderTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
 echo "\n========================================\n";
 echo "Phase 2C Parser & Registry Unit Tests\n";
 echo "========================================\n\n";

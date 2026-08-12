@@ -69,14 +69,22 @@ class BasketCsvParserTest
         }
         $assert('Whitespace-normalized empty field fails dataset parse', $caughtWsEmpty);
 
-        // 9. Malformed CSV quote error
-        $caughtMalformed = false;
-        try {
-            $parser->parse("\"A,B,C", 'test.csv');
-        } catch (DatasetValidationException $e) {
-            $caughtMalformed = ($e->getIssues()[0]->getCode() === 'MALFORMED_CSV');
+        // 9. Malformed CSV quote errors (Unbalanced and balanced malformed quotes)
+        $malformedCases = [
+            'A"B"C,D',
+            '"A"B,C',
+            'A,"B"C',
+            '"A,B,C',
+        ];
+        foreach ($malformedCases as $idx => $mCase) {
+            $caughtMalformed = false;
+            try {
+                $parser->parse($mCase, 'test.csv');
+            } catch (DatasetValidationException $e) {
+                $caughtMalformed = ($e->getIssues()[0]->getCode() === 'MALFORMED_CSV');
+            }
+            $assert("BasketCsvParser rejects malformed quote case #{$idx}: '{$mCase}' as MALFORMED_CSV", $caughtMalformed);
         }
-        $assert('Unbalanced quote fails dataset parse with MALFORMED_CSV error', $caughtMalformed);
 
         // 10. Invalid UTF-8
         $caughtUtf8 = false;
