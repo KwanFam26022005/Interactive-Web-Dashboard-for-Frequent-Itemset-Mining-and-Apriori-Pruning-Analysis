@@ -9,6 +9,7 @@ use App\Dataset\CanonicalTransaction;
 use App\Mining\AprioriEngine;
 use App\Mining\Itemset;
 use App\Mining\MiningLimitExceededException;
+use InvalidArgumentException;
 
 class AprioriEngineOracleTest
 {
@@ -148,8 +149,31 @@ class AprioriEngineOracleTest
         $assert('Evaluated-infrequent terminal test max_k is 1', $resInf->getMaxK() === 1);
 
         // --------------------------------------------------
-        // 6. Candidate Guardrail Test
+        // 6. Guardrail Parameter Validation Tests (Section 5)
         // --------------------------------------------------
+        $badCandidateLimits = [0, -1];
+        foreach ($badCandidateLimits as $badLimit) {
+            $caughtBadLimit = false;
+            try {
+                $engine->run($transactions, 500000, $badLimit);
+            } catch (InvalidArgumentException $e) {
+                $caughtBadLimit = true;
+            }
+            $assert("candidateLimit={$badLimit} rejected with InvalidArgumentException", $caughtBadLimit);
+        }
+
+        $badDeadlines = [0.0, -1.0, INF, NAN];
+        foreach ($badDeadlines as $idx => $badDeadline) {
+            $caughtBadDeadline = false;
+            try {
+                $engine->run($transactions, 500000, 250000, $badDeadline);
+            } catch (InvalidArgumentException $e) {
+                $caughtBadDeadline = true;
+            }
+            $assert("bad deadlineSeconds #{$idx} rejected with InvalidArgumentException", $caughtBadDeadline);
+        }
+
+        // Candidate limit regression tests
         $resLimitOk = $engine->run($transactions, 500000, 7);
         $assert('candidateLimit = 7 succeeds for tiny dataset (7 candidates)', $resLimitOk->getCandidatesGeneratedTotal() === 7);
 
@@ -162,29 +186,121 @@ class AprioriEngineOracleTest
         $assert('candidateLimit = 6 throws MiningLimitExceededException', $caughtLimit);
 
         // --------------------------------------------------
-        // 7. Deadline Guardrail Test (Deterministic Injected Monotonic Clock)
+        // 7. Strict Deadline Semantics Boundary Tests (Section 6, 15)
         // --------------------------------------------------
-        $clockTicks = [
-            0,                     // startNs
-            0,                     // initial check
-            1_000_000_000,         // C1 check
-            31_000_000_000,        // C2 check (exceeds 30s deadline)
-        ];
-        $tickIndex = 0;
-        $mockClock = static function () use (&$clockTicks, &$tickIndex): int {
-            $val = $clockTicks[$tickIndex] ?? 35_000_000_000;
-            $tickIndex++;
-            return $val;
-        };
+        // Test A: elapsed < deadline -> allowed
+        $clockLess = static fn(): int => 100;
+        $engineLess = new AprioriEngine(null, null, null, null, $clockLess);
+        $resLess = $engineLess->run($transactions, 500000, 250000, 10.0);
+        $assert('Test A: elapsed < deadline is allowed (succeeds)', $resLess->getCandidatesGeneratedTotal() === 7);
 
-        $engineDeadline = new AprioriEngine(null, null, null, null, $mockClock);
-        $caughtDeadline = false;
+        // Test B: elapsed == deadline -> throws MiningLimitExceededException
+        $eqTick = 0;
+        $clockEq = static function () use (&$eqTick): int {
+            if ($eqTick === 0) {
+                $eqTick++;
+                return 0;
+            }
+            return 10_000_000_000; // 10.0 seconds exact
+        };
+        $engineEq = new AprioriEngine(null, null, null, null, $clockEq);
+        $caughtEq = false;
         try {
-            $engineDeadline->run($transactions, 500000, 250000, 30.0);
+            $engineEq->run($transactions, 500000, 250000, 10.0);
         } catch (MiningLimitExceededException $e) {
-            $caughtDeadline = true;
+            $caughtEq = true;
         }
-        $assert('Deadline guardrail throws MiningLimitExceededException deterministically', $caughtDeadline);
+        $assert('Test B: elapsed == deadline throws MiningLimitExceededException', $caughtEq);
+
+        // Test C: elapsed > deadline -> throws MiningLimitExceededException
+        $gtTick = 0;
+        $clockGt = static function () use (&$gtTick): int {
+            if ($gtTick === 0) {
+                $gtTick++;
+                return 0;
+            }
+            return 10_000_000_001; // 10.000000001 seconds
+        };
+        $engineGt = new AprioriEngine(null, null, null, null, $clockGt);
+        $caughtGt = false;
+        try {
+            $engineGt->run($transactions, 500000, 250000, 10.0);
+        } catch (MiningLimitExceededException $e) {
+            $caughtGt = true;
+        }
+        $assert('Test C: elapsed > deadline throws MiningLimitExceededException', $caughtGt);
+
+        // Test D: C1 terminal overrun -> failure
+        $c1Tick = 0;
+        $clockC1Over = static function () use (&$c1Tick): int {
+            if ($c1Tick < 2) {
+                $c1Tick++;
+                return 0;
+            }
+            return 10_000_000_000; // hits deadline after C1
+        };
+        $engineC1Over = new AprioriEngine(null, null, null, null, $clockC1Over);
+        $caughtC1Over = false;
+        try {
+            $engineC1Over->run([$tNoFreq1, $tNoFreq2], 1000000, 250000, 10.0);
+        } catch (MiningLimitExceededException $e) {
+            $caughtC1Over = true;
+        }
+        $assert('Test D: C1 terminal overrun throws MiningLimitExceededException', $caughtC1Over);
+
+        // Test E: join-empty terminal overrun -> failure
+        $joinTick = 0;
+        $clockJoinOver = static function () use (&$joinTick): int {
+            if ($joinTick < 3) {
+                $joinTick++;
+                return 0;
+            }
+            return 10_000_000_000; // hits deadline after join returns []
+        };
+        $engineJoinOver = new AprioriEngine(null, null, null, null, $clockJoinOver);
+        $caughtJoinOver = false;
+        try {
+            $engineJoinOver->run($transactions, 500001, 250000, 10.0);
+        } catch (MiningLimitExceededException $e) {
+            $caughtJoinOver = true;
+        }
+        $assert('Test E: join-empty terminal overrun throws MiningLimitExceededException', $caughtJoinOver);
+
+        // Test F: evaluated-infrequent terminal overrun -> failure
+        $evalTick = 0;
+        $clockEvalOver = static function () use (&$evalTick): int {
+            if ($evalTick < 4) {
+                $evalTick++;
+                return 0;
+            }
+            return 10_000_000_000; // hits deadline after C2 filter
+        };
+        $engineEvalOver = new AprioriEngine(null, null, null, null, $clockEvalOver);
+        $caughtEvalOver = false;
+        try {
+            $engineEvalOver->run([$tInf1, $tInf2, $tInf3], 500000, 250000, 10.0);
+        } catch (MiningLimitExceededException $e) {
+            $caughtEvalOver = true;
+        }
+        $assert('Test F: evaluated-infrequent terminal overrun throws MiningLimitExceededException', $caughtEvalOver);
+
+        // Test G: all-pruned terminal overrun -> failure
+        $pruneTick = 0;
+        $clockPruneOver = static function () use (&$pruneTick): int {
+            if ($pruneTick < 6) {
+                $pruneTick++;
+                return 0;
+            }
+            return 10_000_000_000; // hits deadline after C3 prune
+        };
+        $enginePruneOver = new AprioriEngine(null, null, null, null, $clockPruneOver);
+        $caughtPruneOver = false;
+        try {
+            $enginePruneOver->run($transactions, 500000, 250000, 10.0);
+        } catch (MiningLimitExceededException $e) {
+            $caughtPruneOver = true;
+        }
+        $assert('Test G: all-pruned terminal overrun (C3) throws MiningLimitExceededException', $caughtPruneOver);
 
         // --------------------------------------------------
         // 8. Determinism Test (Repeated Runs & Raw Permutation)

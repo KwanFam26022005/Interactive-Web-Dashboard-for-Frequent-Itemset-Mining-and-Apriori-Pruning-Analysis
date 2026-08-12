@@ -56,6 +56,14 @@ class AprioriEngine
             throw new InvalidArgumentException("Transaction list cannot be empty.");
         }
 
+        if ($candidateLimit <= 0) {
+            throw new InvalidArgumentException("candidateLimit must be a positive integer (> 0). Got {$candidateLimit}.");
+        }
+
+        if (!is_finite($deadlineSeconds) || $deadlineSeconds <= 0) {
+            throw new InvalidArgumentException("deadlineSeconds must be a finite positive number (> 0).");
+        }
+
         // Validate and compute required_count BEFORE starting timer
         $requiredCount = SupportThreshold::calculateRequiredCount($supportUnits, $txCount);
         $deadlineNs = (int)($deadlineSeconds * 1_000_000_000.0);
@@ -126,8 +134,14 @@ class AprioriEngine
             $frequentItemsets[] = $freqSet;
         }
 
+        $this->checkDeadline($startNs, $deadlineNs);
+
         if ($c1FrequentCount === 0) {
+            // Validate totals and invariants before stopping clock
+            new AprioriResult($requiredCount, $frequentItemsets, $authoritativeSupportMap, $levels, 0, 0);
+            $this->checkDeadline($startNs, $deadlineNs);
             $endNs = ($this->clock)();
+
             return new AprioriResult(
                 $requiredCount,
                 $frequentItemsets,
@@ -149,6 +163,8 @@ class AprioriEngine
 
             // 1. CandidateJoiner
             $generatedCandidates = $this->joiner->join($prevFrequent);
+            $this->checkDeadline($startNs, $deadlineNs);
+
             $genCount = count($generatedCandidates);
 
             // If join returns 0 candidates, STOP without adding a synthetic level
@@ -190,6 +206,8 @@ class AprioriEngine
                 $frequentItemsets[] = $freqSet;
             }
 
+            $this->checkDeadline($startNs, $deadlineNs);
+
             if ($freqCount === 0) {
                 break;
             }
@@ -205,6 +223,17 @@ class AprioriEngine
             }
         }
 
+        // Validate complete AprioriResult totals and invariants before stopping timer
+        new AprioriResult(
+            $requiredCount,
+            $frequentItemsets,
+            $authoritativeSupportMap,
+            $levels,
+            $maxK,
+            0
+        );
+
+        $this->checkDeadline($startNs, $deadlineNs);
         $endNs = ($this->clock)();
 
         return new AprioriResult(
@@ -220,7 +249,7 @@ class AprioriEngine
     private function checkDeadline(int $startNs, int $deadlineNs): void
     {
         $nowNs = ($this->clock)();
-        if (($nowNs - $startNs) > $deadlineNs) {
+        if (($nowNs - $startNs) >= $deadlineNs) {
             throw new MiningLimitExceededException("Mining limit exceeded: execution deadline exceeded.");
         }
     }
