@@ -32,7 +32,10 @@ class ConnectionFactory
         ];
 
         try {
-            return new PDO($dsn, $user, $password, $options);
+            $pdo = new PDO($dsn, $user, $password, $options);
+            $pdo->exec("SET time_zone = '+00:00'");
+
+            return $pdo;
         } catch (PDOException $e) {
             // Mask password from exception message for security
             $safeMessage = "Database connection failed for DSN: mysql:host={$host};port={$port};dbname={$dbName}. Code: " . $e->getCode();

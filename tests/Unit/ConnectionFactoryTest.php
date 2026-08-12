@@ -53,6 +53,10 @@ class ConnectionFactoryTest
                 'PDO DEFAULT_FETCH_MODE is FETCH_ASSOC',
                 $pdo->getAttribute(PDO::ATTR_DEFAULT_FETCH_MODE) === PDO::FETCH_ASSOC
             );
+            $assert(
+                'PDO session time zone is UTC',
+                $pdo->query('SELECT @@session.time_zone')->fetchColumn() === '+00:00'
+            );
         } catch (\Throwable $e) {
             $assert('Valid ConnectionFactory create', false, $e->getMessage());
         }

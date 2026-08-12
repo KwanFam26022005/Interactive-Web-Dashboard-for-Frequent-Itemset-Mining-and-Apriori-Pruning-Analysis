@@ -383,6 +383,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 3A Persistence Integration Tests\n";
+echo "========================================\n\n";
+
+try {
+    $persistenceRes = \App\Tests\Integration\PersistenceRepositoryTest::run();
+    foreach ($persistenceRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $persistenceRes['passed'];
+    $failed += $persistenceRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] PersistenceRepositoryTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
