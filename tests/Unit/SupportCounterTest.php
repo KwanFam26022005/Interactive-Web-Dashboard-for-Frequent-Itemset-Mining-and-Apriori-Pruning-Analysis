@@ -52,7 +52,7 @@ class SupportCounterTest
         $counter = new SupportCounter();
         $counts = $counter->countSupport($transactions, $candidates);
 
-        // Assert exact oracle counts (Section 21)
+        // Assert exact oracle counts
         $assert('Exact count A = 4', $counts[$setA->getIdentity()] === 4);
         $assert('Exact count B = 2', $counts[$setB->getIdentity()] === 2);
         $assert('Exact count C = 2', $counts[$setC->getIdentity()] === 2);
@@ -66,6 +66,33 @@ class SupportCounterTest
         $tCase = CanonicalTransaction::fromRawItems(5, ['a'], $w, 5);
         $countsCase = $counter->countSupport([$tCase], [$setA]);
         $assert('Case-distinct item a does not match candidate A', $countsCase[$setA->getIdentity()] === 0);
+
+        // Numeric SupportCounter Regression Tests (Section 16)
+        $tn1 = CanonicalTransaction::fromRawItems(1, ['1', '2', '10'], $w, 1);
+        $tn2 = CanonicalTransaction::fromRawItems(2, ['1', '2'], $w, 2);
+        $tn3 = CanonicalTransaction::fromRawItems(3, ['1', '10'], $w, 3);
+        $txsNum = [$tn1, $tn2, $tn3];
+
+        $setN1 = Itemset::fromCanonicalItems(['1']);
+        $setN10 = Itemset::fromCanonicalItems(['10']);
+        $setN2 = Itemset::fromCanonicalItems(['2']);
+        $setN1_10 = Itemset::fromCanonicalItems(['1', '10']);
+        $setN1_2 = Itemset::fromCanonicalItems(['1', '2']);
+        $setN10_2 = Itemset::fromCanonicalItems(['10', '2']);
+        $setN1_10_2 = Itemset::fromCanonicalItems(['1', '10', '2']);
+        $setN01 = Itemset::fromCanonicalItems(['01']);
+
+        $candsNum = [$setN1, $setN10, $setN2, $setN1_10, $setN1_2, $setN10_2, $setN1_10_2, $setN01];
+        $countsNum = $counter->countSupport($txsNum, $candsNum);
+
+        $assert('Numeric candidate "1" count = 3', $countsNum[$setN1->getIdentity()] === 3);
+        $assert('Numeric candidate "10" count = 2', $countsNum[$setN10->getIdentity()] === 2);
+        $assert('Numeric candidate "2" count = 2', $countsNum[$setN2->getIdentity()] === 2);
+        $assert('Numeric candidate {"1", "10"} count = 2', $countsNum[$setN1_10->getIdentity()] === 2);
+        $assert('Numeric candidate {"1", "2"} count = 2', $countsNum[$setN1_2->getIdentity()] === 2);
+        $assert('Numeric candidate {"10", "2"} count = 1', $countsNum[$setN10_2->getIdentity()] === 1);
+        $assert('Numeric candidate {"1", "10", "2"} count = 1', $countsNum[$setN1_10_2->getIdentity()] === 1);
+        $assert('Numeric candidate "01" count = 0 (distinct from "1")', $countsNum[$setN01->getIdentity()] === 0);
 
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }

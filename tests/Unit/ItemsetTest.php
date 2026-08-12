@@ -92,6 +92,27 @@ class ItemsetTest
         $assert('Prefix relationship puts shorter itemset {A} before {A, B}', Itemset::compare($setA, $setAB) === -1);
         $assert('Same itemset compares equal (0)', Itemset::compare($setAB, $setAB) === 0);
 
+        // 9. Numeric Itemset Hardening Tests
+        $setNum = Itemset::fromCanonicalItems(['10', '2', '1']);
+        $itemsNum = $setNum->getItems();
+        $allNumStrings = true;
+        foreach ($itemsNum as $it) {
+            if (!is_string($it)) {
+                $allNumStrings = false;
+            }
+        }
+        $assert('Numeric Itemset items sorted by binary strcmp are strictly strings ["1", "10", "2"]',
+            $itemsNum === ['1', '10', '2'] && $allNumStrings
+        );
+
+        $caughtNumDuplicate = false;
+        try {
+            Itemset::fromCanonicalItems(['1', '10', '1']);
+        } catch (InvalidArgumentException $e) {
+            $caughtNumDuplicate = true;
+        }
+        $assert('Duplicate numeric item "1" in Itemset creation rejected', $caughtNumDuplicate);
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

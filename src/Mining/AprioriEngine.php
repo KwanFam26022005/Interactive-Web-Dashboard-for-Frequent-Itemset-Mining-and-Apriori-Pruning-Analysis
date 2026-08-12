@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mining;
 
+use App\Dataset\CanonicalItemIndexKey;
 use App\Dataset\CanonicalTransaction;
 use Closure;
 use InvalidArgumentException;
@@ -81,23 +82,34 @@ class AprioriEngine
         // --------------------------------------------------
         // Level 1 — Singleton Scan
         // --------------------------------------------------
-        /** @var array<string, int> $singletonCounts */
-        $singletonCounts = [];
+        /** @var array<string, array{item: string, count: int}> $singletonMap */
+        $singletonMap = [];
 
         foreach ($transactions as $tx) {
             foreach ($tx->getItems() as $item) {
-                if (!isset($singletonCounts[$item])) {
-                    $singletonCounts[$item] = 1;
+                $encodedKey = CanonicalItemIndexKey::encode($item);
+                if (!isset($singletonMap[$encodedKey])) {
+                    $singletonMap[$encodedKey] = [
+                        'item' => $item,
+                        'count' => 1,
+                    ];
                 } else {
-                    $singletonCounts[$item]++;
+                    $singletonMap[$encodedKey]['count']++;
                 }
             }
         }
 
         /** @var list<Itemset> $singletons */
+        /** @var array<string, int> $singletonCountsByIdent */
         $singletons = [];
-        foreach ($singletonCounts as $itemStr => $cnt) {
-            $singletons[] = Itemset::fromCanonicalItems([$itemStr]);
+        $singletonCountsByIdent = [];
+
+        foreach ($singletonMap as $data) {
+            $itemStr = $data['item'];
+            $cnt = $data['count'];
+            $itemset = Itemset::fromCanonicalItems([$itemStr]);
+            $singletons[] = $itemset;
+            $singletonCountsByIdent[$itemset->getIdentity()] = $cnt;
         }
 
         usort($singletons, [Itemset::class, 'compare']);
@@ -111,9 +123,9 @@ class AprioriEngine
         /** @var list<Itemset> $l1Frequent */
         $l1Frequent = [];
         foreach ($singletons as $singleton) {
-            $itemStr = $singleton->getItems()[0];
-            $cnt = $singletonCounts[$itemStr];
-            $authoritativeSupportMap[$singleton->getIdentity()] = $cnt;
+            $ident = $singleton->getIdentity();
+            $cnt = $singletonCountsByIdent[$ident];
+            $authoritativeSupportMap[$ident] = $cnt;
 
             if ($cnt >= $requiredCount) {
                 $l1Frequent[] = $singleton;

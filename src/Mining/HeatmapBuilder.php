@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mining;
 
+use App\Dataset\CanonicalItemIndexKey;
 use App\Dataset\CanonicalTransaction;
 use InvalidArgumentException;
 
@@ -28,33 +29,46 @@ class HeatmapBuilder
             throw new InvalidArgumentException("maxItems must be between 1 and 25. Got {$maxItems}.");
         }
 
-        /** @var array<string, int> $singletonCounts */
-        $singletonCounts = [];
+        /** @var array<string, array{item: string, count: int}> $singletonMap */
+        $singletonMap = [];
 
         foreach ($transactions as $tx) {
             foreach ($tx->getItems() as $item) {
-                if (!isset($singletonCounts[$item])) {
-                    $singletonCounts[$item] = 1;
+                $encodedKey = CanonicalItemIndexKey::encode($item);
+                if (!isset($singletonMap[$encodedKey])) {
+                    $singletonMap[$encodedKey] = [
+                        'item' => $item,
+                        'count' => 1,
+                    ];
                 } else {
-                    $singletonCounts[$item]++;
+                    $singletonMap[$encodedKey]['count']++;
                 }
             }
         }
 
-        uksort($singletonCounts, static function (string $item1, string $item2) use (&$singletonCounts): int {
-            $c1 = $singletonCounts[$item1];
-            $c2 = $singletonCounts[$item2];
-            if ($c1 !== $c2) {
-                return $c2 <=> $c1; // descending count
+        $singletonList = array_values($singletonMap);
+
+        usort($singletonList, static function (array $a, array $b): int {
+            if ($a['count'] !== $b['count']) {
+                return $b['count'] <=> $a['count']; // support count descending
             }
-            return strcmp($item1, $item2); // ascending strcmp tie-break
+            return strcmp($a['item'], $b['item']); // ascending binary strcmp tie-break
         });
 
-        $selectedItems = array_slice(array_keys($singletonCounts), 0, $maxItems);
-        $M = count($selectedItems);
+        $selectedEntries = array_slice($singletonList, 0, $maxItems);
+        /** @var list<string> $selectedItems */
+        $selectedItems = [];
+        /** @var array<string, int> $encodedItemIndex */
+        $encodedItemIndex = [];
 
-        /** @var array<string, int> $itemIndex Map item string => index 0..M-1 */
-        $itemIndex = array_flip($selectedItems);
+        foreach ($selectedEntries as $idx => $entry) {
+            $itemStr = $entry['item'];
+            $selectedItems[] = $itemStr;
+            $encodedKey = CanonicalItemIndexKey::encode($itemStr);
+            $encodedItemIndex[$encodedKey] = $idx;
+        }
+
+        $M = count($selectedItems);
 
         // Initialize MxM zero matrix
         $matrix = [];
@@ -63,13 +77,12 @@ class HeatmapBuilder
         }
 
         foreach ($transactions as $tx) {
-            $txItems = $tx->getItems();
-            // Filter transaction items to selected items
             /** @var list<int> $presentIndices */
             $presentIndices = [];
-            foreach ($txItems as $item) {
-                if (isset($itemIndex[$item])) {
-                    $presentIndices[] = $itemIndex[$item];
+            foreach ($tx->getItems() as $item) {
+                $encodedKey = CanonicalItemIndexKey::encode($item);
+                if (isset($encodedItemIndex[$encodedKey])) {
+                    $presentIndices[] = $encodedItemIndex[$encodedKey];
                 }
             }
 

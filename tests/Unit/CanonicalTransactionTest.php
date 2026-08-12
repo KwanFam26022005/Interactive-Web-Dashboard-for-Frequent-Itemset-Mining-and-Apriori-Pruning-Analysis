@@ -30,7 +30,7 @@ class CanonicalTransactionTest
         $caughtPrivateConstructor = false;
         try {
             // @phpstan-ignore-next-line
-            new CanonicalTransaction(1, '1', ['A' => true]);
+            new CanonicalTransaction(1, '1', ['A'], ['A' => true]);
         } catch (Error $e) {
             $caughtPrivateConstructor = true;
         }
@@ -81,7 +81,48 @@ class CanonicalTransactionTest
         $wPerm2 = [];
         $txPerm1 = CanonicalTransaction::fromRawItems(5, ['C', 'A', 'B'], $wPerm1, 1);
         $txPerm2 = CanonicalTransaction::fromRawItems(5, ['B', 'C', 'A'], $wPerm2, 1);
-        $assert('Input item permutation produces identical canonical transaction items', $txPerm1->getItems() === $txPerm2->getItems() && $txPerm1->getMembershipMap() === $txPerm2->getMembershipMap());
+        $assert('Input item permutation produces identical canonical transaction items',
+            $txPerm1->getItems() === $txPerm2->getItems() &&
+            $txPerm1->getItemCount() === $txPerm2->getItemCount() &&
+            $txPerm1->hasItem('A') && $txPerm1->hasItem('B') && $txPerm1->hasItem('C')
+        );
+
+        // 8. Numeric Item Identity Edge Cases (Section 12 & 13)
+        $wNum = [];
+        $txNum = CanonicalTransaction::fromRawItems(6, ['2', '10', '1'], $wNum, 1);
+        $itemsNum = $txNum->getItems();
+        $allStringsNum = true;
+        foreach ($itemsNum as $it) {
+            if (!is_string($it)) {
+                $allStringsNum = false;
+            }
+        }
+        $assert('Numeric items sorted by binary strcmp are strictly strings ["1", "10", "2"]',
+            $itemsNum === ['1', '10', '2'] && $allStringsNum &&
+            $txNum->hasItem('1') && $txNum->hasItem('10') && $txNum->hasItem('2')
+        );
+
+        $wDistinct = [];
+        $txDistinct = CanonicalTransaction::fromRawItems(7, ['1', '01', '001', '1.0', '+1'], $wDistinct, 1);
+        $itemsDistinct = $txDistinct->getItems();
+        $allStringsDistinct = true;
+        foreach ($itemsDistinct as $it) {
+            if (!is_string($it)) {
+                $allStringsDistinct = false;
+            }
+        }
+        $assert('Visually similar numeric strings ("1", "01", "001", "1.0", "+1") remain 5 distinct exact strings',
+            count($itemsDistinct) === 5 && $allStringsDistinct &&
+            $txDistinct->hasItem('1') && $txDistinct->hasItem('01') && $txDistinct->hasItem('001') &&
+            $txDistinct->hasItem('1.0') && $txDistinct->hasItem('+1')
+        );
+
+        $wDupNum = [];
+        $txDupNum = CanonicalTransaction::fromRawItems(8, ['1', '1'], $wDupNum, 1);
+        $assert('Duplicate numeric item "1" produces exactly one string "1" item and one DUPLICATE_ITEM warning',
+            $txDupNum->getItems() === ['1'] && is_string($txDupNum->getItems()[0]) &&
+            count($wDupNum) === 1 && $wDupNum[0]->getCode() === 'DUPLICATE_ITEM'
+        );
 
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }

@@ -104,6 +104,33 @@ class HeatmapBuilderTest
         $assert('Matrix is square and symmetric', $isSquareSymmetric);
         $assert('Off-diagonal co-occurrence is bounded by participating diagonals', $offDiagBounded);
 
+        // 5. Numeric Heatmap Oracle Test (Section 17)
+        $tn1 = CanonicalTransaction::fromRawItems(1, ['1', '2', '10'], $w, 1);
+        $tn2 = CanonicalTransaction::fromRawItems(2, ['1', '2'], $w, 2);
+        $tn3 = CanonicalTransaction::fromRawItems(3, ['1', '10'], $w, 3);
+        $resNumHM = $builder->build([$tn1, $tn2, $tn3], 25);
+
+        $itemsNumHM = $resNumHM->getItems();
+        $allNumHMStrings = true;
+        foreach ($itemsNumHM as $it) {
+            if (!is_string($it)) {
+                $allNumHMStrings = false;
+            }
+        }
+
+        $expectedMatrixNum = [
+            [3, 2, 2],
+            [2, 2, 1],
+            [2, 1, 2]
+        ];
+
+        $assert('Numeric heatmap selected items are strictly strings ["1", "10", "2"]',
+            $itemsNumHM === ['1', '10', '2'] && $allNumHMStrings
+        );
+        $assert('Numeric heatmap 3x3 matrix matches exact oracle',
+            $resNumHM->getMatrix() === $expectedMatrixNum
+        );
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

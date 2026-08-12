@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mining;
 
+use App\Dataset\CanonicalItemIndexKey;
 use App\Dataset\ItemNormalizer;
 use InvalidArgumentException;
 
@@ -35,10 +36,11 @@ class Itemset
                 throw new InvalidArgumentException("Item '{$item}' is not in canonical form.");
             }
 
-            if (isset($seen[$item])) {
+            $encodedKey = CanonicalItemIndexKey::encode($item);
+            if (isset($seen[$encodedKey])) {
                 throw new InvalidArgumentException("Duplicate item '{$item}' in Itemset creation.");
             }
-            $seen[$item] = true;
+            $seen[$encodedKey] = true;
             $normalizedItems[] = $item;
         }
 

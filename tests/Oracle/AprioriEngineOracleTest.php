@@ -325,6 +325,79 @@ class AprioriEngineOracleTest
             $resPerm->getFrequentItemsets()[4]->getItems() === ['A', 'C']
         );
 
+        // --------------------------------------------------
+        // 9. Numeric Apriori Oracle Test (Section 15)
+        // --------------------------------------------------
+        $tn1 = CanonicalTransaction::fromRawItems(1, ['1', '2', '10'], $w, 1);
+        $tn2 = CanonicalTransaction::fromRawItems(2, ['1', '2'], $w, 2);
+        $tn3 = CanonicalTransaction::fromRawItems(3, ['1', '10'], $w, 3);
+
+        $resNum = $engine->run([$tn1, $tn2, $tn3], 500000); // N=3, support_units=500000 => req=2
+
+        $assert('Numeric oracle required_count is 2', $resNum->getRequiredCount() === 2);
+        $assert('Numeric oracle max_k is 2', $resNum->getMaxK() === 2);
+
+        $numLevels = $resNum->getLevels();
+        $assert('Numeric oracle reports exactly 3 levels (C1, C2, C3)', count($numLevels) === 3);
+
+        $numL1 = $numLevels[0];
+        $assert('Numeric C1 metrics (k=1, singleton_scan, gen:3, prun:0, eval:3, freq:3)',
+            $numL1->getK() === 1 && $numL1->getSource() === 'singleton_scan' &&
+            $numL1->getGenerated() === 3 && $numL1->getPruned() === 0 &&
+            $numL1->getEvaluated() === 3 && $numL1->getFrequent() === 3
+        );
+
+        $numL2 = $numLevels[1];
+        $assert('Numeric C2 metrics (k=2, join_prune, gen:3, prun:0, eval:3, freq:2)',
+            $numL2->getK() === 2 && $numL2->getSource() === 'join_prune' &&
+            $numL2->getGenerated() === 3 && $numL2->getPruned() === 0 &&
+            $numL2->getEvaluated() === 3 && $numL2->getFrequent() === 2
+        );
+
+        $numL3 = $numLevels[2];
+        $assert('Numeric C3 metrics (k=3, join_prune, gen:1, prun:1, eval:0, freq:0)',
+            $numL3->getK() === 3 && $numL3->getSource() === 'join_prune' &&
+            $numL3->getGenerated() === 1 && $numL3->getPruned() === 1 &&
+            $numL3->getEvaluated() === 0 && $numL3->getFrequent() === 0
+        );
+
+        $assert('Numeric oracle totals (gen:7, prun:1, eval:6, freq:5)',
+            $resNum->getCandidatesGeneratedTotal() === 7 &&
+            $resNum->getCandidatesPrunedTotal() === 1 &&
+            $resNum->getCandidatesEvaluatedTotal() === 6 &&
+            $resNum->getFrequentItemsetsTotal() === 5
+        );
+
+        $numFreqSets = $resNum->getFrequentItemsets();
+        $allNumFreqStrings = true;
+        foreach ($numFreqSets as $set) {
+            foreach ($set->getItems() as $it) {
+                if (!is_string($it)) {
+                    $allNumFreqStrings = false;
+                }
+            }
+        }
+
+        $assert('Numeric frequent itemsets returned in exact stable order with all string item values',
+            count($numFreqSets) === 5 && $allNumFreqStrings &&
+            $numFreqSets[0]->getItems() === ['1'] &&
+            $numFreqSets[1]->getItems() === ['10'] &&
+            $numFreqSets[2]->getItems() === ['2'] &&
+            $numFreqSets[3]->getItems() === ['1', '10'] &&
+            $numFreqSets[4]->getItems() === ['1', '2']
+        );
+
+        $numSupportMap = $resNum->getSupportMap();
+        $setN10_2 = Itemset::fromCanonicalItems(['10', '2']);
+        $setN1_10_2 = Itemset::fromCanonicalItems(['1', '10', '2']);
+
+        $assert('Numeric support map contains evaluated {"10", "2"} count = 1',
+            isset($numSupportMap[$setN10_2->getIdentity()]) && $numSupportMap[$setN10_2->getIdentity()] === 1
+        );
+        $assert('Numeric support map MUST NOT contain pruned {"1", "10", "2"}',
+            !isset($numSupportMap[$setN1_10_2->getIdentity()])
+        );
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

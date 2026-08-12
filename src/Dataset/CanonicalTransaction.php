@@ -10,8 +10,10 @@ class CanonicalTransaction
 {
     private int $ordinal;
     private string $transactionKey;
+    /** @var list<string> */
+    private array $canonicalItems;
     /** @var array<string, true> */
-    private array $membershipMap;
+    private array $membershipIndex;
 
     /**
      * Factory method: Normalizes raw items, deduplicates, sorts by strcmp, and validates canonical invariants.
@@ -27,14 +29,20 @@ class CanonicalTransaction
             throw new InvalidArgumentException("Transaction ordinal must be positive integer.");
         }
 
-        $membershipMap = [];
+        /** @var list<string> $canonicalItems */
+        $canonicalItems = [];
+        /** @var array<string, true> $membershipIndex */
+        $membershipIndex = [];
+        /** @var array<string, true> $seenDuplicates */
         $seenDuplicates = [];
 
         foreach ($rawItems as $rawItem) {
             $normalized = ItemNormalizer::normalize($rawItem);
-            if (isset($membershipMap[$normalized])) {
-                if (!isset($seenDuplicates[$normalized])) {
-                    $seenDuplicates[$normalized] = true;
+            $encodedKey = CanonicalItemIndexKey::encode($normalized);
+
+            if (isset($membershipIndex[$encodedKey])) {
+                if (!isset($seenDuplicates[$encodedKey])) {
+                    $seenDuplicates[$encodedKey] = true;
                     $warnings[] = new ParserIssue(
                         'DUPLICATE_ITEM',
                         $physicalLine,
@@ -43,29 +51,33 @@ class CanonicalTransaction
                 }
                 continue;
             }
-            $membershipMap[$normalized] = true;
+
+            $membershipIndex[$encodedKey] = true;
+            $canonicalItems[] = $normalized;
         }
 
-        if (count($membershipMap) === 0) {
+        if (count($canonicalItems) === 0) {
             throw new InvalidArgumentException("Transaction must contain at least one item.");
         }
 
-        // Sort membership map keys using binary byte strcmp comparison
-        uksort($membershipMap, 'strcmp');
+        // Sort canonical items using binary byte strcmp comparison
+        usort($canonicalItems, 'strcmp');
 
-        return new self($ordinal, (string)$ordinal, $membershipMap);
+        return new self($ordinal, (string)$ordinal, $canonicalItems, $membershipIndex);
     }
 
     /**
      * Sealed private constructor to prevent public instantiation into a non-canonical state.
      *
-     * @param array<string, true> $membershipMap Pre-sorted canonical membership map
+     * @param list<string> $canonicalItems Pre-sorted canonical item strings
+     * @param array<string, true> $membershipIndex Internal encoded membership index
      */
-    private function __construct(int $ordinal, string $transactionKey, array $membershipMap)
+    private function __construct(int $ordinal, string $transactionKey, array $canonicalItems, array $membershipIndex)
     {
         $this->ordinal = $ordinal;
         $this->transactionKey = $transactionKey;
-        $this->membershipMap = $membershipMap;
+        $this->canonicalItems = $canonicalItems;
+        $this->membershipIndex = $membershipIndex;
     }
 
     public function getOrdinal(): int
@@ -80,31 +92,23 @@ class CanonicalTransaction
 
     /**
      * Returns canonical item strings sorted ascending by PHP strcmp byte comparison.
+     * Every element is guaranteed to be a PHP string.
      *
      * @return list<string>
      */
     public function getItems(): array
     {
-        return array_keys($this->membershipMap);
-    }
-
-    /**
-     * Returns associative membership map keyed by canonical item string.
-     *
-     * @return array<string, true>
-     */
-    public function getMembershipMap(): array
-    {
-        return $this->membershipMap;
+        return $this->canonicalItems;
     }
 
     public function hasItem(string $item): bool
     {
-        return isset($this->membershipMap[$item]);
+        $encodedKey = CanonicalItemIndexKey::encode($item);
+        return isset($this->membershipIndex[$encodedKey]);
     }
 
     public function getItemCount(): int
     {
-        return count($this->membershipMap);
+        return count($this->canonicalItems);
     }
 }

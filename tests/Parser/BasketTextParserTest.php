@@ -70,6 +70,25 @@ class BasketTextParserTest
         $resNbsp = $parser->parse($nbspContent, 'sample.txt');
         $assert('Non-ASCII NBSP whitespace is not treated as token delimiter', $resNbsp->getTransactions()[0]->getItems() === ["A\xC2\xA0B", "C"]);
 
+        // 9. Numeric BasketText Parser Test (Section 14)
+        $numTextContent = "1 2 10\n1 2\n1 10";
+        $resNumText = $parser->parse($numTextContent, 'retail.txt');
+        $txsNum = $resNumText->getTransactions();
+        $allNumStrings = true;
+        foreach ($txsNum as $tx) {
+            foreach ($tx->getItems() as $it) {
+                if (!is_string($it)) {
+                    $allNumStrings = false;
+                }
+            }
+        }
+        $assert('Numeric text dataset produces exact string canonical items without numeric conversion',
+            $resNumText->getTransactionCount() === 3 && $allNumStrings &&
+            $txsNum[0]->getItems() === ['1', '10', '2'] &&
+            $txsNum[1]->getItems() === ['1', '2'] &&
+            $txsNum[2]->getItems() === ['1', '10']
+        );
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

@@ -2,7 +2,7 @@
 
 ## 1. Canonical transaction and itemset model
 
-A dataset is an ordered list of non-empty transactions. For mining, each transaction is a set represented as an associative membership map keyed by canonical item string. Duplicate input items therefore contribute once.
+A dataset is an ordered list of non-empty transactions. Logically, each transaction is a set of exact canonical item strings. In PHP, internal membership indexes use collision-safe binary key encoding so numeric-string item values are not coerced by PHP array-key rules; domain item values remain exact canonical strings. Duplicate input items therefore contribute once.
 
 Canonical item strings are valid UTF-8, 1–128 bytes, trimmed of leading/trailing ASCII whitespace, contain no ASCII control characters, preserve case, and receive no Unicode normalization. `A` and `a`, and canonically distinct Unicode byte sequences, are different items. Empty strings are invalid.
 
