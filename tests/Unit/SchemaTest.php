@@ -57,8 +57,14 @@ class SchemaTest
         $schemaErrors = SchemaVerifier::verify($pdo);
         $assert('Authoritative SchemaVerifier finds 0 errors on clean test DB', count($schemaErrors) === 0, implode('; ', $schemaErrors));
 
-        // 5. Controlled Schema Drift Detection Test
+        // 5. Controlled Structural Index Drift Detection Test
         self::testSchemaDriftDetection($pdo, $assert);
+
+        // 6. Controlled Column Default Drift Detection Test
+        self::testColumnDefaultDriftDetection($pdo, $assert);
+
+        // 7. Controlled Same-Name CHECK Semantic Drift Detection Test
+        self::testSameNameCheckSemanticDriftDetection($pdo, $assert);
 
         // Clean test tables before inserting constraint test rows
         $requiredTables = ['datasets', 'transactions', 'transaction_items', 'experiment_runs', 'experiment_run_levels'];
@@ -68,7 +74,7 @@ class SchemaTest
         }
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
 
-        // 6. Complete Constraint Behavior & Boundary Tests
+        // 8. Complete Constraint Behavior & Boundary Tests
         self::testConstraintBehaviors($pdo, $assert);
 
         // Cleanup test tables after testing
@@ -135,18 +141,58 @@ class SchemaTest
 
     private static function testSchemaDriftDetection(PDO $pdo, callable $assert): void
     {
-        // Introduce structural drift: drop index idx_datasets_sha256
-        $pdo->exec("ALTER TABLE `datasets` DROP INDEX `idx_datasets_sha256`");
+        try {
+            // Introduce structural drift: drop index idx_datasets_sha256
+            $pdo->exec("ALTER TABLE `datasets` DROP INDEX `idx_datasets_sha256`");
 
-        $driftErrors = SchemaVerifier::verify($pdo);
-        $detected = (count($driftErrors) > 0 && str_contains(implode(' ', $driftErrors), 'idx_datasets_sha256'));
-        $assert('SchemaVerifier detects structural drift (dropped index)', $detected);
-
-        // Restore schema
-        $pdo->exec("ALTER TABLE `datasets` ADD INDEX `idx_datasets_sha256` (`sha256`)");
+            $driftErrors = SchemaVerifier::verify($pdo);
+            $detected = (count($driftErrors) > 0 && str_contains(implode(' ', $driftErrors), 'idx_datasets_sha256'));
+            $assert('SchemaVerifier detects structural drift (dropped index)', $detected);
+        } finally {
+            // Restore schema
+            $pdo->exec("ALTER TABLE `datasets` ADD INDEX `idx_datasets_sha256` (`sha256`)");
+        }
 
         $restoredErrors = SchemaVerifier::verify($pdo);
-        $assert('SchemaVerifier passes after schema restoration', count($restoredErrors) === 0, implode('; ', $restoredErrors));
+        $assert('SchemaVerifier passes after index restoration', count($restoredErrors) === 0, implode('; ', $restoredErrors));
+    }
+
+    private static function testColumnDefaultDriftDetection(PDO $pdo, callable $assert): void
+    {
+        try {
+            // Temporarily change default for datasets.transaction_count to 1
+            $pdo->exec("ALTER TABLE `datasets` ALTER COLUMN `transaction_count` SET DEFAULT 1");
+
+            $driftErrors = SchemaVerifier::verify($pdo);
+            $detected = (count($driftErrors) > 0 && str_contains(implode(' ', $driftErrors), 'transaction_count') && str_contains(implode(' ', $driftErrors), 'default mismatch'));
+            $assert('SchemaVerifier detects column default drift (transaction_count DEFAULT 1)', $detected);
+        } finally {
+            // Restore exact frozen default
+            $pdo->exec("ALTER TABLE `datasets` ALTER COLUMN `transaction_count` SET DEFAULT 0");
+        }
+
+        $restoredErrors = SchemaVerifier::verify($pdo);
+        $assert('SchemaVerifier passes after column default restoration', count($restoredErrors) === 0, implode('; ', $restoredErrors));
+    }
+
+    private static function testSameNameCheckSemanticDriftDetection(PDO $pdo, callable $assert): void
+    {
+        try {
+            // Temporarily replace chk_experiment_runs_min_support with wrong definition (min_support >= 0)
+            $pdo->exec("ALTER TABLE `experiment_runs` DROP CHECK `chk_experiment_runs_min_support`");
+            $pdo->exec("ALTER TABLE `experiment_runs` ADD CONSTRAINT `chk_experiment_runs_min_support` CHECK (`min_support` >= 0)");
+
+            $driftErrors = SchemaVerifier::verify($pdo);
+            $detected = (count($driftErrors) > 0 && str_contains(implode(' ', $driftErrors), 'chk_experiment_runs_min_support') && str_contains(implode(' ', $driftErrors), 'semantic mismatch'));
+            $assert('SchemaVerifier detects same-name CHECK semantic drift', $detected);
+        } finally {
+            // Restore exact frozen CHECK definition
+            $pdo->exec("ALTER TABLE `experiment_runs` DROP CHECK `chk_experiment_runs_min_support`");
+            $pdo->exec("ALTER TABLE `experiment_runs` ADD CONSTRAINT `chk_experiment_runs_min_support` CHECK (`min_support` > 0 AND `min_support` <= 1)");
+        }
+
+        $restoredErrors = SchemaVerifier::verify($pdo);
+        $assert('SchemaVerifier passes after CHECK semantics restoration', count($restoredErrors) === 0, implode('; ', $restoredErrors));
     }
 
     private static function testConstraintBehaviors(PDO $pdo, callable $assert): void

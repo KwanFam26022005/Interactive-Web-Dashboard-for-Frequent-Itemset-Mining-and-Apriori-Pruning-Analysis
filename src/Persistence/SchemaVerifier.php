@@ -26,12 +26,12 @@ class SchemaVerifier
         $expectedTables = [
             'datasets' => [
                 'columns' => [
-                    'id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'extra' => 'auto_increment'],
-                    'name' => ['type' => 'varchar(120)', 'nullable' => 'NO'],
-                    'source_filename' => ['type' => 'varchar(255)', 'nullable' => 'NO'],
-                    'format' => ['type' => 'varchar(32)', 'nullable' => 'NO', 'collation' => 'utf8mb4_bin'],
-                    'sha256' => ['type' => 'char(64)', 'nullable' => 'NO', 'collation' => 'ascii_general_ci'],
-                    'byte_size' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO'],
+                    'id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'extra' => 'auto_increment', 'default' => null],
+                    'name' => ['type' => 'varchar(120)', 'nullable' => 'NO', 'default' => null],
+                    'source_filename' => ['type' => 'varchar(255)', 'nullable' => 'NO', 'default' => null],
+                    'format' => ['type' => 'varchar(32)', 'nullable' => 'NO', 'collation' => 'utf8mb4_bin', 'default' => null],
+                    'sha256' => ['type' => 'char(64)', 'nullable' => 'NO', 'collation' => 'ascii_general_ci', 'default' => null],
+                    'byte_size' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => null],
                     'transaction_count' => ['type' => 'int', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
                     'unique_item_count' => ['type' => 'int', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
                     'created_at' => ['type' => 'timestamp', 'nullable' => 'NO', 'default' => 'CURRENT_TIMESTAMP'],
@@ -41,14 +41,16 @@ class SchemaVerifier
                     'idx_datasets_created_at' => ['created_at'],
                     'idx_datasets_sha256' => ['sha256'],
                 ],
-                'checks' => ['chk_datasets_format'],
+                'checks' => [
+                    'chk_datasets_format' => "format in ('basket_csv', 'basket_txt', 'mushroom')",
+                ],
             ],
             'transactions' => [
                 'columns' => [
-                    'id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'extra' => 'auto_increment'],
-                    'dataset_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO'],
-                    'transaction_key' => ['type' => 'varchar(64)', 'nullable' => 'NO'],
-                    'ordinal' => ['type' => 'int', 'unsigned' => true, 'nullable' => 'NO'],
+                    'id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'extra' => 'auto_increment', 'default' => null],
+                    'dataset_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => null],
+                    'transaction_key' => ['type' => 'varchar(64)', 'nullable' => 'NO', 'default' => null],
+                    'ordinal' => ['type' => 'int', 'unsigned' => true, 'nullable' => 'NO', 'default' => null],
                 ],
                 'pk' => ['id'],
                 'fks' => [
@@ -61,8 +63,8 @@ class SchemaVerifier
             ],
             'transaction_items' => [
                 'columns' => [
-                    'transaction_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO'],
-                    'item_key' => ['type' => 'varchar(128)', 'nullable' => 'NO', 'collation' => 'utf8mb4_bin'],
+                    'transaction_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => null],
+                    'item_key' => ['type' => 'varchar(128)', 'nullable' => 'NO', 'collation' => 'utf8mb4_bin', 'default' => null],
                 ],
                 'pk' => ['transaction_id', 'item_key'],
                 'fks' => [
@@ -74,12 +76,12 @@ class SchemaVerifier
             ],
             'experiment_runs' => [
                 'columns' => [
-                    'id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'extra' => 'auto_increment'],
-                    'dataset_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO'],
-                    'min_support' => ['type' => 'decimal(7,6)', 'nullable' => 'NO'],
-                    'min_confidence' => ['type' => 'decimal(7,6)', 'nullable' => 'NO'],
-                    'runtime_ms' => ['type' => 'decimal(12,3)', 'nullable' => 'NO'],
-                    'rule_generation_runtime_ms' => ['type' => 'decimal(12,3)', 'nullable' => 'NO'],
+                    'id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'extra' => 'auto_increment', 'default' => null],
+                    'dataset_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => null],
+                    'min_support' => ['type' => 'decimal(7,6)', 'nullable' => 'NO', 'default' => null],
+                    'min_confidence' => ['type' => 'decimal(7,6)', 'nullable' => 'NO', 'default' => null],
+                    'runtime_ms' => ['type' => 'decimal(12,3)', 'nullable' => 'NO', 'default' => null],
+                    'rule_generation_runtime_ms' => ['type' => 'decimal(12,3)', 'nullable' => 'NO', 'default' => null],
                     'candidates_generated' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
                     'candidates_pruned' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
                     'candidates_evaluated' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
@@ -97,17 +99,17 @@ class SchemaVerifier
                     'idx_experiment_runs_dataset_params' => ['dataset_id', 'min_support', 'min_confidence'],
                 ],
                 'checks' => [
-                    'chk_experiment_runs_min_support',
-                    'chk_experiment_runs_min_confidence',
-                    'chk_experiment_runs_runtime',
-                    'chk_experiment_runs_rule_runtime',
+                    'chk_experiment_runs_min_support' => 'min_support > 0 and min_support <= 1',
+                    'chk_experiment_runs_min_confidence' => 'min_confidence >= 0 and min_confidence <= 1',
+                    'chk_experiment_runs_runtime' => 'runtime_ms >= 0',
+                    'chk_experiment_runs_rule_runtime' => 'rule_generation_runtime_ms >= 0',
                 ],
             ],
             'experiment_run_levels' => [
                 'columns' => [
-                    'run_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO'],
-                    'k' => ['type' => 'smallint', 'unsigned' => true, 'nullable' => 'NO'],
-                    'source' => ['type' => 'varchar(24)', 'nullable' => 'NO', 'collation' => 'utf8mb4_bin'],
+                    'run_id' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => null],
+                    'k' => ['type' => 'smallint', 'unsigned' => true, 'nullable' => 'NO', 'default' => null],
+                    'source' => ['type' => 'varchar(24)', 'nullable' => 'NO', 'collation' => 'utf8mb4_bin', 'default' => null],
                     'generated' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
                     'pruned' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
                     'evaluated' => ['type' => 'bigint', 'unsigned' => true, 'nullable' => 'NO', 'default' => '0'],
@@ -118,10 +120,10 @@ class SchemaVerifier
                     'run_id' => ['ref_table' => 'experiment_runs', 'ref_column' => 'id', 'delete_rule' => 'CASCADE'],
                 ],
                 'checks' => [
-                    'chk_experiment_run_levels_k',
-                    'chk_experiment_run_levels_source',
-                    'chk_experiment_run_levels_pruned_evaluated',
-                    'chk_experiment_run_levels_frequent',
+                    'chk_experiment_run_levels_k' => 'k >= 1',
+                    'chk_experiment_run_levels_source' => "source in ('singleton_scan', 'join_prune')",
+                    'chk_experiment_run_levels_pruned_evaluated' => 'pruned + evaluated = generated',
+                    'chk_experiment_run_levels_frequent' => 'frequent <= evaluated',
                 ],
             ],
         ];
@@ -182,6 +184,13 @@ class SchemaVerifier
 
                 if (isset($expectedCol['collation']) && $actualCol['COLLATION_NAME'] !== $expectedCol['collation']) {
                     $errors[] = "Table '{$table}' column '{$colName}' collation mismatch. Expected '{$expectedCol['collation']}', got '{$actualCol['COLLATION_NAME']}'.";
+                }
+
+                // Explicit Column Default Verification
+                $expectedDefault = self::normalizeDefault($expectedCol['default'] ?? null);
+                $actualDefault = self::normalizeDefault($actualCol['COLUMN_DEFAULT']);
+                if ($expectedDefault !== $actualDefault) {
+                    $errors[] = "Table '{$table}' column '{$colName}' default mismatch. Expected " . var_export($expectedDefault, true) . ", got " . var_export($actualDefault, true) . ".";
                 }
             }
 
@@ -278,23 +287,64 @@ class SchemaVerifier
                 }
             }
 
-            // Introspect CHECK Constraints
+            // Introspect CHECK Constraints and Clause Semantics
             if (isset($spec['checks'])) {
-                $chkSql = "SELECT CONSTRAINT_NAME
-                           FROM information_schema.table_constraints
-                           WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_TYPE = 'CHECK'";
+                $chkSql = "SELECT c.CONSTRAINT_NAME, cc.CHECK_CLAUSE
+                           FROM information_schema.table_constraints c
+                           JOIN information_schema.check_constraints cc
+                             ON c.CONSTRAINT_SCHEMA = cc.CONSTRAINT_SCHEMA AND c.CONSTRAINT_NAME = cc.CONSTRAINT_NAME
+                           WHERE c.TABLE_SCHEMA = ? AND c.TABLE_NAME = ? AND c.CONSTRAINT_TYPE = 'CHECK'";
                 $chkStmt = $pdo->prepare($chkSql);
                 $chkStmt->execute([$dbName, $table]);
-                $actualChecks = $chkStmt->fetchAll(PDO::FETCH_COLUMN);
+                $actualChecksRows = $chkStmt->fetchAll(PDO::FETCH_ASSOC);
 
-                foreach ($spec['checks'] as $expectedChk) {
-                    if (!in_array($expectedChk, $actualChecks, true)) {
-                        $errors[] = "Table '{$table}' missing CHECK constraint '{$expectedChk}'.";
+                $actualChecks = [];
+                foreach ($actualChecksRows as $r) {
+                    $rUpper = array_change_key_case($r, CASE_UPPER);
+                    $actualChecks[$rUpper['CONSTRAINT_NAME']] = $rUpper['CHECK_CLAUSE'];
+                }
+
+                foreach ($spec['checks'] as $chkName => $expectedClause) {
+                    if (!isset($actualChecks[$chkName])) {
+                        $errors[] = "Table '{$table}' missing CHECK constraint '{$chkName}'.";
+                        continue;
+                    }
+
+                    $normExpected = self::normalizeCheckClause($expectedClause);
+                    $normActual = self::normalizeCheckClause($actualChecks[$chkName]);
+
+                    if ($normExpected !== $normActual) {
+                        $errors[] = "Table '{$table}' CHECK constraint '{$chkName}' semantic mismatch. Expected clause '{$normExpected}', got '{$normActual}'.";
                     }
                 }
             }
         }
 
         return $errors;
+    }
+
+    private static function normalizeDefault(?string $val): ?string
+    {
+        if ($val === null) {
+            return null;
+        }
+        $trimmed = trim($val);
+        $upper = strtoupper($trimmed);
+        if ($upper === 'CURRENT_TIMESTAMP()' || $upper === 'CURRENT_TIMESTAMP') {
+            return 'CURRENT_TIMESTAMP';
+        }
+        return $trimmed;
+    }
+
+    private static function normalizeCheckClause(string $clause): string
+    {
+        $s = strtolower($clause);
+        $s = stripcslashes($s);
+        $s = str_replace(['_utf8mb4', '\\', '`'], '', $s);
+        $s = preg_replace('/\s+/', ' ', $s);
+        $s = preg_replace('/(\d+)\.0+(?!\d)/', '$1', $s);
+        $s = str_replace(['(', ')'], '', $s);
+        $s = preg_replace('/\s*([><=+\-,])\s*/', ' $1 ', $s);
+        return trim(preg_replace('/\s+/', ' ', $s));
     }
 }
