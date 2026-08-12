@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http;
 
 use InvalidArgumentException;
+use JsonException;
 
 /**
  * Strict HTTP-global validation for dataset requests.
@@ -154,6 +155,89 @@ final class RequestValidator
     }
 
     /**
+     * @return array{dataset_id: int, support_units: int, confidence_units: int, top_n: int}
+     */
+    public function validateMiningJson(string $rawBody): array
+    {
+        try {
+            $decoded = json_decode(
+                $rawBody,
+                false,
+                512,
+                JSON_THROW_ON_ERROR | JSON_BIGINT_AS_STRING
+            );
+        } catch (JsonException) {
+            throw new ApiException(
+                400,
+                'INVALID_JSON',
+                'Request body must contain valid JSON.'
+            );
+        }
+
+        if (!is_object($decoded)) {
+            throw self::invalidRequest('Request body must be a JSON object.');
+        }
+
+        $tokens = $this->scanTopLevelObject($rawBody);
+        $required = ['dataset_id', 'min_support', 'min_confidence'];
+        $allowed = [...$required, 'top_n'];
+
+        foreach (array_keys($tokens) as $key) {
+            if (!is_string($key) || !in_array($key, $allowed, true)) {
+                throw self::invalidRequest('Unknown JSON field.');
+            }
+        }
+
+        foreach ($required as $key) {
+            if (!array_key_exists($key, $tokens)) {
+                throw self::invalidRequest('A required JSON field is missing.');
+            }
+        }
+
+        $datasetId = $this->parsePositiveJsonInteger($tokens['dataset_id']);
+        if ($datasetId === null) {
+            throw self::invalidDatasetId();
+        }
+
+        $supportUnits = $this->parseExactMillionths($tokens['min_support']);
+        if ($supportUnits === null || $supportUnits < 1) {
+            throw new ApiException(
+                422,
+                'INVALID_MIN_SUPPORT',
+                'Minimum support must be an exact number between 0.000001 and 1.'
+            );
+        }
+
+        $confidenceUnits = $this->parseExactMillionths($tokens['min_confidence']);
+        if ($confidenceUnits === null) {
+            throw new ApiException(
+                422,
+                'INVALID_MIN_CONFIDENCE',
+                'Minimum confidence must be an exact number between 0 and 1.'
+            );
+        }
+
+        $topN = 20;
+        if (array_key_exists('top_n', $tokens)) {
+            $topN = $this->parsePositiveJsonInteger($tokens['top_n']);
+            if ($topN === null || $topN > 100) {
+                throw new ApiException(
+                    422,
+                    'INVALID_TOP_N',
+                    'Top n must be an integer between 1 and 100.'
+                );
+            }
+        }
+
+        return [
+            'dataset_id' => $datasetId,
+            'support_units' => $supportUnits,
+            'confidence_units' => $confidenceUnits,
+            'top_n' => $topN,
+        ];
+    }
+
+    /**
      * @param array<string, mixed> $post
      * @param array<string, mixed> $files
      * @return array{source_filename: string, tmp_name: string, format: string, name: ?string}
@@ -238,6 +322,261 @@ final class RequestValidator
                 throw self::invalidRequest("Unknown {$kind} field.");
             }
         }
+    }
+
+    /**
+     * Captures raw top-level value tokens while preserving their original numeric lexemes.
+     *
+     * The complete body has already passed json_decode validation before this scanner runs.
+     *
+     * @return array<string, string>
+     */
+    private function scanTopLevelObject(string $rawBody): array
+    {
+        $length = strlen($rawBody);
+        $offset = 0;
+        $this->skipJsonWhitespace($rawBody, $offset, $length);
+        $offset++;
+
+        $tokens = [];
+        $seen = [];
+
+        while (true) {
+            $this->skipJsonWhitespace($rawBody, $offset, $length);
+            if ($offset < $length && $rawBody[$offset] === '}') {
+                break;
+            }
+
+            $keyStart = $offset;
+            $this->scanJsonString($rawBody, $offset, $length);
+            $keyToken = substr($rawBody, $keyStart, $offset - $keyStart);
+
+            try {
+                $key = json_decode($keyToken, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException) {
+                throw self::invalidRequest('The JSON object could not be inspected safely.');
+            }
+
+            if (!is_string($key)) {
+                throw self::invalidRequest('The JSON object could not be inspected safely.');
+            }
+
+            $identity = 'key:' . $key;
+            if (array_key_exists($identity, $seen)) {
+                throw self::invalidRequest('Duplicate JSON fields are not allowed.');
+            }
+            $seen[$identity] = true;
+
+            $this->skipJsonWhitespace($rawBody, $offset, $length);
+            $offset++;
+            $this->skipJsonWhitespace($rawBody, $offset, $length);
+
+            $valueStart = $offset;
+            $this->scanJsonValue($rawBody, $offset, $length);
+            $tokens[$key] = trim(substr($rawBody, $valueStart, $offset - $valueStart));
+
+            $this->skipJsonWhitespace($rawBody, $offset, $length);
+            if ($offset < $length && $rawBody[$offset] === ',') {
+                $offset++;
+                continue;
+            }
+
+            break;
+        }
+
+        return $tokens;
+    }
+
+    private function skipJsonWhitespace(string $json, int &$offset, int $length): void
+    {
+        while ($offset < $length) {
+            $character = $json[$offset];
+            if ($character !== ' ' && $character !== "\t" && $character !== "\n" && $character !== "\r") {
+                return;
+            }
+
+            $offset++;
+        }
+    }
+
+    private function scanJsonString(string $json, int &$offset, int $length): void
+    {
+        $offset++;
+        $escaped = false;
+
+        while ($offset < $length) {
+            $character = $json[$offset++];
+            if ($escaped) {
+                $escaped = false;
+                continue;
+            }
+
+            if ($character === '\\') {
+                $escaped = true;
+                continue;
+            }
+
+            if ($character === '"') {
+                return;
+            }
+        }
+
+        throw self::invalidRequest('The JSON object could not be inspected safely.');
+    }
+
+    private function scanJsonValue(string $json, int &$offset, int $length): void
+    {
+        $depth = 0;
+        $inString = false;
+        $escaped = false;
+
+        while ($offset < $length) {
+            $character = $json[$offset];
+
+            if ($inString) {
+                $offset++;
+                if ($escaped) {
+                    $escaped = false;
+                } elseif ($character === '\\') {
+                    $escaped = true;
+                } elseif ($character === '"') {
+                    $inString = false;
+                }
+                continue;
+            }
+
+            if ($character === '"') {
+                $inString = true;
+                $offset++;
+                continue;
+            }
+
+            if ($character === '{' || $character === '[') {
+                $depth++;
+                $offset++;
+                continue;
+            }
+
+            if ($character === '}' || $character === ']') {
+                if ($depth === 0) {
+                    return;
+                }
+
+                $depth--;
+                $offset++;
+                continue;
+            }
+
+            if ($character === ',' && $depth === 0) {
+                return;
+            }
+
+            $offset++;
+        }
+    }
+
+    private function parsePositiveJsonInteger(string $token): ?int
+    {
+        if (preg_match('/^(0|[1-9][0-9]*)$/D', $token) !== 1 || $token === '0') {
+            return null;
+        }
+
+        $maximum = (string)PHP_INT_MAX;
+        if (
+            strlen($token) > strlen($maximum)
+            || (strlen($token) === strlen($maximum) && strcmp($token, $maximum) > 0)
+        ) {
+            return null;
+        }
+
+        return (int)$token;
+    }
+
+    private function parseExactMillionths(string $token): ?int
+    {
+        if (
+            preg_match(
+                '/^(-?)(0|[1-9][0-9]*+)(?:\.([0-9]++))?(?:[eE]([+-]?)([0-9]++))?$/D',
+                $token,
+                $matches,
+                PREG_UNMATCHED_AS_NULL
+            ) !== 1
+        ) {
+            return null;
+        }
+
+        $integerDigits = $matches[2];
+        $fractionDigits = $matches[3] ?? '';
+        $coefficient = ltrim($integerDigits . $fractionDigits, '0');
+        if ($coefficient === '') {
+            return 0;
+        }
+
+        if ($matches[1] === '-') {
+            return null;
+        }
+
+        $fractionLength = strlen($fractionDigits);
+        $coefficientLength = strlen($coefficient);
+        if ($fractionLength > PHP_INT_MAX - $coefficientLength - 16) {
+            return null;
+        }
+
+        $exponent = $this->parseBoundedExponent(
+            $matches[4] ?? '',
+            $matches[5] ?? '',
+            $fractionLength + $coefficientLength + 15
+        );
+        $shift = $exponent - $fractionLength + 6;
+
+        if ($shift >= 0) {
+            if ($coefficientLength + $shift > 7) {
+                return null;
+            }
+
+            $unitDigits = $coefficient . str_repeat('0', $shift);
+        } else {
+            $digitsToRemove = -$shift;
+            $withoutTrailingZeros = rtrim($coefficient, '0');
+            $trailingZeros = $coefficientLength - strlen($withoutTrailingZeros);
+            if ($digitsToRemove > $trailingZeros) {
+                return null;
+            }
+
+            $unitDigits = substr($coefficient, 0, $coefficientLength - $digitsToRemove);
+        }
+
+        if (
+            strlen($unitDigits) > 7
+            || (strlen($unitDigits) === 7 && strcmp($unitDigits, '1000000') > 0)
+        ) {
+            return null;
+        }
+
+        return (int)$unitDigits;
+    }
+
+    private function parseBoundedExponent(string $sign, string $digits, int $bound): int
+    {
+        if ($digits === '') {
+            return 0;
+        }
+
+        $digits = ltrim($digits, '0');
+        if ($digits === '') {
+            return 0;
+        }
+
+        $boundDigits = (string)$bound;
+        if (
+            strlen($digits) > strlen($boundDigits)
+            || (strlen($digits) === strlen($boundDigits) && strcmp($digits, $boundDigits) > 0)
+        ) {
+            return $sign === '-' ? -($bound + 1) : $bound + 1;
+        }
+
+        $value = (int)$digits;
+        return $sign === '-' ? -$value : $value;
     }
 
     /**

@@ -455,6 +455,58 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 3D Mining HTTP API Tests\n";
+echo "========================================\n\n";
+
+try {
+    $miningValidatorRes = \App\Tests\Api\MiningRequestValidatorTest::run();
+    foreach ($miningValidatorRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $miningValidatorRes['passed'];
+    $failed += $miningValidatorRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] MiningRequestValidatorTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $miningAssemblerRes = \App\Tests\Api\MiningResponseAssemblerTest::run();
+    foreach ($miningAssemblerRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $miningAssemblerRes['passed'];
+    $failed += $miningAssemblerRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] MiningResponseAssemblerTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $miningControllerRes = \App\Tests\Api\MiningControllerTest::run();
+    foreach ($miningControllerRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $miningControllerRes['passed'];
+    $failed += $miningControllerRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] MiningControllerTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $miningHttpRes = \App\Tests\Api\MiningHttpIntegrationTest::run();
+    foreach ($miningHttpRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $miningHttpRes['passed'];
+    $failed += $miningHttpRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] MiningHttpIntegrationTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
