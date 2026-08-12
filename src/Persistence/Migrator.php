@@ -12,7 +12,7 @@ class Migrator
 {
     /**
      * Run all SQL migration files in the given directory against the PDO connection,
-     * and verify schema completeness.
+     * and verify exact schema structure using SchemaVerifier.
      *
      * @return list<string> Names of migration files executed / verified
      */
@@ -47,32 +47,12 @@ class Migrator
             }
         }
 
-        // Post-execution schema verification: ensure all 5 required tables exist
-        self::verifySchemaStructure($pdo);
+        // Authoritative exact schema verification
+        $schemaErrors = SchemaVerifier::verify($pdo);
+        if (count($schemaErrors) > 0) {
+            throw new RuntimeException("Migration schema verification failed:\n - " . implode("\n - ", $schemaErrors));
+        }
 
         return $executed;
-    }
-
-    /**
-     * Verify that the database schema contains all five required Phase 1 tables.
-     */
-
-    public static function verifySchemaStructure(PDO $pdo): void
-    {
-        $dbName = $pdo->query("SELECT DATABASE()")->fetchColumn();
-        if (!$dbName) {
-            throw new RuntimeException("No database selected for migration verification.");
-        }
-
-        $stmt = $pdo->prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = ?");
-        $stmt->execute([$dbName]);
-        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-        $required = ['datasets', 'transactions', 'transaction_items', 'experiment_runs', 'experiment_run_levels'];
-        foreach ($required as $tbl) {
-            if (!in_array($tbl, $tables, true)) {
-                throw new RuntimeException("Migration verification failed: Table '{$tbl}' missing in database '{$dbName}'.");
-            }
-        }
     }
 }

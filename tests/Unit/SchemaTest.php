@@ -6,6 +6,7 @@ namespace App\Tests\Unit;
 
 use App\Persistence\ConnectionFactory;
 use App\Persistence\Migrator;
+use App\Persistence\SchemaVerifier;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -52,8 +53,12 @@ class SchemaTest
         $rerunExecuted = Migrator::run($pdo, $migrationsDir);
         $assert('Rerun migration is idempotent and verified', count($rerunExecuted) > 0);
 
-        // 4. Exact INFORMATION_SCHEMA Introspection
-        self::testExactSchemaIntrospection($pdo, $assert);
+        // 4. Authoritative Schema Introspection using SchemaVerifier
+        $schemaErrors = SchemaVerifier::verify($pdo);
+        $assert('Authoritative SchemaVerifier finds 0 errors on clean test DB', count($schemaErrors) === 0, implode('; ', $schemaErrors));
+
+        // 5. Controlled Schema Drift Detection Test
+        self::testSchemaDriftDetection($pdo, $assert);
 
         // Clean test tables before inserting constraint test rows
         $requiredTables = ['datasets', 'transactions', 'transaction_items', 'experiment_runs', 'experiment_run_levels'];
@@ -63,7 +68,7 @@ class SchemaTest
         }
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
 
-        // 5. Constraint Behavior Tests
+        // 6. Complete Constraint Behavior & Boundary Tests
         self::testConstraintBehaviors($pdo, $assert);
 
         // Cleanup test tables after testing
@@ -128,91 +133,53 @@ class SchemaTest
         $assert('Safety guard refuses DB_NAME=fim_dashboard', $caughtDb);
     }
 
-    private static function testExactSchemaIntrospection(PDO $pdo, callable $assert): void
+    private static function testSchemaDriftDetection(PDO $pdo, callable $assert): void
     {
-        $db = 'fim_dashboard_test';
+        // Introduce structural drift: drop index idx_datasets_sha256
+        $pdo->exec("ALTER TABLE `datasets` DROP INDEX `idx_datasets_sha256`");
 
-        // Introspect Columns for datasets
-        $dsColumns = self::getTableColumns($pdo, $db, 'datasets');
-        $assert('datasets has exact column count 9', count($dsColumns) === 9);
-        $assert('datasets.id is bigint unsigned auto_increment', str_contains($dsColumns['id']['COLUMN_TYPE'], 'bigint') && str_contains($dsColumns['id']['COLUMN_TYPE'], 'unsigned') && str_contains($dsColumns['id']['EXTRA'], 'auto_increment'));
-        $assert('datasets.format collation is utf8mb4_bin', $dsColumns['format']['COLLATION_NAME'] === 'utf8mb4_bin');
-        $assert('datasets.sha256 collation is ascii_general_ci', $dsColumns['sha256']['COLLATION_NAME'] === 'ascii_general_ci');
+        $driftErrors = SchemaVerifier::verify($pdo);
+        $detected = (count($driftErrors) > 0 && str_contains(implode(' ', $driftErrors), 'idx_datasets_sha256'));
+        $assert('SchemaVerifier detects structural drift (dropped index)', $detected);
 
-        // Primary Keys
-        $dsPk = self::getTablePrimaryKey($pdo, $db, 'datasets');
-        $assert('datasets Primary Key is [id]', $dsPk === ['id']);
+        // Restore schema
+        $pdo->exec("ALTER TABLE `datasets` ADD INDEX `idx_datasets_sha256` (`sha256`)");
 
-        // Introspect Columns for transactions
-        $txColumns = self::getTableColumns($pdo, $db, 'transactions');
-        $assert('transactions has exact column count 4', count($txColumns) === 4);
-        $txPk = self::getTablePrimaryKey($pdo, $db, 'transactions');
-        $assert('transactions Primary Key is [id]', $txPk === ['id']);
-
-        // Foreign Key on transactions
-        $txFks = self::getForeignKeys($pdo, $db, 'transactions');
-        $assert('transactions FK dataset_id -> datasets.id CASCADE', isset($txFks['dataset_id']) && $txFks['dataset_id']['referenced_table'] === 'datasets' && $txFks['dataset_id']['delete_rule'] === 'CASCADE');
-
-        // Unique constraints on transactions
-        $txUniques = self::getUniqueConstraints($pdo, $db, 'transactions');
-        $assert('transactions unique constraint (dataset_id, transaction_key) exists', in_array(['dataset_id', 'transaction_key'], $txUniques, true));
-        $assert('transactions unique constraint (dataset_id, ordinal) exists', in_array(['dataset_id', 'ordinal'], $txUniques, true));
-
-        // Introspect Columns for transaction_items
-        $tiColumns = self::getTableColumns($pdo, $db, 'transaction_items');
-        $assert('transaction_items has exact column count 2', count($tiColumns) === 2);
-        $assert('transaction_items.item_key collation is utf8mb4_bin', $tiColumns['item_key']['COLLATION_NAME'] === 'utf8mb4_bin');
-        $tiPk = self::getTablePrimaryKey($pdo, $db, 'transaction_items');
-        $assert('transaction_items Primary Key is [transaction_id, item_key]', $tiPk === ['transaction_id', 'item_key']);
-
-        // Introspect Columns for experiment_runs
-        $erColumns = self::getTableColumns($pdo, $db, 'experiment_runs');
-        $assert('experiment_runs has exact column count 13', count($erColumns) === 13);
-        $assert('experiment_runs.min_support type decimal(7,6)', str_contains($erColumns['min_support']['COLUMN_TYPE'], 'decimal(7,6)'));
-        $assert('experiment_runs.runtime_ms type decimal(12,3)', str_contains($erColumns['runtime_ms']['COLUMN_TYPE'], 'decimal(12,3)'));
-
-        $erFks = self::getForeignKeys($pdo, $db, 'experiment_runs');
-        $assert('experiment_runs FK dataset_id -> datasets.id RESTRICT', isset($erFks['dataset_id']) && $erFks['dataset_id']['referenced_table'] === 'datasets' && $erFks['dataset_id']['delete_rule'] === 'RESTRICT');
-
-        // Introspect Columns for experiment_run_levels
-        $erlColumns = self::getTableColumns($pdo, $db, 'experiment_run_levels');
-        $assert('experiment_run_levels has exact column count 7', count($erlColumns) === 7);
-        $assert('experiment_run_levels.source collation is utf8mb4_bin', $erlColumns['source']['COLLATION_NAME'] === 'utf8mb4_bin');
-        $erlPk = self::getTablePrimaryKey($pdo, $db, 'experiment_run_levels');
-        $assert('experiment_run_levels Primary Key is [run_id, k]', $erlPk === ['run_id', 'k']);
+        $restoredErrors = SchemaVerifier::verify($pdo);
+        $assert('SchemaVerifier passes after schema restoration', count($restoredErrors) === 0, implode('; ', $restoredErrors));
     }
 
     private static function testConstraintBehaviors(PDO $pdo, callable $assert): void
     {
         // 1. datasets format CHECK rejects invalid format
-        $caught = false;
+        $caughtFmt = false;
         try {
             $pdo->exec("INSERT INTO `datasets` (`name`, `source_filename`, `format`, `sha256`, `byte_size`) VALUES ('test', 'test.csv', 'invalid_fmt', REPEAT('a', 64), 100)");
         } catch (PDOException $e) {
-            $caught = true;
+            $caughtFmt = true;
         }
-        $assert('datasets format CHECK rejects invalid format', $caught);
+        $assert('datasets format CHECK rejects invalid format', $caughtFmt);
 
         // 2. datasets format CHECK rejects uppercase BASKET_CSV due to utf8mb4_bin
-        $caughtUpper = false;
+        $caughtUpperFmt = false;
         try {
             $pdo->exec("INSERT INTO `datasets` (`name`, `source_filename`, `format`, `sha256`, `byte_size`) VALUES ('test', 'test.csv', 'BASKET_CSV', REPEAT('a', 64), 100)");
         } catch (PDOException $e) {
-            $caughtUpper = true;
+            $caughtUpperFmt = true;
         }
-        $assert('datasets format CHECK rejects uppercase BASKET_CSV', $caughtUpper);
+        $assert('datasets format CHECK rejects uppercase BASKET_CSV', $caughtUpperFmt);
 
         // Insert valid dataset for FK tests
         $pdo->exec("INSERT INTO `datasets` (`id`, `name`, `source_filename`, `format`, `sha256`, `byte_size`) VALUES (1, 'Mushroom', 'mushroom.csv', 'mushroom', REPEAT('a', 64), 1000)");
 
         // 3. transactions FK rejects missing dataset
-        $caughtFk = false;
+        $caughtTxFk = false;
         try {
             $pdo->exec("INSERT INTO `transactions` (`dataset_id`, `transaction_key`, `ordinal`) VALUES (9999, 'T1', 1)");
         } catch (PDOException $e) {
-            $caughtFk = true;
+            $caughtTxFk = true;
         }
-        $assert('transactions FK rejects missing dataset_id', $caughtFk);
+        $assert('transactions FK rejects missing dataset_id', $caughtTxFk);
 
         // Insert valid transaction
         $pdo->exec("INSERT INTO `transactions` (`id`, `dataset_id`, `transaction_key`, `ordinal`) VALUES (10, 1, 'T1', 1)");
@@ -277,7 +244,16 @@ class SchemaTest
         }
         $assert('experiment_runs min_support > 1.0 rejected', $caughtSuppHigh);
 
-        // 10. experiment_runs min_confidence > 1.0 rejected
+        // 10. experiment_runs min_confidence < 0.0 rejected
+        $caughtConfNeg = false;
+        try {
+            $pdo->exec("INSERT INTO `experiment_runs` (`dataset_id`, `min_support`, `min_confidence`, `runtime_ms`, `rule_generation_runtime_ms`) VALUES (1, 0.5, -0.1, 10.0, 5.0)");
+        } catch (PDOException $e) {
+            $caughtConfNeg = true;
+        }
+        $assert('experiment_runs min_confidence < 0.0 rejected', $caughtConfNeg);
+
+        // 11. experiment_runs min_confidence > 1.0 rejected
         $caughtConfHigh = false;
         try {
             $pdo->exec("INSERT INTO `experiment_runs` (`dataset_id`, `min_support`, `min_confidence`, `runtime_ms`, `rule_generation_runtime_ms`) VALUES (1, 0.5, 1.5, 10.0, 5.0)");
@@ -286,7 +262,7 @@ class SchemaTest
         }
         $assert('experiment_runs min_confidence > 1.0 rejected', $caughtConfHigh);
 
-        // 11. experiment_runs runtime_ms < 0.0 rejected
+        // 12. experiment_runs runtime_ms < 0.0 rejected
         $caughtRuntimeNeg = false;
         try {
             $pdo->exec("INSERT INTO `experiment_runs` (`dataset_id`, `min_support`, `min_confidence`, `runtime_ms`, `rule_generation_runtime_ms`) VALUES (1, 0.5, 0.5, -1.0, 5.0)");
@@ -295,10 +271,24 @@ class SchemaTest
         }
         $assert('experiment_runs runtime_ms < 0.0 rejected', $caughtRuntimeNeg);
 
-        // Insert valid experiment_run
-        $pdo->exec("INSERT INTO `experiment_runs` (`id`, `dataset_id`, `min_support`, `min_confidence`, `runtime_ms`, `rule_generation_runtime_ms`) VALUES (100, 1, 0.1, 0.5, 10.0, 5.0)");
+        // 13. experiment_runs rule_generation_runtime_ms < 0.0 rejected
+        $caughtRuleRuntimeNeg = false;
+        try {
+            $pdo->exec("INSERT INTO `experiment_runs` (`dataset_id`, `min_support`, `min_confidence`, `runtime_ms`, `rule_generation_runtime_ms`) VALUES (1, 0.5, 0.5, 10.0, -1.0)");
+        } catch (PDOException $e) {
+            $caughtRuleRuntimeNeg = true;
+        }
+        $assert('experiment_runs rule_generation_runtime_ms < 0.0 rejected', $caughtRuleRuntimeNeg);
 
-        // 12. experiment_run_levels CHECK k >= 1
+        // 14. Valid boundaries min_support = 1.000000, min_confidence = 0.000000 succeed
+        $pdo->exec("INSERT INTO `experiment_runs` (`id`, `dataset_id`, `min_support`, `min_confidence`, `runtime_ms`, `rule_generation_runtime_ms`) VALUES (100, 1, 1.000000, 0.000000, 10.0, 5.0)");
+        $assert('experiment_runs valid boundary min_support=1.0, min_confidence=0.0 succeeds', true);
+
+        // 15. Valid boundaries min_confidence = 1.000000 succeeds
+        $pdo->exec("INSERT INTO `experiment_runs` (`id`, `dataset_id`, `min_support`, `min_confidence`, `runtime_ms`, `rule_generation_runtime_ms`) VALUES (101, 1, 0.500000, 1.000000, 10.0, 5.0)");
+        $assert('experiment_runs valid boundary min_confidence=1.0 succeeds', true);
+
+        // 16. experiment_run_levels CHECK k >= 1
         $caughtKZero = false;
         try {
             $pdo->exec("INSERT INTO `experiment_run_levels` (`run_id`, `k`, `source`, `generated`, `pruned`, `evaluated`, `frequent`) VALUES (100, 0, 'singleton_scan', 10, 0, 10, 5)");
@@ -307,7 +297,7 @@ class SchemaTest
         }
         $assert('experiment_run_levels CHECK rejects k = 0', $caughtKZero);
 
-        // 13. experiment_run_levels source CHECK rejects uppercase SINGLETON_SCAN due to utf8mb4_bin
+        // 17. experiment_run_levels source CHECK rejects uppercase SINGLETON_SCAN due to utf8mb4_bin
         $caughtSourceUpper = false;
         try {
             $pdo->exec("INSERT INTO `experiment_run_levels` (`run_id`, `k`, `source`, `generated`, `pruned`, `evaluated`, `frequent`) VALUES (100, 1, 'SINGLETON_SCAN', 10, 0, 10, 5)");
@@ -316,7 +306,7 @@ class SchemaTest
         }
         $assert('experiment_run_levels source CHECK rejects uppercase SINGLETON_SCAN', $caughtSourceUpper);
 
-        // 14. experiment_run_levels CHECK pruned + evaluated = generated
+        // 18. experiment_run_levels CHECK pruned + evaluated = generated
         $caughtPrunedEval = false;
         try {
             $pdo->exec("INSERT INTO `experiment_run_levels` (`run_id`, `k`, `source`, `generated`, `pruned`, `evaluated`, `frequent`) VALUES (100, 1, 'singleton_scan', 10, 2, 5, 3)");
@@ -325,7 +315,7 @@ class SchemaTest
         }
         $assert('experiment_run_levels CHECK rejects pruned + evaluated != generated', $caughtPrunedEval);
 
-        // 15. experiment_run_levels CHECK frequent <= evaluated
+        // 19. experiment_run_levels CHECK frequent <= evaluated
         $caughtFreq = false;
         try {
             $pdo->exec("INSERT INTO `experiment_run_levels` (`run_id`, `k`, `source`, `generated`, `pruned`, `evaluated`, `frequent`) VALUES (100, 1, 'singleton_scan', 10, 2, 8, 9)");
@@ -337,7 +327,7 @@ class SchemaTest
         // Insert valid level
         $pdo->exec("INSERT INTO `experiment_run_levels` (`run_id`, `k`, `source`, `generated`, `pruned`, `evaluated`, `frequent`) VALUES (100, 1, 'singleton_scan', 10, 2, 8, 5)");
 
-        // 16. Delete Behavior — datasets -> experiment_runs is RESTRICTED
+        // 20. Delete Behavior — datasets -> experiment_runs is RESTRICTED
         $caughtRestricted = false;
         try {
             $pdo->exec("DELETE FROM `datasets` WHERE `id` = 1");
@@ -346,78 +336,16 @@ class SchemaTest
         }
         $assert('dataset deletion with referenced experiment_run is RESTRICTED', $caughtRestricted);
 
-        // 17. Delete Behavior — experiment_runs -> experiment_run_levels CASCADE
+        // 21. Delete Behavior — experiment_runs -> experiment_run_levels CASCADE
         $pdo->exec("DELETE FROM `experiment_runs` WHERE `id` = 100");
         $levelCount = (int)$pdo->query("SELECT COUNT(*) FROM `experiment_run_levels` WHERE `run_id` = 100")->fetchColumn();
         $assert('experiment_runs -> experiment_run_levels CASCADE delete works', $levelCount === 0);
 
-        // 18. Delete Behavior — datasets -> transactions -> transaction_items CASCADE
+        // 22. Delete Behavior — datasets -> transactions -> transaction_items CASCADE
+        $pdo->exec("DELETE FROM `experiment_runs` WHERE `dataset_id` = 1");
         $pdo->exec("DELETE FROM `datasets` WHERE `id` = 1");
         $txCount = (int)$pdo->query("SELECT COUNT(*) FROM `transactions` WHERE `dataset_id` = 1")->fetchColumn();
         $itemCount2 = (int)$pdo->query("SELECT COUNT(*) FROM `transaction_items` WHERE `transaction_id` = 10")->fetchColumn();
         $assert('datasets -> transactions -> transaction_items CASCADE delete works', $txCount === 0 && $itemCount2 === 0);
-    }
-
-    private static function getTableColumns(PDO $pdo, string $db, string $table): array
-    {
-        $stmt = $pdo->prepare("SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLLATION_NAME, EXTRA FROM information_schema.columns WHERE table_schema = ? AND table_name = ?");
-        $stmt->execute([$db, $table]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $result = [];
-        foreach ($rows as $r) {
-            $rUpper = array_change_key_case($r, CASE_UPPER);
-            $colName = $rUpper['COLUMN_NAME'];
-            $result[$colName] = $rUpper;
-        }
-        return $result;
-    }
-
-    private static function getTablePrimaryKey(PDO $pdo, string $db, string $table): array
-    {
-        $stmt = $pdo->prepare("SELECT COLUMN_NAME FROM information_schema.key_column_usage WHERE table_schema = ? AND table_name = ? AND constraint_name = 'PRIMARY' ORDER BY ordinal_position");
-        $stmt->execute([$db, $table]);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
-    }
-
-    private static function getForeignKeys(PDO $pdo, string $db, string $table): array
-    {
-        $sql = "SELECT k.COLUMN_NAME, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME, r.DELETE_RULE
-                FROM information_schema.key_column_usage k
-                JOIN information_schema.referential_constraints r
-                  ON k.constraint_schema = r.constraint_schema AND k.constraint_name = r.constraint_name
-                WHERE k.table_schema = ? AND k.table_name = ? AND k.referenced_table_name IS NOT NULL";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$db, $table]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $result = [];
-        foreach ($rows as $r) {
-            $rUpper = array_change_key_case($r, CASE_UPPER);
-            $col = $rUpper['COLUMN_NAME'];
-            $result[$col] = [
-                'referenced_table' => $rUpper['REFERENCED_TABLE_NAME'],
-                'referenced_column' => $rUpper['REFERENCED_COLUMN_NAME'],
-                'delete_rule' => $rUpper['DELETE_RULE'],
-            ];
-        }
-        return $result;
-    }
-
-    private static function getUniqueConstraints(PDO $pdo, string $db, string $table): array
-    {
-        $sql = "SELECT CONSTRAINT_NAME, COLUMN_NAME
-                FROM information_schema.key_column_usage
-                WHERE table_schema = ? AND table_name = ? AND constraint_name != 'PRIMARY' AND constraint_name LIKE 'uq_%'
-                ORDER BY constraint_name, ordinal_position";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$db, $table]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $grouped = [];
-        foreach ($rows as $r) {
-            $rUpper = array_change_key_case($r, CASE_UPPER);
-            $cName = $rUpper['CONSTRAINT_NAME'];
-            $colName = $rUpper['COLUMN_NAME'];
-            $grouped[$cName][] = $colName;
-        }
-        return array_values($grouped);
     }
 }
