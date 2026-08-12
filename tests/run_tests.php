@@ -399,6 +399,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 3B Dataset Import Service Integration Tests\n";
+echo "========================================\n\n";
+
+try {
+    $datasetImportRes = \App\Tests\Integration\DatasetImportServiceTest::run();
+    foreach ($datasetImportRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $datasetImportRes['passed'];
+    $failed += $datasetImportRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] DatasetImportServiceTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
