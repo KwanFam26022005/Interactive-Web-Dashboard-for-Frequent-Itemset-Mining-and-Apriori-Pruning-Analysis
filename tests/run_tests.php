@@ -27,8 +27,8 @@ assertTest('Test A - PHP bootstrap', defined('APP_ROOT') && APP_ROOT === dirname
 
 // Test B — Autoload
 try {
-    $fixture = new \App\Tests\Fixtures\DummyFixture();
-    assertTest('Test B - Autoload', $fixture->getValue() === 'fixture_ok');
+    $probe = new \App\Tests\Unit\AutoloadProbe();
+    assertTest('Test B - Autoload', $probe->getValue() === 'fixture_ok');
 } catch (\Throwable $e) {
     assertTest('Test B - Autoload', false, $e->getMessage());
 }

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Fixtures;
+namespace App\Tests\Unit;
 
-class DummyFixture
+class AutoloadProbe
 {
     public function getValue(): string
     {
