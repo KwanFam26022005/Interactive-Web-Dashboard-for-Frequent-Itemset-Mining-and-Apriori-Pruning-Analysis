@@ -50,13 +50,25 @@ assertTest(
 
 // Test D — Public smoke entrypoint
 $publicIndex = dirname(__DIR__) . '/public/index.php';
-$output = shell_exec('php ' . escapeshellarg($publicIndex));
-$bootstrapOk = ($output !== null && str_contains($output, 'project bootstrap operational'));
-assertTest(
-    'Test D - Public smoke entrypoint',
-    $bootstrapOk,
-    "Output: " . trim($output ?? '')
-);
+$phpBinary = defined('PHP_BINARY') && PHP_BINARY !== '' ? PHP_BINARY : '';
+$binaryValid = ($phpBinary !== '' && is_file($phpBinary));
+
+if (!$binaryValid) {
+    assertTest(
+        'Test D - Public smoke entrypoint',
+        false,
+        "PHP_BINARY is invalid or unusable: '" . $phpBinary . "'"
+    );
+} else {
+    $command = escapeshellarg($phpBinary) . ' ' . escapeshellarg($publicIndex);
+    $output = shell_exec($command);
+    $bootstrapOk = ($output !== null && str_contains($output, 'project bootstrap operational'));
+    assertTest(
+        'Test D - Public smoke entrypoint',
+        $bootstrapOk,
+        "Command: {$command}, Output: " . trim($output ?? '')
+    );
+}
 
 echo "\n========================================\n";
 echo "Phase 2B Configuration & Unit Tests\n";
