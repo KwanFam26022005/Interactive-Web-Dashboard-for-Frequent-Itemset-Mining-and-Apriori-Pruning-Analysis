@@ -107,6 +107,102 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 2C Canonical Dataset & Domain Unit Tests\n";
+echo "========================================\n\n";
+
+try {
+    $normRes = \App\Tests\Unit\ItemNormalizerTest::run();
+    foreach ($normRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $normRes['passed'];
+    $failed += $normRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ItemNormalizerTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $txRes = \App\Tests\Unit\CanonicalTransactionTest::run();
+    foreach ($txRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $txRes['passed'];
+    $failed += $txRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] CanonicalTransactionTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
+echo "Phase 2C Parser & Registry Unit Tests\n";
+echo "========================================\n\n";
+
+try {
+    $regRes = \App\Tests\Parser\ParserRegistryTest::run();
+    foreach ($regRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $regRes['passed'];
+    $failed += $regRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ParserRegistryTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $csvRes = \App\Tests\Parser\BasketCsvParserTest::run();
+    foreach ($csvRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $csvRes['passed'];
+    $failed += $csvRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] BasketCsvParserTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $txtRes = \App\Tests\Parser\BasketTextParserTest::run();
+    foreach ($txtRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $txtRes['passed'];
+    $failed += $txtRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] BasketTextParserTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $mushRes = \App\Tests\Parser\MushroomParserTest::run();
+    foreach ($mushRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $mushRes['passed'];
+    $failed += $mushRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] MushroomParserTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
+echo "Phase 2C Oracle Fixture & Determinism Tests\n";
+echo "========================================\n\n";
+
+try {
+    $oracleRes = \App\Tests\Oracle\TinyFixtureTest::run();
+    foreach ($oracleRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $oracleRes['passed'];
+    $failed += $oracleRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] TinyFixtureTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
