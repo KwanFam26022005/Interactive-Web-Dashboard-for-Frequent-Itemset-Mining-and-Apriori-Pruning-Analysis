@@ -59,6 +59,54 @@ assertTest(
 );
 
 echo "\n========================================\n";
+echo "Phase 2B Configuration & Unit Tests\n";
+echo "========================================\n\n";
+
+try {
+    $configRes = \App\Tests\Unit\ConfigTest::run();
+    foreach ($configRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $configRes['passed'];
+    $failed += $configRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ConfigTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $connRes = \App\Tests\Unit\ConnectionFactoryTest::run();
+    foreach ($connRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $connRes['passed'];
+    $failed += $connRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ConnectionFactoryTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
+echo "Phase 2B Schema Integration Tests\n";
+echo "========================================\n\n";
+
+try {
+    // Force test environment for schema integration test execution
+    putenv('APP_ENV=test');
+    putenv('DB_NAME=fim_dashboard_test');
+
+    $schemaRes = \App\Tests\Integration\SchemaTest::run();
+    foreach ($schemaRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $schemaRes['passed'];
+    $failed += $schemaRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] SchemaTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
