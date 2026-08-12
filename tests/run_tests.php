@@ -95,7 +95,7 @@ try {
     putenv('APP_ENV=test');
     putenv('DB_NAME=fim_dashboard_test');
 
-    $schemaRes = \App\Tests\Integration\SchemaTest::run();
+    $schemaRes = \App\Tests\Unit\SchemaTest::run();
     foreach ($schemaRes['results'] as $resLine) {
         echo "{$resLine}\n";
     }
