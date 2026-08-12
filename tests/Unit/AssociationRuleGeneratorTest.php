@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit;
 
-use App\Dataset\BasketCsvParser;
-use App\Mining\AprioriEngine;
 use App\Mining\AprioriResult;
 use App\Mining\AssociationRuleGenerator;
 use App\Mining\Itemset;
@@ -83,9 +81,6 @@ class AssociationRuleGeneratorTest
         $assert('ruleLimit <= 0 rejected with InvalidArgumentException', $caughtBadLimit);
 
         // 2. Exact Confidence Boundary Test (3/4 = 0.75 confidence)
-        // Set up support map: F={X, Y} count=3, X count=4, Y count=3, N=4
-        // X -> Y confidence = 3/4 = 0.75
-        // Y -> X confidence = 3/3 = 1.0 (sorted first by confidence desc)
         $setX = Itemset::fromCanonicalItems(['X']);
         $setY = Itemset::fromCanonicalItems(['Y']);
         $setXY = Itemset::fromCanonicalItems(['X', 'Y']);
@@ -157,7 +152,59 @@ class AssociationRuleGeneratorTest
         });
         $assert('Union {A,B,C} enumerates exactly 6 proper antecedent rules', count($rulesFromABC) === 6);
 
-        // 5. Rule Limit Test (equality succeeds, exceed fails)
+        // 5. Invalid Support Map Tests (Section 9, 10)
+        // Case 5A: Missing antecedent entry in support map
+        $mockMissingAnt = new AprioriResult(
+            1,
+            [$setA, $setB, $setAB],
+            [$setB->getIdentity() => 2, $setAB->getIdentity() => 2], // missing setA
+            [$mockLevel, $mockLevel2],
+            2,
+            100
+        );
+        $caughtMissingAnt = false;
+        try {
+            $generator->generate($mockMissingAnt, 4, 0);
+        } catch (RuntimeException $e) {
+            $caughtMissingAnt = true;
+        }
+        $assert('Missing antecedent entry in support map throws RuntimeException', $caughtMissingAnt);
+
+        // Case 5B: Impossible count (supportCountF > supportCountA)
+        $mockImpossibleCount = new AprioriResult(
+            1,
+            [$setA, $setB, $setAB],
+            [$setA->getIdentity() => 2, $setB->getIdentity() => 2, $setAB->getIdentity() => 3], // F=3 > A=2
+            [$mockLevel, $mockLevel2],
+            2,
+            100
+        );
+        $caughtImpossibleCount = false;
+        try {
+            $generator->generate($mockImpossibleCount, 4, 0);
+        } catch (RuntimeException $e) {
+            $caughtImpossibleCount = true;
+        }
+        $assert('Impossible count support(F) > support(A) in generator throws RuntimeException', $caughtImpossibleCount);
+
+        // Case 5C: Zero denominator path in generator
+        $mockZeroSupport = new AprioriResult(
+            1,
+            [$setA, $setB, $setAB],
+            [$setA->getIdentity() => 0, $setB->getIdentity() => 2, $setAB->getIdentity() => 0], // A=0
+            [$mockLevel, $mockLevel2],
+            2,
+            100
+        );
+        $caughtZeroDenomGen = false;
+        try {
+            $generator->generate($mockZeroSupport, 4, 0);
+        } catch (RuntimeException $e) {
+            $caughtZeroDenomGen = true;
+        }
+        $assert('Zero antecedent support count path in generator throws RuntimeException', $caughtZeroDenomGen);
+
+        // 6. Rule Limit Test (equality succeeds, exceed fails)
         $resLimitOk = $generator->generate($mockResult, 4, 750000, 1);
         $assert('ruleLimit = 1 succeeds when 1 rule qualifies', $resLimitOk->getRulesCount() === 1);
 
@@ -169,7 +216,7 @@ class AssociationRuleGeneratorTest
         }
         $assert('ruleLimit exceed throws MiningLimitExceededException without returning partial result', $caughtLimitExceed);
 
-        // 6. AprioriResult Immutability Assertion
+        // 7. AprioriResult Immutability Assertion
         $origNs = $mockResult->getElapsedNanoseconds();
         $origMapCount = count($mockResult->getSupportMap());
         $origLevelsCount = count($mockResult->getLevels());
@@ -184,7 +231,7 @@ class AssociationRuleGeneratorTest
             count($mockResult->getFrequentItemsets()) === $origFreqCount
         );
 
-        // 7. Deterministic Clock timing test
+        // 8. Deterministic Clock timing test (Section 11, 13)
         $clockTick = 0;
         $mockClock = static function () use (&$clockTick): int {
             if ($clockTick === 0) {
@@ -195,7 +242,7 @@ class AssociationRuleGeneratorTest
         };
         $genTimed = new AssociationRuleGenerator($mockClock);
         $resTimed = $genTimed->generate($mockResult, 4, 750000);
-        $assert('Rule generation elapsed nanoseconds accurately captured', $resTimed->getElapsedNanoseconds() === 4000);
+        $assert('Rule generation elapsed nanoseconds accurately captured after result validation', $resTimed->getElapsedNanoseconds() === 4000);
 
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }

@@ -16,7 +16,7 @@ class AssociationRule
     private float $lift;
     private string $identity;
 
-    public function __construct(
+    private function __construct(
         Itemset $antecedent,
         Itemset $consequent,
         int $supportCount,
@@ -37,7 +37,19 @@ class AssociationRule
         $this->lift = $lift;
     }
 
-    public static function createWithDenominatorCheck(
+    /**
+     * Authoritative factory deriving metrics and enforcing complete rule-domain invariants.
+     *
+     * @param Itemset $antecedent Non-empty canonical antecedent Itemset
+     * @param Itemset $consequent Non-empty canonical consequent Itemset
+     * @param int $supportCountF Integer support count of union F = A union B
+     * @param int $supportCountA Integer support count of antecedent A
+     * @param int $supportCountB Integer support count of consequent B
+     * @param int $transactionCountN Total transactions N (> 0)
+     * @return self Sealed AssociationRule instance
+     * @throws RuntimeException on any rule-side or support-count invariant violation
+     */
+    public static function createFromCounts(
         Itemset $antecedent,
         Itemset $consequent,
         int $supportCountF,
@@ -45,18 +57,41 @@ class AssociationRule
         int $supportCountB,
         int $transactionCountN
     ): self {
+        // 1. Rule Side Invariants
+        if (count($antecedent->getItems()) === 0) {
+            throw new RuntimeException("Antecedent Itemset cannot be empty.");
+        }
+
+        if (count($consequent->getItems()) === 0) {
+            throw new RuntimeException("Consequent Itemset cannot be empty.");
+        }
+
+        if (!empty(array_intersect($antecedent->getItems(), $consequent->getItems()))) {
+            throw new RuntimeException("Antecedent and consequent Itemsets must be disjoint.");
+        }
+
+        // 2. Support-Count Invariants
         if ($transactionCountN <= 0) {
             throw new RuntimeException("Zero denominator invariant failure: transaction count N must be > 0. Got {$transactionCountN}.");
         }
 
-        if ($supportCountA <= 0) {
-            throw new RuntimeException("Zero denominator invariant failure: antecedent support count must be > 0. Got {$supportCountA}.");
+        if ($supportCountF <= 0 || $supportCountA <= 0 || $supportCountB <= 0) {
+            throw new RuntimeException("Zero/negative denominator invariant failure: support counts must be > 0. Got F={$supportCountF}, A={$supportCountA}, B={$supportCountB}.");
         }
 
-        if ($supportCountB <= 0) {
-            throw new RuntimeException("Zero denominator invariant failure: consequent support count must be > 0. Got {$supportCountB}.");
+        if ($supportCountF > $supportCountA) {
+            throw new RuntimeException("Impossible support count invariant failure: supportCountF ({$supportCountF}) cannot exceed supportCountA ({$supportCountA}).");
         }
 
+        if ($supportCountF > $supportCountB) {
+            throw new RuntimeException("Impossible support count invariant failure: supportCountF ({$supportCountF}) cannot exceed supportCountB ({$supportCountB}).");
+        }
+
+        if ($supportCountF > $transactionCountN || $supportCountA > $transactionCountN || $supportCountB > $transactionCountN) {
+            throw new RuntimeException("Support count invariant failure: support counts cannot exceed transactionCount N ({$transactionCountN}).");
+        }
+
+        // 3. Unrounded Metric Derivation
         $support = (float)$supportCountF / (float)$transactionCountN;
         $confidence = (float)$supportCountF / (float)$supportCountA;
         $lift = $confidence / ((float)$supportCountB / (float)$transactionCountN);

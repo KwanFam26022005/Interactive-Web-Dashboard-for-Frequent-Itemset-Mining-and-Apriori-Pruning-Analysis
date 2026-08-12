@@ -30,7 +30,7 @@ class AssociationRuleGenerator
      * @param int $ruleLimit Maximum qualifying rules allowed (default 50,000)
      * @return RuleGenerationResult Complete qualifying rules result
      * @throws InvalidArgumentException on invalid input parameters
-     * @throws RuntimeException on zero-denominator or missing support map entries
+     * @throws RuntimeException on zero-denominator, invalid support map, or invariant failures
      * @throws MiningLimitExceededException if qualifying rules count exceeds ruleLimit
      */
     public function generate(
@@ -97,7 +97,7 @@ class AssociationRuleGenerator
 
                 // Exact integer cross-multiplication confidence filter
                 if (($cntF * 1_000_000) >= ($confidenceUnits * $cntA)) {
-                    $rule = AssociationRule::createWithDenominatorCheck(
+                    $rule = AssociationRule::createFromCounts(
                         $antSet,
                         $consSet,
                         $cntF,
@@ -161,6 +161,9 @@ class AssociationRuleGenerator
             // 5. Consequent canonical order
             return Itemset::compare($r1->getConsequent(), $r2->getConsequent());
         });
+
+        // Validate RuleGenerationResult invariant before stopping clock
+        new RuleGenerationResult($qualifyingRules, count($qualifyingRules), 0);
 
         $endNs = ($this->clock)();
 
