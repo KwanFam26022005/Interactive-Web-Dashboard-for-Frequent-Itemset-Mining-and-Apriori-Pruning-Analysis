@@ -415,6 +415,46 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 3C HTTP Infrastructure & Dataset API Tests\n";
+echo "========================================\n\n";
+
+try {
+    $httpInfrastructureRes = \App\Tests\Api\HttpInfrastructureTest::run();
+    foreach ($httpInfrastructureRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $httpInfrastructureRes['passed'];
+    $failed += $httpInfrastructureRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] HttpInfrastructureTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $datasetControllerRes = \App\Tests\Api\DatasetControllerTest::run();
+    foreach ($datasetControllerRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $datasetControllerRes['passed'];
+    $failed += $datasetControllerRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] DatasetControllerTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $datasetHttpRes = \App\Tests\Api\DatasetHttpIntegrationTest::run();
+    foreach ($datasetHttpRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $datasetHttpRes['passed'];
+    $failed += $datasetHttpRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] DatasetHttpIntegrationTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
