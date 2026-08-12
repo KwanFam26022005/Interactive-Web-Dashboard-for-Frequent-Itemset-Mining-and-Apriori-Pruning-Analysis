@@ -1,0 +1,46 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Runtime state
+/storage/uploads/
+/storage/logs/
+/storage/cache/
+/storage/results/
+*.log
+*.pid
+*.sock
+
+# Local database data and convenience dumps
+/database/data/
+*.ibd
+*.frm
+*.MYD
+*.MYI
+*.sql.gz
+
+# External/raw datasets; keep provenance instructions
+/datasets/raw/
+
+# Scratch experiment output; canonical evidence belongs in explicit raw/processed/figures files
+/experiments/generated/
+/experiments/**/local/
+
+# Optional dependency/build/test artifacts
+/vendor/
+/node_modules/
+/coverage/
+/.phpunit.cache/
+*.tmp
+*.temp
+

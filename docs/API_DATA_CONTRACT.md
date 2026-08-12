@@ -1,216 +1,210 @@
 # API and Data Contract
 
-## 1. Purpose
+## 1. Dataset ingestion profiles
 
-Define stable boundaries for dataset ingestion, mining requests, mining responses, and persistence before implementation begins.
+All uploads are UTF-8 (an optional leading UTF-8 BOM is removed). Import is all-or-nothing. The request must select exactly one profile; extension alone never selects semantics.
 
-## 2. Dataset ingestion model
+| `format` | Extensions | Physical record | Item mapping |
+|---|---|---|---|
+| `basket_csv` | `.csv` | One nonblank line per transaction; comma-separated fields; quoted fields allowed but embedded record newlines are not. | Each non-empty trimmed field is one item. Empty fields invalidate the record. |
+| `basket_txt` | `.txt`, `.dat` | One nonblank line per transaction; one or more ASCII whitespace characters separate tokens. | Each token is one item. Intended Retail/FIMI adapter. |
+| `mushroom` | `.csv`, `.data` | One nonblank line per transaction; comma-separated categorical fields with a fixed field count established by the first record. | Field `i` value `v` becomes `c{i}=v` (one-based), preventing equal codes in different attributes from colliding. `?` is a valid categorical value. |
 
-The application must support a transactional representation in which each transaction resolves to a set of item identifiers.
+Uploaded transaction IDs are not supported in the MVP. Each accepted record receives `ordinal = 1..N` and `transaction_key` equal to that decimal ordinal. Blank lines do not become empty transactions and generate warnings. Duplicate items within a record are deduplicated after normalization and generate warnings; they never increase support.
 
-The parser may support more than one physical file shape later, but all accepted inputs must normalize to:
+Parsing collects errors with source record numbers. Any invalid nonblank record rejects the whole import. At most 100 issue objects are returned; `total_issues` preserves the full count. The limits and normalization rules in `ARCHITECTURE.md` and `MINING_CONTRACT.md` apply. Universal delimiter detection, arbitrary transaction-ID columns, JSON uploads, Excel files, and a universal ETL mapper are non-goals.
 
-```text
-transaction_id -> unique set of items
-```
+The tiny fixture uses `basket_csv`; Retail uses `basket_txt`; Mushroom uses `mushroom`. Before benchmark execution, `datasets/README.md` must record upstream URL, version/date, license/redistribution status, checksum, selected profile, and measured imported statistics.
 
-Required validation:
+## 2. API conventions
 
-- non-empty dataset
-- valid transaction identifiers when present
-- valid item identifiers
-- duplicate items inside one transaction are deduplicated for support counting
-- malformed rows produce explicit validation errors or documented skip behavior
+- Base paths are literal PHP endpoints; no rewrite configuration is required.
+- Successful and failed bodies are UTF-8 `application/json` except the initial HTML page.
+- Unknown fields are rejected with `INVALID_REQUEST` to catch client/contract drift.
+- IDs/counts are JSON integers; metric precision follows `MINING_CONTRACT.md`.
+- Unsupported methods return `405` with an `Allow` header.
+- Dataset imports and mining are synchronous for the MVP.
 
-The exact Retail/Mushroom adapters should be added only after the real source files are selected and inspected.
+## 3. `GET /api/datasets.php`
 
-## 3. Logical persistence model
+Lists imported datasets, newest first. No request body. Optional query `id` changes the operation to one-dataset detail; no other query fields are allowed.
 
-Initial logical tables:
-
-### datasets
-
-```text
-id
-name
-source_filename
-transaction_count
-unique_item_count
-created_at
-```
-
-### transactions
-
-```text
-id
-dataset_id
-transaction_key
-```
-
-### transaction_items
-
-```text
-transaction_id
-item_key
-```
-
-### experiment_runs
-
-```text
-id
-dataset_id
-min_support
-min_confidence
-runtime_ms
-candidates_generated
-candidates_pruned
-candidates_evaluated
-frequent_itemsets
-rules_count
-max_k
-created_at
-```
-
-A later migration may normalize an `items` table if needed. Do not add schema complexity without a concrete requirement.
-
-Recommended integrity constraints include foreign keys and uniqueness preventing duplicate `(transaction_id, item_key)` rows.
-
-## 4. Mining request contract
-
-The core mining endpoint should accept an equivalent JSON/form payload:
+List response, `200`:
 
 ```json
 {
-  "dataset_id": 1,
-  "min_support": 0.10,
-  "min_confidence": 0.60,
-  "top_n": 20
+  "datasets": [
+    {
+      "id": 1,
+      "name": "tiny-oracle",
+      "format": "basket_csv",
+      "source_filename": "tiny.csv",
+      "sha256": "63f312520eda0c5bc90b8ac6cd9c9f61fcf2ed8569b01becbb653ba66319466e",
+      "byte_size": 15,
+      "transaction_count": 4,
+      "unique_item_count": 3,
+      "created_at": "2026-08-12T00:00:00Z"
+    }
+  ]
 }
 ```
 
-Authoritative mining parameters:
+Detail returns `{"dataset": <same-shape>}` with `200`. `id` must be a positive integer; missing records return `404 DATASET_NOT_FOUND`.
 
-- `dataset_id`
-- `min_support`
-- `min_confidence`
+## 4. `POST /api/datasets.php`
 
-`top_n` is a presentation control and must not change mining correctness or experiment totals.
+Content type: `multipart/form-data`.
 
-## 5. Mining response contract
+Fields:
 
-The response should preserve a shape equivalent to:
+- `file` required, exactly one uploaded file;
+- `format` required enum `basket_csv|basket_txt|mushroom`;
+- `name` optional string; after trim 1–120 characters, default is source basename without extension.
+
+On completed import return `201`:
 
 ```json
 {
   "dataset": {
     "id": 1,
-    "name": "example",
-    "transaction_count": 0,
-    "unique_item_count": 0
+    "name": "tiny-oracle",
+    "format": "basket_csv",
+    "source_filename": "tiny.csv",
+    "sha256": "63f312520eda0c5bc90b8ac6cd9c9f61fcf2ed8569b01becbb653ba66319466e",
+    "byte_size": 15,
+    "transaction_count": 4,
+    "unique_item_count": 3,
+    "created_at": "2026-08-12T00:00:00Z"
+  },
+  "warnings": [],
+  "total_warnings": 0
+}
+```
+
+Use `400` for a missing/broken multipart request, `413` for over 10 MiB, `415` for extension/profile mismatch, and `422 DATASET_VALIDATION_FAILED` for parse/normalization/content errors. No database rows survive a failed import.
+
+## 5. `POST /api/mining.php`
+
+Content type: `application/json`. Required fields are `dataset_id`, `min_support`, and `min_confidence`; optional `top_n` defaults to `20`.
+
+```json
+{
+  "dataset_id": 1,
+  "min_support": 0.5,
+  "min_confidence": 0.75,
+  "top_n": 20
+}
+```
+
+Validation: positive integer dataset ID; finite representable decimal `min_support` in `(0,1]`; finite representable decimal `min_confidence` in `[0,1]`; integer `top_n` in `[1,100]`. Numeric strings, booleans, `null`, arrays, and coercion are rejected. A missing dataset is `404`.
+
+Successful response, `200`:
+
+```json
+{
+  "run_id": 42,
+  "dataset": {
+    "id": 1,
+    "name": "tiny-oracle",
+    "transaction_count": 4,
+    "unique_item_count": 3
   },
   "parameters": {
-    "min_support": 0.10,
-    "min_confidence": 0.60
+    "min_support": 0.5,
+    "min_confidence": 0.75,
+    "top_n": 20
   },
   "summary": {
-    "frequent_itemsets": 0,
-    "rules": 0,
-    "runtime_ms": 0,
-    "max_k": 0,
-    "candidates_generated": 0,
-    "candidates_pruned": 0,
-    "candidates_evaluated": 0
+    "frequent_itemsets": 5,
+    "rules_count": 2,
+    "runtime_ms": 0.123,
+    "rule_generation_runtime_ms": 0.045,
+    "max_k": 2,
+    "candidates_generated": 7,
+    "candidates_pruned": 1,
+    "candidates_evaluated": 6,
+    "pruning_ratio": 0.142857
   },
-  "levels": [],
-  "itemsets": [],
-  "rules": [],
-  "heatmap": null
+  "levels": [
+    {
+      "k": 1,
+      "source": "singleton_scan",
+      "generated": 3,
+      "pruned": 0,
+      "evaluated": 3,
+      "frequent": 3,
+      "pruning_ratio": 0
+    }
+  ],
+  "itemsets": [
+    {"items": ["A"], "k": 1, "support_count": 4, "support": 1}
+  ],
+  "rules": [
+    {
+      "antecedent": ["B"],
+      "consequent": ["A"],
+      "support_count": 2,
+      "support": 0.5,
+      "confidence": 1,
+      "lift": 1
+    }
+  ],
+  "heatmap": {
+    "metric": "support_count",
+    "items": ["A", "B", "C"],
+    "values": [[4, 2, 2], [2, 2, 1], [2, 1, 2]]
+  },
+  "result_limits": {
+    "itemsets_returned": 5,
+    "itemsets_truncated": false,
+    "rules_returned": 2,
+    "rules_truncated": false,
+    "heatmap_items_returned": 3,
+    "heatmap_items_truncated": false
+  }
 }
 ```
 
-The final implementation may add fields without breaking documented fields during the MVP.
+Summary counts and levels describe the complete successful result, never just displayed arrays. `itemsets` and `rules` are independently capped by `top_n` using the stable orders in `MINING_CONTRACT.md`. Heatmap items are the highest-support singletons (support count descending, then canonical item order), capped at `min(top_n,25)`. Its diagonal is singleton support count and off-diagonal is pair co-occurrence count across all transactions, whether or not that pair is frequent.
 
-## 6. Itemset result shape
+The endpoint persists the completed summary and every reported level, then returns the generated `run_id`. It does not persist itemsets, rules, or heatmap. There is no result/history retrieval endpoint in the MVP; controlled experiment exports use repository/runner code rather than an extra public CRUD API.
 
-```json
-{
-  "items": ["A", "B"],
-  "k": 2,
-  "support_count": 10,
-  "support": 0.25
-}
-```
+## 6. Error envelope and status map
 
-Item order must be canonical and stable.
-
-## 7. Rule result shape
-
-```json
-{
-  "antecedent": ["A"],
-  "consequent": ["B"],
-  "support": 0.25,
-  "confidence": 0.70,
-  "lift": 1.20
-}
-```
-
-## 8. Level metric shape
-
-```json
-{
-  "k": 2,
-  "generated": 0,
-  "pruned": 0,
-  "evaluated": 0,
-  "frequent": 0
-}
-```
-
-These fields must follow the definitions in `MINING_CONTRACT.md`.
-
-## 9. Error response contract
-
-Use a predictable non-success response equivalent to:
+Every non-success JSON response is:
 
 ```json
 {
   "error": {
     "code": "INVALID_MIN_SUPPORT",
-    "message": "min_support must be within the supported range",
+    "message": "min_support must be greater than 0 and at most 1",
     "details": {}
   }
 }
 ```
 
-Do not expose PHP stack traces to normal browser responses.
+`code` is stable uppercase snake case; `message` is safe for users; `details` contains safe structured field/record issues and is `{}` when absent.
 
-## 10. HTTP/API conventions
+| Status | Codes / meaning |
+|---:|---|
+| `400` | `INVALID_JSON`, `INVALID_REQUEST`, `UPLOAD_FAILED` |
+| `404` | `DATASET_NOT_FOUND` |
+| `405` | `METHOD_NOT_ALLOWED` |
+| `413` | `UPLOAD_TOO_LARGE` |
+| `415` | `UNSUPPORTED_MEDIA_TYPE`, `UNSUPPORTED_DATASET_FORMAT` |
+| `422` | `INVALID_DATASET_ID`, `INVALID_MIN_SUPPORT`, `INVALID_MIN_CONFIDENCE`, `INVALID_TOP_N`, `DATASET_VALIDATION_FAILED`, pre-run `COMPUTATION_GUARDRAIL` |
+| `500` | `INTERNAL_ERROR`, including internal invariant failure |
+| `503` | `MINING_LIMIT_EXCEEDED` for deadline/candidate/rule limits reached during computation |
 
-Exact routes remain an implementation detail until Phase 1 review, but the design should keep separate concerns for:
+No non-success response includes partial result arrays or a persisted completed run.
 
-- dataset upload/import
-- dataset listing/summary
-- mining execution
-- experiment/history retrieval if implemented
+## 7. Visualization sufficiency
 
-AJAX requests should not force full-page reloads.
+- KPI cards: `dataset`, `summary`.
+- Frequent-itemset bar: `itemsets`.
+- Rule scatter: rule `support`, `confidence`, `lift`.
+- Co-occurrence heatmap: `heatmap`.
+- Candidate/pruning chart: `levels` and summary ratio.
+- Experiments: persistent complete run/level metrics and raw CSV exports, never reconstructed from top-N arrays.
 
-## 11. Visualization data policy
-
-- Dashboard presentation may display only top-N results for readability.
-- Summary counts must represent the full mining output, not only displayed points.
-- Experimental raw results must never be reconstructed from a truncated visualization response if the complete metrics are already available from the backend.
-
-## 12. Security/usability baseline
-
-For the midterm scope:
-
-- validate parameter types/ranges server-side
-- validate uploaded file type/size according to final ingestion implementation
-- do not trust browser-only validation
-- use parameterized database access
-- return clear validation errors
-- provide loading/error states in the UI
-
-This is a baseline, not a claim of production security hardening.
+Adding optional fields is permitted only when clients ignore them; removing/renaming fields or changing semantics after freeze requires architecture review.

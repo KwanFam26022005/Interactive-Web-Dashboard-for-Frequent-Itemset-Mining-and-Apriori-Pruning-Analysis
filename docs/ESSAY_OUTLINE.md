@@ -59,7 +59,7 @@ Explain dataset parser, Apriori engine, rule generator, and profiler.
 
 ### 4.3 Data/persistence design
 
-Show the relevant logical schema or ERD.
+Show the frozen logical schema/ERD and explain why normalized datasets and compact run metrics persist while itemsets/rules remain transient.
 
 ### 4.4 API flow
 
@@ -93,7 +93,7 @@ Recommended mapping:
 
 ### 5.4 Co-occurrence heatmap
 
-Define the matrix quantity explicitly, for example pair support/co-occurrence for selected items.
+Use the API's explicit `support_count` matrix: singleton counts on the diagonal and transaction co-occurrence counts off-diagonal for the selected top singleton items.
 
 ### 5.5 Performance/pruning views
 
@@ -126,7 +126,7 @@ Organize by research question rather than by screenshot.
 
 ### 8.1 RQ1 — minimum support
 
-Discuss the observed relationship among minimum support, frequent itemsets, candidate counts, maximum level, and runtime.
+Discuss the observed relationship among minimum support, frequent itemsets, candidate counts, maximum level, and Apriori-only `runtime_ms`.
 
 ### 8.2 RQ2 — pruning
 
@@ -169,7 +169,7 @@ Avoid a conclusion that merely states that the website was successfully built.
 6. frequent-itemset bar chart
 7. association-rule scatter plot
 8. co-occurrence heatmap
-9. runtime vs minimum support
+9. Apriori `runtime_ms` vs minimum support
 10. candidates vs minimum support
 11. generated/pruned/evaluated comparison
 12. D3.js/Chart.js/ECharts benchmark
@@ -184,3 +184,17 @@ Avoid a conclusion that merely states that the website was successfully built.
 - visualization benchmark results
 
 All numeric result tables must come from measured data, not placeholders presented as results.
+
+## 13. Frozen evidence sources
+
+The architecture can produce every required essay artifact without scraping charts:
+
+- Apriori/pruning analysis: complete run summaries and `experiment_run_levels`, validated by the tiny oracle;
+- scatter and heatmap semantics: rule metrics and explicit heatmap matrix in mining JSON;
+- performance charts: canonical raw run/level CSV using the frozen backend timing boundary;
+- library comparison: separate `render_ms`/`update_ms` observations over captured identical workloads;
+- system/API/ERD figures: `ARCHITECTURE.md`, `API_DATA_CONTRACT.md`, and `DATABASE_SCHEMA.md`;
+- Results and Discussion: versioned raw observations, reproducible processed tables/figures, environment/config manifests;
+- limitations: guardrail failures, dataset provenance/size, top-N display metadata, and environment-dependent visualization measurements.
+
+Full frequent-itemset/rule payloads are transient by design. If a report claim needs a particular example, the experiment/export procedure must capture that example at run time; it must not infer it later from a truncated chart.

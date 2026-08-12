@@ -62,7 +62,7 @@ Actual dataset statistics must be measured after ingestion; do not hard-code unv
 - association-rule generation
 - minimum-support and minimum-confidence controls
 - per-level candidate/pruning metrics
-- total runtime instrumentation
+- Apriori-only `runtime_ms` plus separately named rule-generation and browser-render timings
 - PHP API returning JSON
 - MySQL persistence where required by the architecture
 - AJAX-based frontend integration
@@ -97,6 +97,7 @@ The midterm is successful when all of the following are true:
 - the tiny fixture matches a hand-derived Apriori oracle
 - candidate pruning is deterministic and test-covered
 - support/confidence/lift definitions are implemented consistently
+- C1 singleton discovery and `k >= 2` join/prune metrics follow the frozen instrumentation contract
 - the browser can trigger a real mining run through AJAX and render returned results
 - required charts use actual mining output rather than mocked values
 - raw experimental data is preserved

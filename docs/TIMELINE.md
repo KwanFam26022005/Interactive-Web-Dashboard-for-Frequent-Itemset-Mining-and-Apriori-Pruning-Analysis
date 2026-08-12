@@ -15,6 +15,8 @@ The schedule is intentionally front-loaded toward correctness and end-to-end int
 - freeze system architecture
 - freeze Apriori/pruning semantics
 - freeze initial API/data contract
+- derive the tiny correctness oracle and freeze test gates
+- freeze database, configuration, artifact, dependency, timing, and safety contracts
 - review initial repository documentation
 
 ### Antigravity responsibilities
@@ -26,11 +28,16 @@ The schedule is intentionally front-loaded toward correctness and end-to-end int
 
 ### Exit criteria
 
-- project charter approved
-- architecture reviewed
-- mining contract reviewed
-- API/data contract reviewed
-- no unresolved scope ambiguity
+- repository layout and PHP module boundaries frozen
+- logical schema and persistence boundary frozen
+- canonical transaction and all ingestion profiles frozen
+- Apriori, C1/join/prune metrics, runtime, and association rules frozen
+- exact endpoints, JSON, limits, and error envelope frozen
+- independent tiny oracle and Phase 2/3 test requirements complete
+- configuration, dependency, artifact, and web-safety policies frozen
+- experiment and essay evidence compatibility verified
+- cross-document contradiction audit passes
+- no application implementation exists
 
 ### Gate token
 

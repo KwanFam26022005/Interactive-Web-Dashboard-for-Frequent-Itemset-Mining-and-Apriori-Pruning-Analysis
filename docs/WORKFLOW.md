@@ -159,6 +159,8 @@ BLOCKED_BY_REQUIREMENT
 
 Contracts in `docs/` are authoritative until deliberately revised.
 
+Phase 1 contract authority is split by topic: `ARCHITECTURE.md` and `ARCHITECTURE_DECISIONS.md` own boundaries; `DATABASE_SCHEMA.md` owns columns/constraints; `MINING_CONTRACT.md` owns algorithm/metrics/timing; `API_DATA_CONTRACT.md` owns ingestion/routes/JSON/errors; `TEST_ORACLE.md` owns hand-derived expected values; `TEST_STRATEGY.md` owns gate tests; and `LOCAL_CONFIGURATION.md` owns secrets/artifacts. A summary elsewhere never overrides the topic owner.
+
 If implementation and documentation disagree:
 
 1. stop

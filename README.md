@@ -69,8 +69,13 @@ See [`AGENTS.md`](AGENTS.md) and [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
 - [`docs/PROJECT_CHARTER.md`](docs/PROJECT_CHARTER.md) — scope, objectives, research questions, success criteria
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system boundaries and component design
+- [`docs/ARCHITECTURE_DECISIONS.md`](docs/ARCHITECTURE_DECISIONS.md) — frozen non-trivial decisions and consequences
+- [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) — concrete MySQL tables, constraints, and indexes
 - [`docs/MINING_CONTRACT.md`](docs/MINING_CONTRACT.md) — Apriori/pruning semantics and metrics
 - [`docs/API_DATA_CONTRACT.md`](docs/API_DATA_CONTRACT.md) — dataset, API, JSON, and persistence contracts
+- [`docs/TEST_ORACLE.md`](docs/TEST_ORACLE.md) — independent hand-derived tiny-dataset oracle
+- [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) — required unit, oracle, parser, persistence, API, and UI tests
+- [`docs/LOCAL_CONFIGURATION.md`](docs/LOCAL_CONFIGURATION.md) — local secrets, configuration, and artifact policy
 - [`docs/EXPERIMENT_PLAN.md`](docs/EXPERIMENT_PLAN.md) — controlled experimental methodology
 - [`docs/ESSAY_OUTLINE.md`](docs/ESSAY_OUTLINE.md) — midterm essay structure
 - [`docs/TIMELINE.md`](docs/TIMELINE.md) — one-month execution plan
@@ -78,4 +83,4 @@ See [`AGENTS.md`](AGENTS.md) and [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
 ## Current status
 
-**Documentation bootstrap in progress. No implementation phase is considered passed yet.**
+**Phase 1 architecture contracts are frozen on `phase/1-architecture`. Phase 2 implementation has not begun and no implementation gate is considered passed.**

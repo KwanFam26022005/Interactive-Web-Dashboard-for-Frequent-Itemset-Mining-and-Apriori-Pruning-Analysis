@@ -16,7 +16,7 @@ Measure the effect of minimum support on:
 - frequent itemsets
 - rule count
 - maximum mined level
-- Apriori runtime
+- Apriori-only `runtime_ms` as frozen in `MINING_CONTRACT.md`
 
 ### RQ2
 
@@ -68,6 +68,7 @@ dataset_id/dataset_version
 min_support
 min_confidence
 runtime_ms
+rule_generation_runtime_ms
 candidates_generated
 candidates_pruned
 candidates_evaluated
@@ -77,6 +78,8 @@ max_k
 ```
 
 Also retain per-level metrics.
+
+`candidates_generated`, `candidates_pruned`, and `candidates_evaluated` are sums of every reported level including the explicitly labeled C1 singleton scan. Analyses that discuss join/prune behavior must additionally show `k >= 2` levels rather than attributing C1 to the join operation.
 
 ## 5. Experiment B — pruning analysis
 
@@ -119,7 +122,7 @@ Initial workload sizes:
 10,000 points
 ```
 
-Use the same generated or captured data semantics for all three libraries.
+Use the same immutable captured point arrays, visual encodings, container dimensions, browser session policy, and interaction/update operation for all three libraries. Pin exact library versions and run a dedicated benchmark page; do not benchmark the production dashboard against unrelated examples.
 
 Minimum quantitative metrics:
 
@@ -140,19 +143,20 @@ Qualitative criteria:
 
 ## 7. Timing methodology
 
-Before the first formal run, document:
+The backend mining boundary is already frozen: `runtime_ms` starts immediately before C1 discovery/counting on canonical transactions already in memory and stops when frequent itemsets, the support map, and level metrics are complete. It excludes parsing, database I/O, rule generation, response shaping, serialization, HTTP, and rendering. `rule_generation_runtime_ms`, `render_ms`, and `update_ms` are separate metrics.
+
+Before the first formal run, additionally freeze and document:
 
 - PHP/runtime version
 - browser version for visualization tests
 - operating system
 - hardware summary
-- whether database load/parsing is included in mining runtime
-- exact timing start/end boundaries
+- dataset checksum and canonical imported counts
 - warm-up policy if used
 - repetition count
 - statistic reported across repetitions (for example median)
 
-Do not mix browser rendering time into Apriori mining runtime.
+Browser measurements use `performance.now()` around an exact documented create/set-data-to-completion boundary. Because libraries may paint asynchronously, the Phase 4 freeze must define a consistent completion observation (including animation disabled and the same animation-frame policy). Do not compare callbacks with materially different completion semantics.
 
 ## 8. Repetition policy
 
@@ -179,6 +183,8 @@ experiments/raw/visualization_benchmark.csv
 ```
 
 Names may change during scaffolding, but raw and derived outputs must remain clearly separated.
+
+Artifact rules are frozen in `LOCAL_CONFIGURATION.md`: configs and environment manifests are versioned; individual canonical observations are retained before aggregation; small report-bearing raw/processed CSV and final figures are versioned; scratch/local generated output and restricted large datasets are not.
 
 ## 10. Required figures
 
@@ -211,5 +217,6 @@ Additional dashboard screenshots do not replace these experimental figures.
 - candidate invariants validated
 - at least the primary dataset experiment completed
 - visualization comparison completed at documented workloads
+- exact library versions, captured workloads, completion boundary, animation setting, viewport, and browser/hardware are recorded
 - no manually fabricated numbers
 - limitations recorded
