@@ -215,6 +215,82 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 2D-1 Apriori Mathematical & Domain Primitives Tests\n";
+echo "========================================\n\n";
+
+try {
+    $itemsetRes = \App\Tests\Unit\ItemsetTest::run();
+    foreach ($itemsetRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $itemsetRes['passed'];
+    $failed += $itemsetRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ItemsetTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $joinerRes = \App\Tests\Unit\CandidateJoinerTest::run();
+    foreach ($joinerRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $joinerRes['passed'];
+    $failed += $joinerRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] CandidateJoinerTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $prunerRes = \App\Tests\Unit\CandidatePrunerTest::run();
+    foreach ($prunerRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $prunerRes['passed'];
+    $failed += $prunerRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] CandidatePrunerTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $counterRes = \App\Tests\Unit\SupportCounterTest::run();
+    foreach ($counterRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $counterRes['passed'];
+    $failed += $counterRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] SupportCounterTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $threshRes = \App\Tests\Unit\SupportThresholdTest::run();
+    foreach ($threshRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $threshRes['passed'];
+    $failed += $threshRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] SupportThresholdTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $filterRes = \App\Tests\Unit\FrequentFilterTest::run();
+    foreach ($filterRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $filterRes['passed'];
+    $failed += $filterRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] FrequentFilterTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
