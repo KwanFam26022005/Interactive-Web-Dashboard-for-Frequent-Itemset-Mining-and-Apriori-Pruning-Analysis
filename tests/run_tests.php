@@ -319,6 +319,58 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 2E Association Rules & Heatmap Tests\n";
+echo "========================================\n\n";
+
+try {
+    $ruleRes = \App\Tests\Unit\AssociationRuleTest::run();
+    foreach ($ruleRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $ruleRes['passed'];
+    $failed += $ruleRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] AssociationRuleTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $ruleGenRes = \App\Tests\Unit\AssociationRuleGeneratorTest::run();
+    foreach ($ruleGenRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $ruleGenRes['passed'];
+    $failed += $ruleGenRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] AssociationRuleGeneratorTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $heatmapRes = \App\Tests\Unit\HeatmapBuilderTest::run();
+    foreach ($heatmapRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $heatmapRes['passed'];
+    $failed += $heatmapRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] HeatmapBuilderTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $ruleHeatmapOracleRes = \App\Tests\Oracle\AssociationRuleHeatmapOracleTest::run();
+    foreach ($ruleHeatmapOracleRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $ruleHeatmapOracleRes['passed'];
+    $failed += $ruleHeatmapOracleRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] AssociationRuleHeatmapOracleTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
