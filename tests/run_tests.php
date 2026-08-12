@@ -291,6 +291,34 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 2D-2 Apriori Engine Orchestration & Exact Oracle Tests\n";
+echo "========================================\n\n";
+
+try {
+    $levelMetricsRes = \App\Tests\Unit\LevelMetricsTest::run();
+    foreach ($levelMetricsRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $levelMetricsRes['passed'];
+    $failed += $levelMetricsRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] LevelMetricsTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+try {
+    $engineOracleRes = \App\Tests\Oracle\AprioriEngineOracleTest::run();
+    foreach ($engineOracleRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $engineOracleRes['passed'];
+    $failed += $engineOracleRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] AprioriEngineOracleTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
