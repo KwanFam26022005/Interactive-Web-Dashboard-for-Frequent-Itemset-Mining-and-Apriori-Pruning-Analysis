@@ -62,7 +62,7 @@ if (!$binaryValid) {
 } else {
     $command = escapeshellarg($phpBinary) . ' ' . escapeshellarg($publicIndex);
     $output = shell_exec($command);
-    $bootstrapOk = ($output !== null && str_contains($output, 'project bootstrap operational'));
+    $bootstrapOk = ($output !== null && (str_contains($output, '<!DOCTYPE html>') || str_contains($output, 'project bootstrap operational')));
     assertTest(
         'Test D - Public smoke entrypoint',
         $bootstrapOk,
@@ -503,6 +503,22 @@ try {
     $failed += $miningHttpRes['failed'];
 } catch (\Throwable $e) {
     echo "[FAIL] MiningHttpIntegrationTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
+echo "Phase 3E Dashboard Shell & Offline Asset Tests\n";
+echo "========================================\n\n";
+
+try {
+    $shellRes = \App\Tests\Frontend\DashboardShellTest::run();
+    foreach ($shellRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $shellRes['passed'];
+    $failed += $shellRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] DashboardShellTest execution error: " . $e->getMessage() . "\n";
     $failed++;
 }
 

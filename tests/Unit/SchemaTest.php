@@ -177,9 +177,17 @@ class SchemaTest
 
     private static function testSameNameCheckSemanticDriftDetection(PDO $pdo, callable $assert): void
     {
+        $dropConstraint = static function (string $table, string $name) use ($pdo): void {
+            try {
+                $pdo->exec("ALTER TABLE `{$table}` DROP CONSTRAINT `{$name}`");
+            } catch (\PDOException) {
+                $pdo->exec("ALTER TABLE `{$table}` DROP CHECK `{$name}`");
+            }
+        };
+
         try {
             // Temporarily replace chk_experiment_runs_min_support with wrong definition (min_support >= 0)
-            $pdo->exec("ALTER TABLE `experiment_runs` DROP CHECK `chk_experiment_runs_min_support`");
+            $dropConstraint('experiment_runs', 'chk_experiment_runs_min_support');
             $pdo->exec("ALTER TABLE `experiment_runs` ADD CONSTRAINT `chk_experiment_runs_min_support` CHECK (`min_support` >= 0)");
 
             $driftErrors = SchemaVerifier::verify($pdo);
@@ -187,7 +195,7 @@ class SchemaTest
             $assert('SchemaVerifier detects same-name CHECK semantic drift', $detected);
         } finally {
             // Restore exact frozen CHECK definition
-            $pdo->exec("ALTER TABLE `experiment_runs` DROP CHECK `chk_experiment_runs_min_support`");
+            $dropConstraint('experiment_runs', 'chk_experiment_runs_min_support');
             $pdo->exec("ALTER TABLE `experiment_runs` ADD CONSTRAINT `chk_experiment_runs_min_support` CHECK (`min_support` > 0 AND `min_support` <= 1)");
         }
 

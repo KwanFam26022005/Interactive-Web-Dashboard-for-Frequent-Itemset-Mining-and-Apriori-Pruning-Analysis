@@ -137,6 +137,29 @@ final class HttpTestClient
      */
     public function request(string $method, string $target, array $headers = [], string $body = ''): array
     {
+        $rawResponse = $this->executeRequest($method, $target, $headers, $body);
+        return self::parseResponse($rawResponse);
+    }
+
+    /**
+     * @param array<string, string|list<string>> $headers
+     * @return array{
+     *   status: int,
+     *   headers: array<string, list<string>>,
+     *   body: string
+     * }
+     */
+    public function rawRequest(string $method, string $target, array $headers = [], string $body = ''): array
+    {
+        $rawResponse = $this->executeRequest($method, $target, $headers, $body);
+        return self::parseRawHeaderAndBody($rawResponse);
+    }
+
+    /**
+     * @param array<string, string|list<string>> $headers
+     */
+    private function executeRequest(string $method, string $target, array $headers, string $body): string
+    {
         if ($this->stopped) {
             throw new RuntimeException('HTTP test client has already been stopped.');
         }
@@ -149,7 +172,7 @@ final class HttpTestClient
 
         $requestHeaders = [
             'Host' => ["{$this->host}:{$this->port}"],
-            'Accept' => ['application/json'],
+            'Accept' => ['application/json, text/html, */*'],
             'Connection' => ['close'],
         ];
         foreach ($headers as $name => $values) {
@@ -214,7 +237,7 @@ final class HttpTestClient
             fclose($socket);
         }
 
-        return self::parseResponse($rawResponse);
+        return $rawResponse;
     }
 
     /**
@@ -454,12 +477,10 @@ final class HttpTestClient
      * @return array{
      *   status: int,
      *   headers: array<string, list<string>>,
-     *   body: string,
-     *   json: mixed,
-     *   json_object: mixed
+     *   body: string
      * }
      */
-    private static function parseResponse(string $rawResponse): array
+    private static function parseRawHeaderAndBody(string $rawResponse): array
     {
         $separator = strpos($rawResponse, "\r\n\r\n");
         if ($separator === false) {
@@ -485,6 +506,27 @@ final class HttpTestClient
             $headers[$name][] = $value;
         }
 
+        return [
+            'status' => (int)$matches[1],
+            'headers' => $headers,
+            'body' => $body,
+        ];
+    }
+
+    /**
+     * @return array{
+     *   status: int,
+     *   headers: array<string, list<string>>,
+     *   body: string,
+     *   json: mixed,
+     *   json_object: mixed
+     * }
+     */
+    private static function parseResponse(string $rawResponse): array
+    {
+        $raw = self::parseRawHeaderAndBody($rawResponse);
+        $body = $raw['body'];
+
         try {
             $json = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
             $jsonObject = json_decode($body, false, 512, JSON_THROW_ON_ERROR);
@@ -493,8 +535,8 @@ final class HttpTestClient
         }
 
         return [
-            'status' => (int)$matches[1],
-            'headers' => $headers,
+            'status' => $raw['status'],
+            'headers' => $raw['headers'],
             'body' => $body,
             'json' => $json,
             'json_object' => $jsonObject,
