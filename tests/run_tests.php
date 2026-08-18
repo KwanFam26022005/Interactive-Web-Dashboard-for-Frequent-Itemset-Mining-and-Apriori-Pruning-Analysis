@@ -523,6 +523,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 3F Dashboard AJAX & ECharts Integration Tests\n";
+echo "========================================\n\n";
+
+try {
+    $dashboardRes = \App\Tests\Frontend\DashboardIntegrationTest::run();
+    foreach ($dashboardRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $dashboardRes['passed'];
+    $failed += $dashboardRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] DashboardIntegrationTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
