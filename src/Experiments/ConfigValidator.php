@@ -45,7 +45,7 @@ class ConfigValidator
     /**
      * @return list<string>
      */
-    public static function validateMushroomConfig(string $filePath): array
+    public static function validateExperimentConfig(string $filePath): array
     {
         $errors = [];
         $content = @file_get_contents($filePath);
@@ -60,7 +60,7 @@ class ConfigValidator
         }
 
         if (!is_array($data)) {
-            return ["Mushroom config root must be a JSON object in {$filePath}"];
+            return ["Experiment config root must be a JSON object in {$filePath}"];
         }
 
         // 1. Required top-level fields
@@ -88,12 +88,9 @@ class ConfigValidator
             return $errors;
         }
 
-        if ($data['dataset'] !== 'Mushroom') {
-            $errors[] = "Expected dataset 'Mushroom', got '{$data['dataset']}'";
-        }
-
-        if ($data['ingestion_profile'] !== 'mushroom') {
-            $errors[] = "Expected ingestion_profile 'mushroom', got '{$data['ingestion_profile']}'";
+        $validProfiles = ['mushroom', 'basket_csv', 'basket_txt'];
+        if (!in_array($data['ingestion_profile'], $validProfiles, true)) {
+            $errors[] = "Invalid ingestion_profile '{$data['ingestion_profile']}' in {$filePath}";
         }
 
         // 2. min_support validation
@@ -172,6 +169,32 @@ class ConfigValidator
 
         return $errors;
     }
+
+    /**
+     * @return list<string>
+     */
+    public static function validateMushroomConfig(string $filePath): array
+    {
+        $errors = self::validateExperimentConfig($filePath);
+        if (!empty($errors)) {
+            return $errors;
+        }
+
+        $content = (string)file_get_contents($filePath);
+        $data = json_decode($content, true);
+
+        if (($data['dataset'] ?? '') !== 'Mushroom') {
+            $errors[] = "Expected dataset 'Mushroom', got '{$data['dataset']}'";
+        }
+
+        if (($data['ingestion_profile'] ?? '') !== 'mushroom') {
+            $errors[] = "Expected ingestion_profile 'mushroom', got '{$data['ingestion_profile']}'";
+        }
+
+        return $errors;
+    }
+
+
 
     /**
      * @return list<string>

@@ -555,7 +555,25 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 4B Experiment Harness Integration Tests\n";
+echo "========================================\n\n";
+
+try {
+    $harnessRes = \App\Tests\Integration\ExperimentHarnessTest::run();
+    foreach ($harnessRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $harnessRes['passed'];
+    $failed += $harnessRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ExperimentHarnessTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
 exit($failed === 0 ? 0 : 1);
+
+
