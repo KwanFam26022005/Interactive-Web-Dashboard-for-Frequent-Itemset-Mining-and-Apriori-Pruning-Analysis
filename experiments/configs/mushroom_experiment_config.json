@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_id": "EXP-MUSHROOM-APRIORI-V1",
+  "dataset": "Mushroom",
+  "ingestion_profile": "mushroom",
+  "min_support": [
+    0.20,
+    0.15,
+    0.10,
+    0.075,
+    0.05
+  ],
+  "min_confidence": 0.75,
+  "warmup_iterations": 2,
+  "formal_repetitions": 10,
+  "timing_summary": {
+    "primary": "median",
+    "dispersion": "IQR"
+  },
+  "run_order": {
+    "strategy": "deterministic_shuffle",
+    "seed": 42
+  },
+  "guards": {
+    "timeout_seconds": 30,
+    "max_candidates": 250000,
+    "max_rules": 50000
+  }
+}

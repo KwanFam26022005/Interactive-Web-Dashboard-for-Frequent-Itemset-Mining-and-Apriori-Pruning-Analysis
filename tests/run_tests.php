@@ -539,6 +539,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 4A Experiment Configuration Tests\n";
+echo "========================================\n\n";
+
+try {
+    $configRes = \App\Tests\Unit\ExperimentConfigTest::run();
+    foreach ($configRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $configRes['passed'];
+    $failed += $configRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ExperimentConfigTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 

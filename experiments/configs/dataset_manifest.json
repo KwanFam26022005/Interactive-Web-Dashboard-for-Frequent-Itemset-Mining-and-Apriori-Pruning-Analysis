@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "datasets": [
+    {
+      "canonical_name": "Mushroom",
+      "candidate_upstream_source": "UCI Machine Learning Repository (Agaricus-Lepiota Data Set)",
+      "candidate_upstream_url": "https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data",
+      "retrieval_date": "TO_BE_MEASURED",
+      "license_or_redistribution_status": "TO_BE_VERIFIED",
+      "raw_filename": "TO_BE_MEASURED",
+      "raw_sha256": "TO_BE_MEASURED",
+      "raw_byte_size": null,
+      "ingestion_profile": "mushroom",
+      "observed_columns_per_record": null,
+      "imported_transaction_count": null,
+      "imported_unique_item_count": null,
+      "status": "UNVERIFIED_PENDING_ACQUISITION",
+      "notes": "Positional prefix c{col}=val (1-based), ? preserved as distinct category."
+    },
+    {
+      "canonical_name": "Retail",
+      "candidate_upstream_source": "Brijs et al. (FIMI Repository)",
+      "candidate_upstream_url": "http://fimi.uantwerpen.be/data/retail.dat",
+      "retrieval_date": "TO_BE_MEASURED",
+      "license_or_redistribution_status": "TO_BE_VERIFIED",
+      "raw_filename": "TO_BE_MEASURED",
+      "raw_sha256": "TO_BE_MEASURED",
+      "raw_byte_size": null,
+      "ingestion_profile": "basket_txt",
+      "observed_columns_per_record": null,
+      "imported_transaction_count": null,
+      "imported_unique_item_count": null,
+      "status": "UNVERIFIED_PENDING_ACQUISITION",
+      "notes": "Whitespace-delimited item tokens per line."
+    }
+  ]
+}
