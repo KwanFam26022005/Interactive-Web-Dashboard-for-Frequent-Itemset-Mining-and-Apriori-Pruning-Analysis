@@ -51,6 +51,7 @@ final class DashboardShellTest
             self::testDomHookContract($client, $assert);
             self::testAccessibilitySemantics($client, $assert);
             self::testOfflineVendorPolicy($assert);
+            self::testAppJsDatasetNameContract($assert);
         } catch (Throwable $throwable) {
             $assert(
                 'DashboardShellTest completes without harness error',
@@ -352,5 +353,30 @@ final class DashboardShellTest
                 "Expected {$expectedSha}, got {$actualSha}"
             );
         }
+    }
+
+    /**
+     * @param callable(string, bool, string=): void $assert
+     */
+    private static function testAppJsDatasetNameContract(callable $assert): void
+    {
+        $appJsPath = dirname(__DIR__, 2) . '/public/assets/js/app.js';
+        $appJs = (string)file_get_contents($appJsPath);
+
+        $assert(
+            'app.js reads #upload-name and trims it',
+            str_contains($appJs, "$('#upload-name').val()")
+            && str_contains($appJs, 'trimmedName')
+        );
+
+        $assert(
+            'app.js deletes name key from FormData when trimmed value is blank',
+            str_contains($appJs, "formData.delete('name')")
+        );
+
+        $assert(
+            'app.js explicitly sets trimmed name on FormData when non-blank',
+            str_contains($appJs, "formData.set('name', trimmedName)")
+        );
     }
 }

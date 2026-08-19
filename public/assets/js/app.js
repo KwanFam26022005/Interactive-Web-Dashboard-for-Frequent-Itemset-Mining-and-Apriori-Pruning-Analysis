@@ -225,6 +225,14 @@
     var formElem = document.getElementById('upload-form');
     var formData = new FormData(formElem);
 
+    var rawName = $('#upload-name').val();
+    var trimmedName = typeof rawName === 'string' ? rawName.trim() : '';
+    if (trimmedName === '') {
+      formData.delete('name');
+    } else {
+      formData.set('name', trimmedName);
+    }
+
     state.importing = true;
     updateDatasetControlsState();
     clearUploadWarnings();

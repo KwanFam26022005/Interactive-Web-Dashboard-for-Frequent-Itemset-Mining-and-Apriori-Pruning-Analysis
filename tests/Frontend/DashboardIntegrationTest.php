@@ -146,10 +146,72 @@ final class DashboardIntegrationTest
     private static function testDatasetImport(HttpTestClient $client, callable $assert): int
     {
         $csvContent = "A,B,C\nA,B\nA,C\nA";
+
+        // Regression Test 1: Direct API request with explicit empty name="" rejects with 422
+        $emptyNameMultipart = HttpTestClient::multipart(
+            [
+                'format' => 'basket_csv',
+                'name' => '',
+            ],
+            [
+                [
+                    'field' => 'file',
+                    'filename' => 'empty_name.csv',
+                    'content' => $csvContent,
+                    'content_type' => 'text/csv',
+                ],
+            ]
+        );
+        $emptyNameResponse = $client->request(
+            'POST',
+            '/api/datasets.php',
+            ['Content-Type' => $emptyNameMultipart['content_type']],
+            $emptyNameMultipart['body']
+        );
+        $assert(
+            'Direct API POST with explicit empty name="" rejects with HTTP 422',
+            $emptyNameResponse['status'] === 422
+        );
+        $assert(
+            'Empty name rejection code is DATASET_VALIDATION_FAILED or INVALID_DATASET_NAME',
+            ($emptyNameResponse['json']['error']['code'] ?? '') === 'DATASET_VALIDATION_FAILED'
+            || ($emptyNameResponse['json']['error']['code'] ?? '') === 'INVALID_DATASET_NAME'
+        );
+
+        // Regression Test 2: Case A — optional name field omitted from multipart -> defaults to source basename
+        $omittedNameMultipart = HttpTestClient::multipart(
+            [
+                'format' => 'basket_csv',
+            ],
+            [
+                [
+                    'field' => 'file',
+                    'filename' => 'default_basename.csv',
+                    'content' => $csvContent,
+                    'content_type' => 'text/csv',
+                ],
+            ]
+        );
+        $omittedNameResponse = $client->request(
+            'POST',
+            '/api/datasets.php',
+            ['Content-Type' => $omittedNameMultipart['content_type']],
+            $omittedNameMultipart['body']
+        );
+        $assert(
+            'Case A: POST /api/datasets.php with omitted name returns HTTP 201',
+            $omittedNameResponse['status'] === 201
+        );
+        $assert(
+            'Case A: Omitted name defaults to source filename basename without extension',
+            ($omittedNameResponse['json']['dataset']['name'] ?? '') === 'default_basename'
+        );
+
+        // Regression Test 3: Case B — explicit name supplied with whitespace -> trimmed and preserved
         $multipart = HttpTestClient::multipart(
             [
                 'format' => 'basket_csv',
-                'name' => 'Tiny Oracle Test Dataset',
+                'name' => '  Tiny Oracle Test Dataset  ',
             ],
             [
                 [
@@ -168,9 +230,9 @@ final class DashboardIntegrationTest
             $multipart['body']
         );
 
-        $assert('POST /api/datasets.php returns HTTP 201', $response['status'] === 201);
+        $assert('Case B: POST /api/datasets.php with explicit name returns HTTP 201', $response['status'] === 201);
         $assert('Import response has dataset object', isset($response['json']['dataset']['id']));
-        $assert('Import response dataset name matches', ($response['json']['dataset']['name'] ?? '') === 'Tiny Oracle Test Dataset');
+        $assert('Case B: Explicit dataset name is trimmed and persisted correctly', ($response['json']['dataset']['name'] ?? '') === 'Tiny Oracle Test Dataset');
         $assert('Import response transaction_count is 4', ($response['json']['dataset']['transaction_count'] ?? 0) === 4);
         $assert('Import response unique_item_count is 3', ($response['json']['dataset']['unique_item_count'] ?? 0) === 3);
         $assert('Import response total_warnings is 0', ($response['json']['total_warnings'] ?? -1) === 0);
@@ -186,8 +248,8 @@ final class DashboardIntegrationTest
         $response = $client->request('GET', '/api/datasets.php');
         $assert('GET /api/datasets.php after import returns 200', $response['status'] === 200);
         $datasets = $response['json']['datasets'] ?? [];
-        $assert('Datasets list contains exactly 1 dataset', count($datasets) === 1);
-        $assert('Dataset list item ID matches imported ID', (int)($datasets[0]['id'] ?? 0) === $datasetId);
+        $assert('Datasets list contains exactly 2 datasets', count($datasets) === 2);
+        $assert('Dataset list newest item ID matches imported ID', (int)($datasets[0]['id'] ?? 0) === $datasetId);
     }
 
     /**
