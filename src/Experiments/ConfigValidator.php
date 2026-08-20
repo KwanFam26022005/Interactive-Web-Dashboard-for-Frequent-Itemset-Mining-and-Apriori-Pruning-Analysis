@@ -279,10 +279,66 @@ class ConfigValidator
             return ["Environment manifest root must be a JSON object in {$filePath}"];
         }
 
+        $validStatuses = ['TEMPLATE_PENDING_MEASUREMENT', 'MEASURED'];
+        $status = $data['status'] ?? '';
+        if (!in_array($status, $validStatuses, true)) {
+            $errors[] = "Environment manifest has invalid status '{$status}' in {$filePath}";
+        }
+
         $requiredSections = ['system', 'runtime', 'visualization_environment', 'provenance_hashes'];
         foreach ($requiredSections as $sec) {
             if (!isset($data[$sec]) || !is_array($data[$sec])) {
                 $errors[] = "Environment manifest missing section '{$sec}' in {$filePath}";
+            }
+        }
+
+        if (!empty($errors)) {
+            return $errors;
+        }
+
+        if ($status === 'MEASURED') {
+            // Validate timestamp_utc
+            $ts = $data['timestamp_utc'] ?? null;
+            if (!is_string($ts) || trim($ts) === '' || $ts === 'TO_BE_MEASURED') {
+                $errors[] = "MEASURED environment manifest must have valid timestamp_utc";
+            }
+
+            // Validate system fields
+            $osName = $data['system']['os_name'] ?? null;
+            if (!is_string($osName) || trim($osName) === '' || $osName === 'TO_BE_MEASURED') {
+                $errors[] = "MEASURED environment manifest must have valid system.os_name";
+            }
+
+            $arch = $data['system']['architecture'] ?? null;
+            if (!is_string($arch) || trim($arch) === '' || $arch === 'TO_BE_MEASURED') {
+                $errors[] = "MEASURED environment manifest must have valid system.architecture";
+            }
+
+            // Validate runtime fields
+            $phpVer = $data['runtime']['php_version'] ?? null;
+            if (!is_string($phpVer) || trim($phpVer) === '' || $phpVer === 'TO_BE_MEASURED') {
+                $errors[] = "MEASURED environment manifest must have valid runtime.php_version";
+            }
+
+            $phpSapi = $data['runtime']['php_sapi'] ?? null;
+            if (!is_string($phpSapi) || trim($phpSapi) === '' || $phpSapi === 'TO_BE_MEASURED') {
+                $errors[] = "MEASURED environment manifest must have valid runtime.php_sapi";
+            }
+
+            $memLimit = $data['runtime']['memory_limit'] ?? null;
+            if (!is_string($memLimit) || trim($memLimit) === '' || $memLimit === 'TO_BE_MEASURED') {
+                $errors[] = "MEASURED environment manifest must have valid runtime.memory_limit";
+            }
+
+            // Validate provenance_hashes
+            $cfgSha = $data['provenance_hashes']['experiment_config_sha256'] ?? null;
+            if (!is_string($cfgSha) || preg_match('/^[0-9a-f]{64}$/i', $cfgSha) !== 1) {
+                $errors[] = "MEASURED environment manifest requires 64-hex provenance_hashes.experiment_config_sha256. Got " . var_export($cfgSha, true);
+            }
+
+            $dsSha = $data['provenance_hashes']['dataset_sha256'] ?? null;
+            if (!is_string($dsSha) || preg_match('/^[0-9a-f]{64}$/i', $dsSha) !== 1) {
+                $errors[] = "MEASURED environment manifest requires 64-hex provenance_hashes.dataset_sha256. Got " . var_export($dsSha, true);
             }
         }
 

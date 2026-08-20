@@ -16,6 +16,7 @@ class MiningResultProcessor
      * @param string $levelsCsvPath Path to raw levels CSV
      * @param string $outputDir Directory where processed CSVs should be written
      * @param string $prefix Prefix for generated files (e.g. 'mushroom' or 'smoke')
+     * @param string|null $datasetName Explicit dataset name (derived from prefix/config if omitted)
      * @return array{
      *     support_summary_file: string,
      *     pruning_summary_file: string,
@@ -28,7 +29,8 @@ class MiningResultProcessor
         string $runsCsvPath,
         string $levelsCsvPath,
         string $outputDir,
-        string $prefix = 'mushroom'
+        string $prefix = 'mushroom',
+        ?string $datasetName = null
     ): array {
         if (!is_file($runsCsvPath) || !is_readable($runsCsvPath)) {
             throw new InvalidArgumentException("Runs CSV not found or unreadable: {$runsCsvPath}");
@@ -47,6 +49,19 @@ class MiningResultProcessor
 
         if (empty($runs)) {
             throw new RuntimeException("Runs CSV is empty.");
+        }
+
+        if ($datasetName !== null && trim($datasetName) !== '') {
+            $resolvedDatasetName = trim($datasetName);
+        } else {
+            $prefixLower = strtolower($prefix);
+            if ($prefixLower === 'mushroom') {
+                $resolvedDatasetName = 'Mushroom';
+            } elseif ($prefixLower === 'smoke' || $prefixLower === 'tiny_test' || $prefixLower === 'tiny') {
+                $resolvedDatasetName = 'Tiny';
+            } else {
+                $resolvedDatasetName = ucfirst($prefix);
+            }
         }
 
         // 1. Group levels by observation_id
@@ -149,6 +164,9 @@ class MiningResultProcessor
 
         foreach ($runsBySupport as $supKey => $supportRuns) {
             $supFloat = (float)$supKey;
+            $minConfidence = isset($supportRuns[0]['min_confidence']) && is_numeric($supportRuns[0]['min_confidence'])
+                ? (float)$supportRuns[0]['min_confidence']
+                : 0.0;
             $totalCount = count($supportRuns);
             $completedRuns = array_values(array_filter($supportRuns, fn($r) => ($r['mining_status'] ?? '') === 'COMPLETED'));
             $completedCount = count($completedRuns);
@@ -157,9 +175,11 @@ class MiningResultProcessor
             if ($completedCount === 0) {
                 // All runs failed or exceeded limit
                 $supportSummaryRows[] = [
+                    'dataset_name' => $resolvedDatasetName,
                     'min_support' => $supFloat,
-                    'completed_runs' => 0,
-                    'total_runs' => $totalCount,
+                    'min_confidence' => $minConfidence,
+                    'n_repeats' => $totalCount,
+                    'n_valid' => 0,
                     'median_runtime_ms' => '',
                     'iqr_runtime_ms' => '',
                     'median_rule_runtime_ms' => '',
@@ -169,8 +189,8 @@ class MiningResultProcessor
                     'candidates_evaluated' => '',
                     'frequent_itemsets' => '',
                     'rules_count' => '',
-                    'overall_pruning_ratio' => '',
                     'max_k' => '',
+                    'pruning_ratio' => '',
                 ];
                 continue;
             }
@@ -181,7 +201,7 @@ class MiningResultProcessor
             $refPruned = (int)$ref['candidates_pruned'];
             $refEval = (int)$ref['candidates_evaluated'];
             $refFreq = (int)$ref['frequent_itemsets'];
-            $refRules = ($ref['rule_status'] === 'COMPLETED') ? (int)$ref['rules_count'] : null;
+            $refRules = ($ref['rule_status'] === 'COMPLETED' && $ref['rules_count'] !== '') ? (int)$ref['rules_count'] : null;
             $refMaxK = (int)$ref['max_k'];
 
             foreach ($completedRuns as $r) {
@@ -217,12 +237,14 @@ class MiningResultProcessor
             $medRule = !empty($ruleRuntimes) ? self::calculateMedian($ruleRuntimes) : null;
             $iqrRule = !empty($ruleRuntimes) ? self::calculateIqr($ruleRuntimes) : null;
 
-            $overallRatio = $refGen > 0 ? round($refPruned / (float)$refGen, 6) : 0.0;
+            $ratio = $refGen > 0 ? round($refPruned / (float)$refGen, 6) : 0.0;
 
             $supportSummaryRows[] = [
+                'dataset_name' => $resolvedDatasetName,
                 'min_support' => $supFloat,
-                'completed_runs' => $completedCount,
-                'total_runs' => $totalCount,
+                'min_confidence' => $minConfidence,
+                'n_repeats' => $totalCount,
+                'n_valid' => $completedCount,
                 'median_runtime_ms' => sprintf('%.3f', $medMining),
                 'iqr_runtime_ms' => sprintf('%.3f', $iqrMining),
                 'median_rule_runtime_ms' => $medRule !== null ? sprintf('%.3f', $medRule) : '',
@@ -232,8 +254,8 @@ class MiningResultProcessor
                 'candidates_evaluated' => $refEval,
                 'frequent_itemsets' => $refFreq,
                 'rules_count' => $refRules ?? '',
-                'overall_pruning_ratio' => sprintf('%.6f', $overallRatio),
                 'max_k' => $refMaxK,
+                'pruning_ratio' => sprintf('%.6f', $ratio),
             ];
 
             // Build deterministic per-level summary from first completed repeat
@@ -241,6 +263,7 @@ class MiningResultProcessor
             $refLevels = $levelsByObs[$refObsId] ?? [];
             foreach ($refLevels as $lvl) {
                 $pruningSummaryRows[] = [
+                    'dataset_name' => $resolvedDatasetName,
                     'min_support' => $supFloat,
                     'k' => (int)$lvl['k'],
                     'source' => (string)$lvl['source'],
@@ -258,9 +281,11 @@ class MiningResultProcessor
         $pruningSummaryFile = $outputDir . '/' . $prefix . '_pruning_summary.csv';
 
         MiningExperimentRunner::writeCsv($supportSummaryFile, [
+            'dataset_name',
             'min_support',
-            'completed_runs',
-            'total_runs',
+            'min_confidence',
+            'n_repeats',
+            'n_valid',
             'median_runtime_ms',
             'iqr_runtime_ms',
             'median_rule_runtime_ms',
@@ -270,11 +295,12 @@ class MiningResultProcessor
             'candidates_evaluated',
             'frequent_itemsets',
             'rules_count',
-            'overall_pruning_ratio',
             'max_k',
+            'pruning_ratio',
         ], $supportSummaryRows);
 
         MiningExperimentRunner::writeCsv($pruningSummaryFile, [
+            'dataset_name',
             'min_support',
             'k',
             'source',

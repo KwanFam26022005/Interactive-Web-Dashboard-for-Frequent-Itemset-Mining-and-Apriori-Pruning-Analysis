@@ -39,7 +39,10 @@ class LineageHelper
         $cmd = 'git -C ' . escapeshellarg($repoRoot) . ' status --porcelain';
         $output = @shell_exec($cmd);
         if ($output === null) {
-            return false;
+            $outLines = [];
+            $exitCode = 1;
+            @exec($cmd, $outLines, $exitCode);
+            return $exitCode === 0 && empty($outLines);
         }
 
         return trim($output) === '';

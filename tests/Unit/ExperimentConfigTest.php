@@ -131,6 +131,53 @@ final class ExperimentConfigTest
                 count($errs) > 0
             );
 
+            // 8. Environment manifest validation
+            $envPath = $configDir . '/environment_manifest.json';
+            $envErrors = ConfigValidator::validateEnvironmentManifest($envPath);
+            $assert(
+                'Production environment manifest validates cleanly as TEMPLATE',
+                $envErrors === [],
+                implode('; ', $envErrors)
+            );
+
+            // 8a. Valid MEASURED environment manifest passes
+            $validMeasured = json_decode((string)file_get_contents($envPath), true);
+            $validMeasured['status'] = 'MEASURED';
+            $validMeasured['timestamp_utc'] = '2026-08-20T09:00:00Z';
+            $validMeasured['system']['os_name'] = 'Windows';
+            $validMeasured['system']['os_version'] = '10.0.26100';
+            $validMeasured['system']['architecture'] = 'x86_64';
+            $validMeasured['runtime']['php_version'] = '8.3.0';
+            $validMeasured['runtime']['php_sapi'] = 'cli';
+            $validMeasured['runtime']['memory_limit'] = '512M';
+            $validMeasured['provenance_hashes']['experiment_config_sha256'] = str_repeat('a', 64);
+            $validMeasured['provenance_hashes']['dataset_sha256'] = str_repeat('b', 64);
+
+            file_put_contents($tmpDir . '/valid_measured.json', json_encode($validMeasured));
+            $errs = ConfigValidator::validateEnvironmentManifest($tmpDir . '/valid_measured.json');
+            $assert('Valid MEASURED environment manifest passes validation', $errs === [], implode('; ', $errs));
+
+            // 8b. MEASURED manifest with placeholder config SHA is rejected
+            $badMeasured = $validMeasured;
+            $badMeasured['provenance_hashes']['experiment_config_sha256'] = 'TO_BE_COMPUTED';
+            file_put_contents($tmpDir . '/bad_measured_cfg.json', json_encode($badMeasured));
+            $errs = ConfigValidator::validateEnvironmentManifest($tmpDir . '/bad_measured_cfg.json');
+            $assert('MEASURED environment manifest with placeholder config SHA is rejected', count($errs) > 0);
+
+            // 8c. MEASURED manifest with placeholder dataset SHA is rejected
+            $badMeasured = $validMeasured;
+            $badMeasured['provenance_hashes']['dataset_sha256'] = 'TO_BE_COMPUTED';
+            file_put_contents($tmpDir . '/bad_measured_ds.json', json_encode($badMeasured));
+            $errs = ConfigValidator::validateEnvironmentManifest($tmpDir . '/bad_measured_ds.json');
+            $assert('MEASURED environment manifest with placeholder dataset SHA is rejected', count($errs) > 0);
+
+            // 8d. MEASURED manifest with invalid hex SHA is rejected
+            $badMeasured = $validMeasured;
+            $badMeasured['provenance_hashes']['dataset_sha256'] = 'invalid_not_64_hex';
+            file_put_contents($tmpDir . '/bad_measured_hex.json', json_encode($badMeasured));
+            $errs = ConfigValidator::validateEnvironmentManifest($tmpDir . '/bad_measured_hex.json');
+            $assert('MEASURED environment manifest with invalid hex SHA is rejected', count($errs) > 0);
+
         } finally {
             if (is_dir($tmpDir)) {
                 array_map('unlink', glob($tmpDir . '/*') ?: []);

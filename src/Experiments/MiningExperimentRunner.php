@@ -99,9 +99,10 @@ class MiningExperimentRunner
         $datasetSha = LineageHelper::hashFile($datasetPath) ?? 'UNAVAILABLE';
         $envManifestPath = $manifestDir . '/environment_manifest.json';
         $envSha = LineageHelper::hashFile($envManifestPath) ?? 'UNAVAILABLE';
+        $skipWorktreeCheck = (bool)($options['skip_worktree_check'] ?? false);
 
         if ($mode === 'formal') {
-            self::enforceFormalSafetyGates($repoRoot, $manifestDir, $datasetPath, $datasetSha, $gitSha, $envManifestPath);
+            self::enforceFormalSafetyGates($repoRoot, $manifestDir, $datasetPath, $datasetSha, $gitSha, $envManifestPath, $configSha, $skipWorktreeCheck);
         }
 
         // 4. Ingest and parse dataset
@@ -441,16 +442,18 @@ class MiningExperimentRunner
         }
     }
 
-    private static function enforceFormalSafetyGates(
+    public static function enforceFormalSafetyGates(
         string $repoRoot,
         string $manifestDir,
         string $datasetPath,
         string $datasetSha,
         ?string $gitSha,
-        string $envManifestPath
+        string $envManifestPath,
+        string $configSha,
+        bool $skipWorktreeCheck = false
     ): void {
         // Gate 1: Git worktree must be clean
-        if (!LineageHelper::isGitWorktreeClean($repoRoot)) {
+        if (!$skipWorktreeCheck && !LineageHelper::isGitWorktreeClean($repoRoot)) {
             throw new RuntimeException("FORMAL GATE FAILURE: Git worktree is dirty. Commit or stash all changes before running formal experiments.");
         }
 
@@ -481,13 +484,30 @@ class MiningExperimentRunner
             throw new RuntimeException("FORMAL GATE FAILURE: Mushroom dataset not registered in dataset manifest.");
         }
 
-        // Gate 4: Environment manifest must be MEASURED
+        // Gate 4: Environment manifest must be MEASURED and have matching provenance hashes
         if (!is_file($envManifestPath)) {
             throw new RuntimeException("FORMAL GATE FAILURE: Environment manifest missing: {$envManifestPath}");
         }
         $envData = json_decode((string)file_get_contents($envManifestPath), true);
         if (($envData['status'] ?? '') !== 'MEASURED') {
             throw new RuntimeException("FORMAL GATE FAILURE: Environment manifest status is '{$envData['status']}'. Formal execution requires 'MEASURED'.");
+        }
+
+        $recordedConfigSha = (string)($envData['provenance_hashes']['experiment_config_sha256'] ?? '');
+        $recordedDatasetSha = (string)($envData['provenance_hashes']['dataset_sha256'] ?? '');
+
+        if (!preg_match('/^[0-9a-f]{64}$/i', $recordedConfigSha)) {
+            throw new RuntimeException("FORMAL GATE FAILURE: Environment manifest experiment_config_sha256 is invalid or placeholder: '{$recordedConfigSha}'");
+        }
+        if (!preg_match('/^[0-9a-f]{64}$/i', $recordedDatasetSha)) {
+            throw new RuntimeException("FORMAL GATE FAILURE: Environment manifest dataset_sha256 is invalid or placeholder: '{$recordedDatasetSha}'");
+        }
+
+        if (strtolower($recordedConfigSha) !== strtolower($configSha)) {
+            throw new RuntimeException("FORMAL GATE FAILURE: Environment manifest config SHA mismatch. Manifest: {$recordedConfigSha}, Actual: {$configSha}");
+        }
+        if (strtolower($recordedDatasetSha) !== strtolower($datasetSha)) {
+            throw new RuntimeException("FORMAL GATE FAILURE: Environment manifest dataset SHA mismatch. Manifest: {$recordedDatasetSha}, Actual: {$datasetSha}");
         }
     }
 }

@@ -102,6 +102,145 @@ class ExperimentHarnessTest
             }
             $assert("Formal mode rejects unverified template dataset manifest", $formalBlocked);
 
+            // 4a. Formal Environment Lineage Gates
+            $manifestMockDir = $tempDir . '/mock_manifests';
+            mkdir($manifestMockDir, 0777, true);
+
+            // Valid dataset manifest for lineage test
+            $validDsManifest = [
+                'schema_version' => '1.0.0',
+                'datasets' => [
+                    [
+                        'canonical_name' => 'Mushroom',
+                        'raw_sha256' => $tinySha,
+                        'status' => 'VERIFIED_FROZEN',
+                        'ingestion_profile' => 'basket_csv',
+                    ]
+                ]
+            ];
+            file_put_contents($manifestMockDir . '/dataset_manifest.json', json_encode($validDsManifest));
+
+            $baseEnv = [
+                'schema_version' => '1.0.0',
+                'status' => 'MEASURED',
+                'timestamp_utc' => '2026-08-20T09:00:00Z',
+                'system' => ['os_name' => 'Windows', 'architecture' => 'x86_64'],
+                'runtime' => ['php_version' => '8.3.0', 'php_sapi' => 'cli', 'memory_limit' => '512M'],
+                'visualization_environment' => ['browser_name' => null],
+                'provenance_hashes' => [
+                    'experiment_config_sha256' => LineageHelper::hashFile($repoRoot . '/experiments/configs/mushroom_experiment_config.json'),
+                    'dataset_sha256' => $tinySha,
+                ]
+            ];
+
+            // Case A: placeholder config SHA
+            $envA = $baseEnv;
+            $envA['provenance_hashes']['experiment_config_sha256'] = 'TO_BE_COMPUTED';
+            file_put_contents($manifestMockDir . '/environment_manifest.json', json_encode($envA));
+            $rejA = false;
+            try {
+                $runner->execute([
+                    'mode' => 'formal',
+                    'dataset_path' => $tinyFile,
+                    'config_path' => $repoRoot . '/experiments/configs/mushroom_experiment_config.json',
+                    'manifest_dir' => $manifestMockDir,
+                    'profile' => 'basket_csv',
+                    'dry_run' => true,
+                    'skip_worktree_check' => true,
+                ]);
+            } catch (RuntimeException $e) {
+                if (str_contains($e->getMessage(), 'experiment_config_sha256 is invalid or placeholder')) {
+                    $rejA = true;
+                }
+            }
+            $assert("Formal gate rejects MEASURED environment manifest with placeholder config SHA", $rejA);
+
+            // Case B: placeholder dataset SHA
+            $envB = $baseEnv;
+            $envB['provenance_hashes']['dataset_sha256'] = 'TO_BE_COMPUTED';
+            file_put_contents($manifestMockDir . '/environment_manifest.json', json_encode($envB));
+            $rejB = false;
+            try {
+                $runner->execute([
+                    'mode' => 'formal',
+                    'dataset_path' => $tinyFile,
+                    'config_path' => $repoRoot . '/experiments/configs/mushroom_experiment_config.json',
+                    'manifest_dir' => $manifestMockDir,
+                    'profile' => 'basket_csv',
+                    'dry_run' => true,
+                    'skip_worktree_check' => true,
+                ]);
+            } catch (RuntimeException $e) {
+                if (str_contains($e->getMessage(), 'dataset_sha256 is invalid or placeholder')) {
+                    $rejB = true;
+                }
+            }
+            $assert("Formal gate rejects MEASURED environment manifest with placeholder dataset SHA", $rejB);
+
+            // Case C: mismatched config SHA
+            $envC = $baseEnv;
+            $envC['provenance_hashes']['experiment_config_sha256'] = str_repeat('c', 64);
+            file_put_contents($manifestMockDir . '/environment_manifest.json', json_encode($envC));
+            $rejC = false;
+            try {
+                $runner->execute([
+                    'mode' => 'formal',
+                    'dataset_path' => $tinyFile,
+                    'config_path' => $repoRoot . '/experiments/configs/mushroom_experiment_config.json',
+                    'manifest_dir' => $manifestMockDir,
+                    'profile' => 'basket_csv',
+                    'dry_run' => true,
+                    'skip_worktree_check' => true,
+                ]);
+            } catch (RuntimeException $e) {
+                if (str_contains($e->getMessage(), 'config SHA mismatch')) {
+                    $rejC = true;
+                }
+            }
+            $assert("Formal gate rejects MEASURED environment manifest with mismatched config SHA", $rejC);
+
+            // Case D: mismatched dataset SHA
+            $envD = $baseEnv;
+            $envD['provenance_hashes']['dataset_sha256'] = str_repeat('d', 64);
+            file_put_contents($manifestMockDir . '/environment_manifest.json', json_encode($envD));
+            $rejD = false;
+            try {
+                $runner->execute([
+                    'mode' => 'formal',
+                    'dataset_path' => $tinyFile,
+                    'config_path' => $repoRoot . '/experiments/configs/mushroom_experiment_config.json',
+                    'manifest_dir' => $manifestMockDir,
+                    'profile' => 'basket_csv',
+                    'dry_run' => true,
+                    'skip_worktree_check' => true,
+                ]);
+            } catch (RuntimeException $e) {
+                if (str_contains($e->getMessage(), 'dataset SHA mismatch')) {
+                    $rejD = true;
+                }
+            }
+            $assert("Formal gate rejects MEASURED environment manifest with mismatched dataset SHA", $rejD);
+
+            // Case E: matching hashes passes lineage check in dry-run
+            $envE = $baseEnv;
+            file_put_contents($manifestMockDir . '/environment_manifest.json', json_encode($envE));
+            $passE = false;
+            try {
+                $resE = $runner->execute([
+                    'mode' => 'formal',
+                    'dataset_path' => $tinyFile,
+                    'config_path' => $repoRoot . '/experiments/configs/mushroom_experiment_config.json',
+                    'manifest_dir' => $manifestMockDir,
+                    'profile' => 'basket_csv',
+                    'dry_run' => true,
+                    'skip_worktree_check' => true,
+                ]);
+                $passE = ($resE['summary_stats']['dry_run'] === true);
+            } catch (\Throwable $e) {
+                $passE = false;
+            }
+            $assert("Formal gate passes when environment manifest provenance hashes match exactly", $passE);
+
             // 5. Deterministic Smoke Run with Tiny Fixture (Oracle Verification)
             // Tiny oracle config: min_support = 0.50 (reqCount = 2 on N=4), min_confidence = 0.50
             $smokeConfigPath = $tempDir . '/tiny_test_config.json';
@@ -170,18 +309,35 @@ class ExperimentHarnessTest
                 $execResult['runs_file'],
                 $execResult['levels_file'],
                 $smokeOutDir,
-                'tiny_test'
+                'tiny_test',
+                'Tiny'
             );
 
             $assert("Processor completed_runs equals 3", $procResult['completed_runs'] === 3);
             $assert("Support summary CSV file created", is_file($procResult['support_summary_file']));
             $assert("Pruning summary CSV file created", is_file($procResult['pruning_summary_file']));
 
+            $rawSupHeader = trim((string)explode("\n", (string)file_get_contents($procResult['support_summary_file']))[0]);
+            $expectedSupHeader = 'dataset_name,min_support,min_confidence,n_repeats,n_valid,median_runtime_ms,iqr_runtime_ms,median_rule_runtime_ms,iqr_rule_runtime_ms,candidates_generated,candidates_pruned,candidates_evaluated,frequent_itemsets,rules_count,max_k,pruning_ratio';
+            $assert("Support summary CSV matches exact schema header", $rawSupHeader === $expectedSupHeader, "Got: {$rawSupHeader}");
+
+            $rawPruneHeader = trim((string)explode("\n", (string)file_get_contents($procResult['pruning_summary_file']))[0]);
+            $expectedPruneHeader = 'dataset_name,min_support,k,source,generated,pruned,evaluated,frequent,pruning_ratio';
+            $assert("Pruning summary CSV matches exact schema header", $rawPruneHeader === $expectedPruneHeader, "Got: {$rawPruneHeader}");
+
             $supSummary = MiningResultProcessor::readCsv($procResult['support_summary_file']);
             $assert("Support summary has 1 row", count($supSummary) === 1);
+            $assert("Support summary dataset_name equals 'Tiny'", $supSummary[0]['dataset_name'] === 'Tiny');
+            $assert("Support summary min_confidence equals 0.75", (float)$supSummary[0]['min_confidence'] === 0.75);
+            $assert("Support summary n_repeats equals 3", (int)$supSummary[0]['n_repeats'] === 3);
+            $assert("Support summary n_valid equals 3", (int)$supSummary[0]['n_valid'] === 3);
             $assert("Support summary frequent_itemsets equals 5", (int)$supSummary[0]['frequent_itemsets'] === 5);
             $assert("Support summary rules_count equals 2", (int)$supSummary[0]['rules_count'] === 2);
-            $assert("Support summary overall_pruning_ratio is ~0.142857", abs((float)$supSummary[0]['overall_pruning_ratio'] - 0.142857) < 0.0001);
+            $assert("Support summary candidates_generated equals 7", (int)$supSummary[0]['candidates_generated'] === 7);
+            $assert("Support summary candidates_pruned equals 1", (int)$supSummary[0]['candidates_pruned'] === 1);
+            $assert("Support summary candidates_evaluated equals 6", (int)$supSummary[0]['candidates_evaluated'] === 6);
+            $assert("Support summary max_k equals 2", (int)$supSummary[0]['max_k'] === 2);
+            $assert("Support summary pruning_ratio is ~0.142857", abs((float)$supSummary[0]['pruning_ratio'] - 0.142857) < 0.0001);
 
             // 7. Median & IQR Mathematics
             $assert("Median of [10, 20, 30] is 20.0", MiningResultProcessor::calculateMedian([10.0, 20.0, 30.0]) === 20.0);

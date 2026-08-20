@@ -11,15 +11,18 @@ $options = getopt('', [
     'levels:',
     'output-dir:',
     'prefix:',
+    'dataset:',
+    'dataset-name:',
 ]);
 
 $runsPath = $options['runs'] ?? null;
 $levelsPath = $options['levels'] ?? null;
 $outputDir = $options['output-dir'] ?? null;
 $prefix = $options['prefix'] ?? 'mushroom';
+$datasetName = $options['dataset-name'] ?? ($options['dataset'] ?? null);
 
 if (!$runsPath || !$levelsPath) {
-    echo "Usage: php experiments/bin/process_mining_results.php --runs <path> --levels <path> [--output-dir <dir>] [--prefix <prefix>]\n";
+    echo "Usage: php experiments/bin/process_mining_results.php --runs <path> --levels <path> [--output-dir <dir>] [--prefix <prefix>] [--dataset <name>]\n";
     exit(1);
 }
 
@@ -33,6 +36,10 @@ echo "========================================\n";
 echo "Runs CSV:   {$runsPath}\n";
 echo "Levels CSV: {$levelsPath}\n";
 echo "Output Dir: {$outputDir}\n";
+echo "Prefix:     {$prefix}\n";
+if ($datasetName !== null) {
+    echo "Dataset:    {$datasetName}\n";
+}
 echo "========================================\n";
 
 try {
@@ -41,7 +48,8 @@ try {
         (string)$runsPath,
         (string)$levelsPath,
         (string)$outputDir,
-        (string)$prefix
+        (string)$prefix,
+        $datasetName !== null ? (string)$datasetName : null
     );
 
     echo "[PASS] Result processing & invariant verification completed successfully!\n";
