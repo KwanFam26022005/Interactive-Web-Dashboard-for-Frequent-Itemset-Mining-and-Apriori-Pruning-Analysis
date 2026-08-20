@@ -1,34 +1,34 @@
 {
-  "schema_version": "1.0.0",
-  "status": "TEMPLATE_PENDING_MEASUREMENT",
-  "timestamp_utc": "TO_BE_MEASURED",
-  "system": {
-    "os_name": "TO_BE_MEASURED",
-    "os_version": "TO_BE_MEASURED",
-    "architecture": "TO_BE_MEASURED",
-    "cpu_model": "TO_BE_MEASURED",
-    "logical_cpu_count": null,
-    "total_ram_bytes": null
-  },
-  "runtime": {
-    "php_version": "TO_BE_MEASURED",
-    "php_sapi": "TO_BE_MEASURED",
-    "opcache_cli_enabled": null,
-    "jit_enabled": null,
-    "memory_limit": "TO_BE_MEASURED",
-    "pdo_mysql_driver_version": "TO_BE_MEASURED",
-    "mysql_server_version": "TO_BE_MEASURED"
-  },
-  "visualization_environment": {
-    "browser_name": "TO_BE_MEASURED",
-    "browser_version": "TO_BE_MEASURED",
-    "viewport_width": null,
-    "viewport_height": null,
-    "device_pixel_ratio": null,
-    "display_scaling_factor": null
-  },
-  "provenance_hashes": {
-    "experiment_config_sha256": "TO_BE_COMPUTED",
-    "dataset_sha256": "TO_BE_COMPUTED"
-  }
+    "schema_version": "1.0.0",
+    "status": "MEASURED",
+    "timestamp_utc": "2026-08-20T02:37:35Z",
+    "system": {
+        "os_name": "Windows",
+        "os_version": "10.0 build 26200 (Windows 11)",
+        "architecture": "AMD64",
+        "cpu_model": "Intel64 Family 6 Model 140 Stepping 2, GenuineIntel",
+        "logical_cpu_count": 8,
+        "total_ram_bytes": 17179869184
+    },
+    "runtime": {
+        "php_version": "8.3.30",
+        "php_sapi": "cli",
+        "opcache_cli_enabled": false,
+        "jit_enabled": false,
+        "memory_limit": "512M",
+        "pdo_mysql_driver_version": "mysqlnd 8.3.30",
+        "mysql_server_version": "8.4.3"
+    },
+    "visualization_environment": {
+        "browser_name": null,
+        "browser_version": null,
+        "viewport_width": null,
+        "viewport_height": null,
+        "device_pixel_ratio": null,
+        "display_scaling_factor": null
+    },
+    "provenance_hashes": {
+        "experiment_config_sha256": "80d89e77b2ba35779b0721f65e9d3027346d430bc26f227dbaa737418f42d0d4",
+        "dataset_sha256": "e65d082030501a3ebcbcd7c9f7c71aa9d28fdfff463bf4cf4716a3fe13ac360e"
+    }
 }

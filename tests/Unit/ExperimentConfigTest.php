@@ -111,18 +111,19 @@ final class ExperimentConfigTest
             $errs = ConfigValidator::validateMushroomConfig($tmpDir . '/test_config.json');
             $assert('Zero formal repetitions is rejected', count($errs) > 0);
 
-            // 7. Dataset manifest unverified consistency
+            // 7. Dataset manifest consistency
             $manifestPath = $configDir . '/dataset_manifest.json';
             $manifest = json_decode((string)file_get_contents($manifestPath), true);
             $manifestErrors = ConfigValidator::validateDatasetManifest($manifestPath);
             $assert(
-                'Production dataset manifest validates cleanly as UNVERIFIED template',
+                'Production dataset manifest validates cleanly',
                 $manifestErrors === [],
                 implode('; ', $manifestErrors)
             );
 
             // Fabricated stats on unverified dataset must fail validation
             $badManifest = $manifest;
+            $badManifest['datasets'][0]['status'] = 'UNVERIFIED_PENDING_ACQUISITION';
             $badManifest['datasets'][0]['imported_transaction_count'] = 8124; // Fake unacquired number
             file_put_contents($tmpDir . '/bad_manifest.json', json_encode($badManifest));
             $errs = ConfigValidator::validateDatasetManifest($tmpDir . '/bad_manifest.json');
@@ -135,7 +136,7 @@ final class ExperimentConfigTest
             $envPath = $configDir . '/environment_manifest.json';
             $envErrors = ConfigValidator::validateEnvironmentManifest($envPath);
             $assert(
-                'Production environment manifest validates cleanly as TEMPLATE',
+                'Production environment manifest validates cleanly',
                 $envErrors === [],
                 implode('; ', $envErrors)
             );
