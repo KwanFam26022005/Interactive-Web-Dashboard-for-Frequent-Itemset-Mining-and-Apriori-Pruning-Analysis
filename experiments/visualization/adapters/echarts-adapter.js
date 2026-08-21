@@ -20,6 +20,8 @@ const EChartsAdapter = {
         });
 
         const points = workload.base_points.map(p => [p.x, p.y]);
+        const fontFamily = config.visual_contract.axis_font_family || 'Arial';
+        const fontSize = config.visual_contract.axis_font_size || 12;
 
         const option = {
             animation: false,
@@ -35,12 +37,26 @@ const EChartsAdapter = {
             xAxis: {
                 type: 'value',
                 min: config.visual_contract.x_domain[0],
-                max: config.visual_contract.x_domain[1]
+                max: config.visual_contract.x_domain[1],
+                interval: 0.2,
+                splitLine: { show: config.visual_contract.gridlines_enabled ?? false },
+                axisLabel: {
+                    fontFamily: fontFamily,
+                    fontSize: fontSize,
+                    formatter: v => Number(v).toFixed(1)
+                }
             },
             yAxis: {
                 type: 'value',
                 min: config.visual_contract.y_domain[0],
-                max: config.visual_contract.y_domain[1]
+                max: config.visual_contract.y_domain[1],
+                interval: 0.2,
+                splitLine: { show: config.visual_contract.gridlines_enabled ?? false },
+                axisLabel: {
+                    fontFamily: fontFamily,
+                    fontSize: fontSize,
+                    formatter: v => Number(v).toFixed(1)
+                }
             },
             series: [{
                 type: 'scatter',

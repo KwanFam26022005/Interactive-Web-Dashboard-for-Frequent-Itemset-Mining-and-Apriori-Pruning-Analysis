@@ -46,6 +46,9 @@ class VisualizationResultProcessor
         'iqr_update_ms',
     ];
 
+    public const VALID_LIBRARIES = ['ECharts', 'D3', 'Chart.js'];
+    public const VALID_WORKLOAD_SIZES = [100, 1000, 5000, 10000];
+
     /**
      * Aggregates raw visualization runs into summary metrics.
      *
@@ -68,14 +71,30 @@ class VisualizationResultProcessor
             throw new RuntimeException("Runs CSV is empty: {$runsCsvPath}");
         }
 
+        // Validate header schema from first line
+        $firstLine = trim((string)file($runsCsvPath)[0]);
+        $expectedHeaderLine = implode(',', self::EXPECTED_RUNS_HEADER);
+        if ($firstLine !== $expectedHeaderLine) {
+            throw new RuntimeException("Runs CSV header mismatch. Expected: {$expectedHeaderLine}, Got: {$firstLine}");
+        }
+
         $grouped = [];
         $completedRuns = 0;
 
-        foreach ($rawRows as $row) {
+        foreach ($rawRows as $idx => $row) {
+            $rowNum = $idx + 2;
             $lib = $row['library'] ?? '';
+            if (!in_array($lib, self::VALID_LIBRARIES, true)) {
+                throw new RuntimeException("Invalid library '{$lib}' on line {$rowNum}");
+            }
+
+            $size = (int)($row['workload_size'] ?? 0);
+            if (!in_array($size, self::VALID_WORKLOAD_SIZES, true)) {
+                throw new RuntimeException("Invalid workload size '{$size}' on line {$rowNum}");
+            }
+
             $ver = $row['library_version'] ?? '';
             $rend = $row['renderer'] ?? '';
-            $size = (int)($row['workload_size'] ?? 0);
             $key = "{$lib}|{$ver}|{$rend}|{$size}";
 
             if (!isset($grouped[$key])) {
@@ -91,25 +110,32 @@ class VisualizationResultProcessor
             }
 
             $grouped[$key]['n_repeats']++;
+            $status = $row['status'] ?? '';
 
-            if (($row['status'] ?? '') === 'COMPLETED') {
+            if ($status === 'COMPLETED') {
+                $renderMs = $row['render_ms'] ?? '';
+                $updateMs = $row['update_ms'] ?? '';
+
+                if (!is_numeric($renderMs) || (float)$renderMs < 0.0) {
+                    throw new RuntimeException("Invalid render_ms '{$renderMs}' for COMPLETED row on line {$rowNum}");
+                }
+                if (!is_numeric($updateMs) || (float)$updateMs < 0.0) {
+                    throw new RuntimeException("Invalid update_ms '{$updateMs}' for COMPLETED row on line {$rowNum}");
+                }
+
                 $completedRuns++;
-                if (isset($row['render_ms']) && is_numeric($row['render_ms'])) {
-                    $grouped[$key]['valid_renders'][] = (float)$row['render_ms'];
-                }
-                if (isset($row['update_ms']) && is_numeric($row['update_ms'])) {
-                    $grouped[$key]['valid_updates'][] = (float)$row['update_ms'];
-                }
+                $grouped[$key]['valid_renders'][] = (float)$renderMs;
+                $grouped[$key]['valid_updates'][] = (float)$updateMs;
             }
         }
 
         $summaryRows = [];
         foreach ($grouped as $g) {
             $nValid = count($g['valid_renders']);
-            $medRender = MiningResultProcessor::calculateMedian($g['valid_renders']);
-            $iqrRender = MiningResultProcessor::calculateIqr($g['valid_renders']);
-            $medUpdate = MiningResultProcessor::calculateMedian($g['valid_updates']);
-            $iqrUpdate = MiningResultProcessor::calculateIqr($g['valid_updates']);
+            $medRender = $nValid > 0 ? MiningResultProcessor::calculateMedian($g['valid_renders']) : null;
+            $iqrRender = $nValid > 0 ? MiningResultProcessor::calculateIqr($g['valid_renders']) : null;
+            $medUpdate = $nValid > 0 ? MiningResultProcessor::calculateMedian($g['valid_updates']) : null;
+            $iqrUpdate = $nValid > 0 ? MiningResultProcessor::calculateIqr($g['valid_updates']) : null;
 
             $summaryRows[] = [
                 'library' => $g['library'],

@@ -31,15 +31,36 @@ const D3Adapter = {
             .domain(config.visual_contract.y_domain)
             .range([innerHeight, 0]);
 
-        // Axes
-        g.append('g')
+        const tickValues = config.visual_contract.axis_tick_values || [0.0, 0.2, 0.4, 0.6, 0.8, 1.0];
+        const fontFamily = config.visual_contract.axis_font_family || 'Arial';
+        const fontSize = config.visual_contract.axis_font_size || 12;
+
+        // X Axis
+        const xAxis = d3.axisBottom(xScale)
+            .tickValues(tickValues)
+            .tickFormat(d3.format('.1f'));
+
+        const xAxisG = g.append('g')
             .attr('class', 'x-axis')
             .attr('transform', `translate(0,${innerHeight})`)
-            .call(d3.axisBottom(xScale));
+            .call(xAxis);
 
-        g.append('g')
+        xAxisG.selectAll('text')
+            .style('font-family', fontFamily)
+            .style('font-size', `${fontSize}px`);
+
+        // Y Axis
+        const yAxis = d3.axisLeft(yScale)
+            .tickValues(tickValues)
+            .tickFormat(d3.format('.1f'));
+
+        const yAxisG = g.append('g')
             .attr('class', 'y-axis')
-            .call(d3.axisLeft(yScale));
+            .call(yAxis);
+
+        yAxisG.selectAll('text')
+            .style('font-family', fontFamily)
+            .style('font-size', `${fontSize}px`);
 
         const pointsG = g.append('g').attr('class', 'points');
 

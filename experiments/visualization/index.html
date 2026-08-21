@@ -14,6 +14,7 @@
             --primary-color: #3b82f6;
             --success-color: #10b981;
             --warning-color: #f59e0b;
+            --danger-color: #ef4444;
         }
 
         body {
@@ -51,6 +52,7 @@
             gap: 12px;
             margin-bottom: 20px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         button {
@@ -82,6 +84,17 @@
             background-color: var(--success-color);
         }
 
+        .preflight-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-pass { background-color: #065f46; color: #34d399; }
+        .badge-fail { background-color: #7f1d1d; color: #f87171; }
+        .badge-warn { background-color: #78350f; color: #fbbf24; }
+
         .status-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -110,7 +123,7 @@
             border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 12px;
-            height: 140px;
+            height: 150px;
             overflow-y: auto;
             font-family: monospace;
             font-size: 12px;
@@ -163,7 +176,7 @@
     <script src="vendor/d3/d3.min.js"></script>
     <script src="vendor/chartjs/chart.umd.min.js"></script>
 
-    <!-- Workloads & Adapters -->
+    <!-- Workloads, Adapters & Benchmark Engine -->
     <script src="workloads/workload_generator.js"></script>
     <script src="adapters/d3-adapter.js"></script>
     <script src="adapters/chartjs-adapter.js"></script>
@@ -178,9 +191,11 @@
         </div>
 
         <div class="controls">
+            <button id="btn-preflight" class="btn-secondary" onclick="runPreflight()">Run Preflight Audit</button>
             <button id="btn-smoke" onclick="startBenchmark(true)">Run Smoke Test (N=100, 2 reps)</button>
-            <button id="btn-formal" class="btn-success" onclick="startBenchmark(false)">Run Formal Benchmark (N=100..10k, 10 reps)</button>
+            <button id="btn-formal" class="btn-success" onclick="startBenchmark(false)" disabled>Run Formal Benchmark (N=100..10k, 10 reps)</button>
             <button id="btn-export" class="btn-secondary" onclick="exportCsv()" disabled>Export Raw CSV</button>
+            <span id="preflight-badge" class="preflight-badge badge-warn">Preflight: Pending</span>
         </div>
 
         <div class="status-card">
@@ -191,7 +206,7 @@
             <div class="progress-bar-container">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
-            <div id="logs" class="logs">Ready to execute benchmark.</div>
+            <div id="logs" class="logs">Click 'Run Preflight Audit' to verify physical artifacts, lineage, and runtime environment.</div>
         </div>
 
         <div class="chart-stage-wrapper">
@@ -209,42 +224,136 @@
     <script>
         let runner = null;
         let lastResults = [];
+        let preflightPassed = false;
+        let verifiedConfig = null;
+        let verifiedManifest = null;
+        let verifiedWorkloads = {};
+        let runtimeLineage = {};
 
-        async function loadBenchmarkConfig() {
+        function logToUI(msg) {
+            const logs = document.getElementById('logs');
+            const line = document.createElement('div');
+            line.textContent = `[${new Date().toISOString().substring(11, 19)}] ${msg}`;
+            logs.appendChild(line);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function fetchPhysicalBytes(url) {
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
+            return await res.arrayBuffer();
+        }
+
+        async function runPreflight(isFormal = false) {
+            logToUI('Starting preflight audit...');
+            const badge = document.getElementById('preflight-badge');
+            const btnFormal = document.getElementById('btn-formal');
+
             try {
-                const res = await fetch('../configs/visualization_benchmark_config.json');
-                return await res.json();
-            } catch (e) {
-                // Fallback default config if running as local file
-                return {
-                    schema_version: '1.0.0',
-                    benchmark_id: 'BENCHMARK-VIS-SCATTER-V1',
-                    libraries: [
-                        { name: 'ECharts', version: '5.6.0', renderer: 'canvas' },
-                        { name: 'D3', version: '7.9.0', renderer: 'svg' },
-                        { name: 'Chart.js', version: '4.4.8', renderer: 'canvas' }
-                    ],
-                    workload_sizes: [100, 1000, 5000, 10000],
-                    warmup_iterations: 2,
-                    formal_repetitions: 10,
-                    run_order: { strategy: 'deterministic_shuffle', seed: 42 },
-                    visual_contract: {
-                        container_width: 800,
-                        container_height: 600,
-                        x_domain: [0.0, 1.0],
-                        y_domain: [0.0, 1.0],
-                        marker_radius: 4,
-                        marker_opacity: 0.7
-                    },
-                    workloads: {
-                        files: {
-                            '100': { sha256: '6d5d7b2997eb34afc962ba44cc1602225cac40392f1963c7e8c6b6af580a4f00' },
-                            '1000': { sha256: 'a02acfc720e8c40934a036e9e7b7bd67e2507ecece75ef552bec97d374eeef6a' },
-                            '5000': { sha256: '4e0f18ce5dd9532411cab14c6e4633216a8a36331fc602117fc07af1f6f9d436' },
-                            '10000': { sha256: '8b2911770f4e9d06cf8306aa8390b6e9e89c86ad6131e1ee69f0c151f1c1db68' }
-                        }
-                    }
+                // 1. Fetch Dynamic Runtime Metadata
+                logToUI('Fetching runtime metadata from runtime_metadata.php...');
+                const metaRes = await fetch('runtime_metadata.php', { cache: 'no-store' });
+                if (!metaRes.ok) throw new Error(`Could not fetch runtime metadata: HTTP ${metaRes.status}`);
+                const meta = await metaRes.json();
+
+                if (!meta.lineage.is_valid_git_sha) {
+                    throw new Error(`Invalid Git commit SHA: ${meta.lineage.git_revision}`);
+                }
+
+                if (isFormal && !meta.lineage.worktree_clean) {
+                    throw new Error(`Git working tree is dirty. Formal runs require clean worktree.`);
+                }
+
+                runtimeLineage = {
+                    git_revision: meta.lineage.git_revision,
+                    worktree_clean: meta.lineage.worktree_clean,
+                    config_sha256: meta.provenance_hashes.visualization_benchmark_config_sha256,
+                    library_manifest_sha256: meta.provenance_hashes.visualization_library_manifest_sha256,
+                    workload_hashes: meta.provenance_hashes.workloads
                 };
+
+                logToUI(`Git Revision: ${runtimeLineage.git_revision} (clean: ${runtimeLineage.worktree_clean})`);
+
+                // 2. Fetch and Verify Benchmark Config Bytes
+                logToUI('Fetching and hashing visualization_benchmark_config.json...');
+                const cfgBytes = await fetchPhysicalBytes('../configs/visualization_benchmark_config.json');
+                const cfgSha = await VisualizationBenchmarkRunner.computeSha256(cfgBytes);
+                if (cfgSha !== runtimeLineage.config_sha256) {
+                    throw new Error(`Config SHA mismatch: computed ${cfgSha}, expected ${runtimeLineage.config_sha256}`);
+                }
+                const cfgText = new TextDecoder().decode(cfgBytes);
+                verifiedConfig = JSON.parse(cfgText);
+                logToUI(`Config SHA verified: ${cfgSha}`);
+
+                // 3. Fetch and Verify Library Manifest Bytes
+                logToUI('Fetching and hashing visualization_library_manifest.json...');
+                const libBytes = await fetchPhysicalBytes('../configs/visualization_library_manifest.json');
+                const libSha = await VisualizationBenchmarkRunner.computeSha256(libBytes);
+                if (libSha !== runtimeLineage.library_manifest_sha256) {
+                    throw new Error(`Library Manifest SHA mismatch: computed ${libSha}, expected ${runtimeLineage.library_manifest_sha256}`);
+                }
+                const libText = new TextDecoder().decode(libBytes);
+                verifiedManifest = JSON.parse(libText);
+                logToUI(`Library Manifest SHA verified: ${libSha}`);
+
+                // 4. Verify In-Browser Runtime Library Versions
+                logToUI('Verifying runtime library versions in browser window...');
+                const echartsEntry = verifiedManifest.libraries.find(l => l.name === 'ECharts');
+                const d3Entry = verifiedManifest.libraries.find(l => l.name === 'D3');
+                const chartjsEntry = verifiedManifest.libraries.find(l => l.name === 'Chart.js');
+
+                if (typeof echarts === 'undefined' || echarts.version !== echartsEntry.version) {
+                    throw new Error(`ECharts runtime version mismatch: got ${typeof echarts !== 'undefined' ? echarts.version : 'undefined'}, expected ${echartsEntry.version}`);
+                }
+                if (typeof d3 === 'undefined' || d3.version !== d3Entry.version) {
+                    throw new Error(`D3 runtime version mismatch: got ${typeof d3 !== 'undefined' ? d3.version : 'undefined'}, expected ${d3Entry.version}`);
+                }
+                if (typeof Chart === 'undefined' || Chart.version !== chartjsEntry.version) {
+                    throw new Error(`Chart.js runtime version mismatch: got ${typeof Chart !== 'undefined' ? Chart.version : 'undefined'}, expected ${chartjsEntry.version}`);
+                }
+                logToUI(`Runtime versions verified: ECharts ${echarts.version}, D3 ${d3.version}, Chart.js ${Chart.version}`);
+
+                // 5. Fetch, Hash, and Validate All Materialized Workloads
+                logToUI('Fetching and validating materialized workload JSON files...');
+                verifiedWorkloads = {};
+                for (const size of verifiedConfig.workload_sizes) {
+                    const wMeta = verifiedConfig.workloads.files[String(size)];
+                    const wBytes = await fetchPhysicalBytes(`workloads/workload_${size}.json`);
+                    const wSha = await VisualizationBenchmarkRunner.computeSha256(wBytes);
+                    if (wSha !== wMeta.sha256) {
+                        throw new Error(`Workload N=${size} SHA mismatch: computed ${wSha}, expected ${wMeta.sha256}`);
+                    }
+                    const wText = new TextDecoder().decode(wBytes);
+                    const wJson = JSON.parse(wText);
+                    if (wJson.size !== size || wJson.base_points.length !== size || wJson.update_points.length !== size) {
+                        throw new Error(`Workload N=${size} structure invalid: size=${wJson.size}, base=${wJson.base_points.length}, update=${wJson.update_points.length}`);
+                    }
+                    verifiedWorkloads[size] = wJson;
+                    logToUI(`Workload N=${size} verified: ${wSha.substring(0, 16)}... (points: ${size})`);
+                }
+
+                // 6. Viewport Check for Formal
+                const vpWidth = window.innerWidth;
+                const vpHeight = window.innerHeight;
+                logToUI(`Browser Viewport: ${vpWidth} x ${vpHeight}, DPR: ${window.devicePixelRatio}`);
+                if (isFormal && (vpWidth !== 1440 || vpHeight !== 900)) {
+                    throw new Error(`Formal benchmark requires 1440x900 viewport. Current: ${vpWidth}x${vpHeight}`);
+                }
+
+                preflightPassed = true;
+                badge.className = 'preflight-badge badge-pass';
+                badge.textContent = 'Preflight: PASS';
+                btnFormal.disabled = false;
+                logToUI('[PASS] Preflight audit completed successfully!');
+                return true;
+            } catch (err) {
+                preflightPassed = false;
+                badge.className = 'preflight-badge badge-fail';
+                badge.textContent = 'Preflight: FAIL';
+                btnFormal.disabled = true;
+                logToUI(`[FAIL] Preflight error: ${err.message}`);
+                if (isFormal) throw err;
+                return false;
             }
         }
 
@@ -261,62 +370,58 @@
             btnSmoke.disabled = true;
             btnFormal.disabled = true;
             btnExport.disabled = true;
-            logs.innerHTML = '';
-
-            const config = await loadBenchmarkConfig();
-
-            // Prepare workloads using in-browser deterministic generator
-            const workloads = {};
-            for (const size of config.workload_sizes) {
-                workloads[size] = WorkloadGenerator.generate(size);
-            }
-
-            const adapters = {
-                'ECharts': EChartsAdapter,
-                'D3': D3Adapter,
-                'Chart.js': ChartJsAdapter
-            };
-
-            runner = new VisualizationBenchmarkRunner(config, null, workloads, adapters);
-
-            runner.onLog = (msg) => {
-                const line = document.createElement('div');
-                line.textContent = `[${new Date().toISOString().substring(11, 19)}] ${msg}`;
-                logs.appendChild(line);
-                logs.scrollTop = logs.scrollHeight;
-            };
-
-            runner.onProgress = (prog) => {
-                const pct = Math.round((prog.current / prog.total) * 100);
-                progressBar.style.width = `${pct}%`;
-                progressText.textContent = `${prog.current} / ${prog.total} (${pct}%)`;
-                statusText.textContent = `Running: ${prog.lastRecord.library} (N=${prog.lastRecord.workload_size}, rep ${prog.lastRecord.repeat_index}) -> Render: ${prog.lastRecord.render_ms}ms, Update: ${prog.lastRecord.update_ms}ms`;
-            };
-
-            statusText.textContent = 'Executing benchmark...';
 
             try {
+                // Ensure preflight passes before starting
+                await runPreflight(!isSmoke);
+
+                const adapters = {
+                    'ECharts': EChartsAdapter,
+                    'D3': D3Adapter,
+                    'Chart.js': ChartJsAdapter
+                };
+
+                runner = new VisualizationBenchmarkRunner(
+                    verifiedConfig,
+                    verifiedManifest,
+                    verifiedWorkloads,
+                    adapters,
+                    runtimeLineage
+                );
+
+                runner.onLog = (msg) => logToUI(msg);
+
+                runner.onProgress = (prog) => {
+                    const pct = Math.round((prog.current / prog.total) * 100);
+                    progressBar.style.width = `${pct}%`;
+                    progressText.textContent = `${prog.current} / ${prog.total} (${pct}%)`;
+                    statusText.textContent = `Running: ${prog.lastRecord.library} (N=${prog.lastRecord.workload_size}, rep ${prog.lastRecord.repeat_index}) -> Render: ${prog.lastRecord.render_ms}ms, Update: ${prog.lastRecord.update_ms}ms`;
+                };
+
+                statusText.textContent = `Executing ${isSmoke ? 'Smoke' : 'Formal'} benchmark...`;
+
                 lastResults = await runner.run(container, isSmoke);
                 statusText.textContent = `Benchmark Finished (${lastResults.length} observations)`;
                 btnExport.disabled = false;
                 renderSummaryTable(lastResults);
             } catch (e) {
                 statusText.textContent = `Error: ${e.message}`;
+                logToUI(`Execution aborted: ${e.message}`);
             } finally {
                 btnSmoke.disabled = false;
-                btnFormal.disabled = false;
+                if (preflightPassed) btnFormal.disabled = false;
             }
         }
 
         function calculateMedian(arr) {
-            if (!arr || arr.length === 0) return 0;
+            if (!arr || arr.length === 0) return null;
             const sorted = [...arr].sort((a, b) => a - b);
             const mid = Math.floor(sorted.length / 2);
             return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
         }
 
         function calculateIqr(arr) {
-            if (!arr || arr.length < 2) return 0;
+            if (!arr || arr.length < 2) return null;
             const sorted = [...arr].sort((a, b) => a - b);
             const mid = Math.floor(sorted.length / 2);
             const lower = sorted.length % 2 === 0 ? sorted.slice(0, mid) : sorted.slice(0, mid);
@@ -331,19 +436,22 @@
             const grouped = {};
 
             for (const r of results) {
-                if (r.status !== 'COMPLETED') continue;
                 const key = `${r.library}|${r.renderer}|${r.workload_size}`;
                 if (!grouped[key]) {
                     grouped[key] = {
                         library: r.library,
                         renderer: r.renderer,
                         workload_size: r.workload_size,
+                        n_repeats: 0,
                         renders: [],
                         updates: []
                     };
                 }
-                grouped[key].renders.push(r.render_ms);
-                grouped[key].updates.push(r.update_ms);
+                grouped[key].n_repeats++;
+                if (r.status === 'COMPLETED') {
+                    if (r.render_ms !== null && !isNaN(r.render_ms)) grouped[key].renders.push(r.render_ms);
+                    if (r.update_ms !== null && !isNaN(r.update_ms)) grouped[key].updates.push(r.update_ms);
+                }
             }
 
             let html = `<table>
@@ -352,6 +460,7 @@
                         <th>Library</th>
                         <th>Renderer</th>
                         <th>Workload Size (N)</th>
+                        <th>Total Runs</th>
                         <th>Valid Runs</th>
                         <th>Median Render (ms)</th>
                         <th>IQR Render (ms)</th>
@@ -363,20 +472,21 @@
 
             for (const key of Object.keys(grouped).sort()) {
                 const g = grouped[key];
-                const medRender = calculateMedian(g.renders).toFixed(3);
-                const iqrRender = calculateIqr(g.renders).toFixed(3);
-                const medUpdate = calculateMedian(g.updates).toFixed(3);
-                const iqrUpdate = calculateIqr(g.updates).toFixed(3);
+                const medRender = calculateMedian(g.renders);
+                const iqrRender = calculateIqr(g.renders);
+                const medUpdate = calculateMedian(g.updates);
+                const iqrUpdate = calculateIqr(g.updates);
 
                 html += `<tr>
                     <td><strong>${g.library}</strong></td>
                     <td>${g.renderer}</td>
                     <td>${g.workload_size}</td>
+                    <td>${g.n_repeats}</td>
                     <td>${g.renders.length}</td>
-                    <td>${medRender}</td>
-                    <td>${iqrRender}</td>
-                    <td>${medUpdate}</td>
-                    <td>${iqrUpdate}</td>
+                    <td>${medRender !== null ? medRender.toFixed(3) : '-'}</td>
+                    <td>${iqrRender !== null ? iqrRender.toFixed(3) : '-'}</td>
+                    <td>${medUpdate !== null ? medUpdate.toFixed(3) : '-'}</td>
+                    <td>${iqrUpdate !== null ? iqrUpdate.toFixed(3) : '-'}</td>
                 </tr>`;
             }
 

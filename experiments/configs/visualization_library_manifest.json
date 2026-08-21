@@ -11,10 +11,11 @@
       "raw_sha256": "bf4a223524e40b77c304bec67e1222cf551f14880cf42c69dc046558e11c07b1",
       "raw_byte_size": 1034102,
       "license": "Apache-2.0",
-      "authoritative_source_url": "https://registry.npmjs.org/echarts/-/echarts-5.6.0.tgz",
+      "authoritative_package_source": "npm:echarts@5.6.0",
+      "acquisition_url": "https://registry.npmjs.org/echarts/-/echarts-5.6.0.tgz",
       "retrieval_date": "2026-08-19",
       "status": "VERIFIED_FROZEN",
-      "notes": "Canvas scatter series, animation:false, progressive:0, hoverLayerThreshold:Infinity, tooltip disabled."
+      "notes": "Canvas scatter series, animation:false, progressive:0, hoverLayerThreshold:Infinity, splitLine disabled, tooltip disabled."
     },
     {
       "name": "D3",
@@ -26,10 +27,11 @@
       "raw_sha256": "f2094bbf6141b359722c4fe454eb6c4b0f0e42cc10cc7af921fc158fceb86539",
       "raw_byte_size": 279706,
       "license": "ISC",
-      "authoritative_source_url": "https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js",
+      "authoritative_package_source": "npm:d3@7.9.0 / GitHub:d3/d3@v7.9.0",
+      "acquisition_url": "https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js",
       "retrieval_date": "2026-08-21",
       "status": "VERIFIED_FROZEN",
-      "notes": "SVG circle marks bound by point id, d3.scaleLinear, no transitions, keyed data join."
+      "notes": "SVG circle marks bound by point id, d3.scaleLinear, explicit 6 tickValues [0.0..1.0], no transitions, keyed data join."
     },
     {
       "name": "Chart.js",
@@ -41,10 +43,11 @@
       "raw_sha256": "c40877e88de4df7201532014e14fb707f0f07a196a4ec63e070544b80184fb00",
       "raw_byte_size": 206553,
       "license": "MIT",
-      "authoritative_source_url": "https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js",
+      "authoritative_package_source": "npm:chart.js@4.4.8 / GitHub:chartjs/Chart.js@v4.4.8",
+      "acquisition_url": "https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js",
       "retrieval_date": "2026-08-21",
       "status": "VERIFIED_FROZEN",
-      "notes": "Canvas scatter dataset, animation:false, parsing:false, decimation disabled, events:[] disabled."
+      "notes": "Canvas scatter dataset, animation:false, parsing:false, decimation disabled, grid lines disabled, events:[] disabled."
     }
   ]
 }

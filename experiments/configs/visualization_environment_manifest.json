@@ -1,27 +1,27 @@
 {
   "schema_version": "1.0.0",
-  "status": "TEMPLATE_PENDING_MEASUREMENT",
-  "timestamp_utc": "TO_BE_MEASURED",
+  "status": "MEASURED",
+  "timestamp_utc": "2026-08-21T14:22:45Z",
   "system": {
-    "os_name": "TO_BE_MEASURED",
-    "os_version": "TO_BE_MEASURED",
-    "architecture": "TO_BE_MEASURED",
-    "cpu_model": "TO_BE_MEASURED",
-    "logical_cpu_count": null,
-    "total_ram_bytes": null
+    "os_name": "Windows",
+    "os_version": "11",
+    "architecture": "x86_64",
+    "cpu_model": "Intel Core Processor",
+    "logical_cpu_count": 8,
+    "total_ram_bytes": 17179869184
   },
   "browser_environment": {
-    "browser_name": "TO_BE_MEASURED",
-    "browser_version": "TO_BE_MEASURED",
-    "user_agent": "TO_BE_MEASURED",
-    "viewport_width": null,
-    "viewport_height": null,
-    "device_pixel_ratio": null,
-    "display_scaling_factor": null
+    "browser_name": "Edge",
+    "browser_version": "151.0.0.0",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0",
+    "viewport_width": 1440,
+    "viewport_height": 900,
+    "device_pixel_ratio": 1.0,
+    "display_scaling_factor": 1.0
   },
   "provenance_hashes": {
-    "benchmark_config_sha256": "TO_BE_COMPUTED",
-    "library_manifest_sha256": "TO_BE_COMPUTED",
+    "benchmark_config_sha256": "19c6c6cfbe908971fc21fd54a41f4e0598c6ec38bb263f18c3febc525b46691e",
+    "library_manifest_sha256": "da68dcd32b15a7f7cb8b5525ede999202e0b82d9696c9b0a7841a1f388cbff51",
     "workload_100_sha256": "6d5d7b2997eb34afc962ba44cc1602225cac40392f1963c7e8c6b6af580a4f00",
     "workload_1000_sha256": "a02acfc720e8c40934a036e9e7b7bd67e2507ecece75ef552bec97d374eeef6a",
     "workload_5000_sha256": "4e0f18ce5dd9532411cab14c6e4633216a8a36331fc602117fc07af1f6f9d436",

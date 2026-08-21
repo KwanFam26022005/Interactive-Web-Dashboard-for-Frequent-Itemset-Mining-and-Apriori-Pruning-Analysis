@@ -17,6 +17,8 @@ const ChartJsAdapter = {
 
         const ctx = canvas.getContext('2d');
         const points = workload.base_points.map(p => ({ x: p.x, y: p.y }));
+        const fontFamily = config.visual_contract.axis_font_family || 'Arial';
+        const fontSize = config.visual_contract.axis_font_size || 12;
 
         const chart = new Chart(ctx, {
             type: 'scatter',
@@ -42,12 +44,32 @@ const ChartJsAdapter = {
                     x: {
                         type: 'linear',
                         min: config.visual_contract.x_domain[0],
-                        max: config.visual_contract.x_domain[1]
+                        max: config.visual_contract.x_domain[1],
+                        grid: { display: config.visual_contract.gridlines_enabled ?? false },
+                        ticks: {
+                            stepSize: 0.2,
+                            autoSkip: false,
+                            callback: v => Number(v).toFixed(1),
+                            font: {
+                                family: fontFamily,
+                                size: fontSize
+                            }
+                        }
                     },
                     y: {
                         type: 'linear',
                         min: config.visual_contract.y_domain[0],
-                        max: config.visual_contract.y_domain[1]
+                        max: config.visual_contract.y_domain[1],
+                        grid: { display: config.visual_contract.gridlines_enabled ?? false },
+                        ticks: {
+                            stepSize: 0.2,
+                            autoSkip: false,
+                            callback: v => Number(v).toFixed(1),
+                            font: {
+                                family: fontFamily,
+                                size: fontSize
+                            }
+                        }
                     }
                 },
                 plugins: {

@@ -2,11 +2,12 @@
  * Core Benchmark Engine for RQ3 Visualization Performance Experiment.
  */
 class VisualizationBenchmarkRunner {
-    constructor(config, libraryManifest, workloads, adapters) {
+    constructor(config, libraryManifest, workloads, adapters, runtimeLineage = {}) {
         this.config = config;
         this.libraryManifest = libraryManifest;
-        this.workloads = workloads;
+        this.workloads = workloads; // { 100: {...}, 1000: {...}, 5000: {...}, 10000: {...} }
         this.adapters = adapters; // { 'ECharts': EChartsAdapter, 'D3': D3Adapter, 'Chart.js': ChartJsAdapter }
+        this.runtimeLineage = runtimeLineage; // { git_revision, config_sha256, library_manifest_sha256, workload_hashes: {} }
         this.results = [];
         this.isRunning = false;
         this.onProgress = null;
@@ -16,6 +17,15 @@ class VisualizationBenchmarkRunner {
     log(msg) {
         if (this.onLog) this.onLog(msg);
         console.log(`[Benchmark] ${msg}`);
+    }
+
+    /**
+     * Computes SHA-256 of an ArrayBuffer or Uint8Array using Web Crypto API.
+     */
+    static async computeSha256(buffer) {
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
     /**
@@ -33,6 +43,7 @@ class VisualizationBenchmarkRunner {
 
     /**
      * Measures operation latency with the standard two-frame boundary.
+     * Metric: render-to-two-frame-observation latency (ms).
      *
      * @param {Function} action Synchronous chart create/update invocation
      * @returns {Promise<number>} Latency in milliseconds rounded to 3 decimals
@@ -53,7 +64,7 @@ class VisualizationBenchmarkRunner {
 
     /**
      * Generates deterministic execution schedule covering library x size x repetition.
-     * Uses Mulberry32 / LCG with seed 42 to shuffle items deterministically.
+     * Uses LCG with seed 42 to shuffle items deterministically.
      */
     generateSchedule(isSmoke = false, smokeReps = 2) {
         const schedule = [];
@@ -98,16 +109,16 @@ class VisualizationBenchmarkRunner {
         let name = 'Unknown';
         let version = 'Unknown';
 
-        if (/Chrome\/([0-9.]+)/.test(ua) && !/Edg/.test(ua)) {
-            name = 'Chrome';
-            version = RegExp.$1;
-        } else if (/Edg\/([0-9.]+)/.test(ua)) {
+        if (/Edg\/([0-9.]+)/.test(ua)) {
             name = 'Edge';
+            version = RegExp.$1;
+        } else if (/Chrome\/([0-9.]+)/.test(ua)) {
+            name = 'Chrome';
             version = RegExp.$1;
         } else if (/Firefox\/([0-9.]+)/.test(ua)) {
             name = 'Firefox';
             version = RegExp.$1;
-        } else if (/Safari\/([0-9.]+)/.test(ua) && !/Chrome/.test(ua)) {
+        } else if (/Safari\/([0-9.]+)/.test(ua)) {
             name = 'Safari';
             version = RegExp.$1;
         }
@@ -135,7 +146,11 @@ class VisualizationBenchmarkRunner {
         const total = schedule.length;
         const warmupCount = isSmoke ? 1 : this.config.warmup_iterations;
 
+        const gitRev = this.runtimeLineage.git_revision || 'UNAVAILABLE';
+        const cfgSha = this.runtimeLineage.config_sha256 || 'UNAVAILABLE';
+
         this.log(`Starting ${isSmoke ? 'SMOKE' : 'FORMAL'} benchmark run (${total} observations scheduled)...`);
+        this.log(`Lineage Git: ${gitRev} | Config SHA: ${cfgSha.substring(0, 16)}...`);
 
         // 1. Warmup phase (unrecorded)
         this.log(`Running ${warmupCount} warmup iterations per library/size...`);
@@ -173,13 +188,15 @@ class VisualizationBenchmarkRunner {
             obsIdCounter++;
 
             const libMeta = this.config.libraries.find(l => l.name === item.library) || {};
-            const workloadMeta = this.config.workloads.files[String(item.workload_size)] || {};
+            const workloadSha = (this.runtimeLineage.workload_hashes && this.runtimeLineage.workload_hashes[item.workload_size])
+                ? this.runtimeLineage.workload_hashes[item.workload_size]
+                : (this.config.workloads?.files?.[String(item.workload_size)]?.sha256 || 'UNAVAILABLE');
 
             const obsRecord = {
                 observation_id: obsId,
-                git_revision: this.config.benchmark_id ? 'fd318b3ca0d3829c0849ee2a5ef783caaae72fdb' : 'UNAVAILABLE',
-                benchmark_config_sha256: '47861199a9fb4297904fcdf425c8deb97b90666c3ea1d5f9d2b966a5b47a2b31',
-                workload_sha256: workloadMeta.sha256 || 'UNAVAILABLE',
+                git_revision: gitRev,
+                benchmark_config_sha256: cfgSha,
+                workload_sha256: workloadSha,
                 library: item.library,
                 library_version: libMeta.version || adapter.version,
                 renderer: libMeta.renderer || adapter.renderer,
@@ -255,7 +272,19 @@ class VisualizationBenchmarkRunner {
     }
 
     /**
-     * Converts results into canonical CSV string.
+     * Escapes a value for CSV RFC 4180 compliance.
+     */
+    static escapeCsv(val) {
+        if (val === null || val === undefined) return '';
+        const str = String(val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    }
+
+    /**
+     * Converts results into canonical CSV string with robust escaping.
      */
     toCsv() {
         const header = [
@@ -281,26 +310,26 @@ class VisualizationBenchmarkRunner {
         ];
 
         const rows = this.results.map(r => [
-            r.observation_id,
-            r.git_revision,
-            r.benchmark_config_sha256,
-            r.workload_sha256,
-            r.library,
-            r.library_version,
-            r.renderer,
-            r.workload_size,
-            r.repeat_index,
-            r.execution_order_index,
-            r.render_ms !== null ? r.render_ms : '',
-            r.update_ms !== null ? r.update_ms : '',
-            r.browser_name,
-            r.browser_version,
-            r.viewport_width,
-            r.viewport_height,
-            r.device_pixel_ratio,
-            r.status,
-            r.failure_code
-        ].map(val => (typeof val === 'string' && val.includes(',') ? `"${val}"` : val)).join(','));
+            VisualizationBenchmarkRunner.escapeCsv(r.observation_id),
+            VisualizationBenchmarkRunner.escapeCsv(r.git_revision),
+            VisualizationBenchmarkRunner.escapeCsv(r.benchmark_config_sha256),
+            VisualizationBenchmarkRunner.escapeCsv(r.workload_sha256),
+            VisualizationBenchmarkRunner.escapeCsv(r.library),
+            VisualizationBenchmarkRunner.escapeCsv(r.library_version),
+            VisualizationBenchmarkRunner.escapeCsv(r.renderer),
+            VisualizationBenchmarkRunner.escapeCsv(r.workload_size),
+            VisualizationBenchmarkRunner.escapeCsv(r.repeat_index),
+            VisualizationBenchmarkRunner.escapeCsv(r.execution_order_index),
+            VisualizationBenchmarkRunner.escapeCsv(r.render_ms !== null ? r.render_ms : ''),
+            VisualizationBenchmarkRunner.escapeCsv(r.update_ms !== null ? r.update_ms : ''),
+            VisualizationBenchmarkRunner.escapeCsv(r.browser_name),
+            VisualizationBenchmarkRunner.escapeCsv(r.browser_version),
+            VisualizationBenchmarkRunner.escapeCsv(r.viewport_width),
+            VisualizationBenchmarkRunner.escapeCsv(r.viewport_height),
+            VisualizationBenchmarkRunner.escapeCsv(r.device_pixel_ratio),
+            VisualizationBenchmarkRunner.escapeCsv(r.status),
+            VisualizationBenchmarkRunner.escapeCsv(r.failure_code)
+        ].join(','));
 
         return [header.join(','), ...rows].join('\n') + '\n';
     }

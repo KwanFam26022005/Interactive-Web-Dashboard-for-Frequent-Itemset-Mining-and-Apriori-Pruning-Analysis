@@ -49,6 +49,11 @@ class ConfigValidator
             $errors = array_merge($errors, self::validateVisualizationLibraryManifest($visLibManifest));
         }
 
+        $visEnvManifest = $configDir . '/visualization_environment_manifest.json';
+        if (is_file($visEnvManifest)) {
+            $errors = array_merge($errors, self::validateVisualizationEnvironmentManifest($visEnvManifest));
+        }
+
         return $errors;
     }
 
@@ -453,6 +458,57 @@ class ConfigValidator
         foreach ($expectedLibs as $exp) {
             if (!in_array($exp, $foundLibs, true)) {
                 $errors[] = "Visualization library manifest missing entry for '{$exp}'";
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function validateVisualizationEnvironmentManifest(string $filePath): array
+    {
+        $errors = [];
+        $content = @file_get_contents($filePath);
+        if ($content === false) {
+            return ["Could not read visualization environment manifest: {$filePath}"];
+        }
+
+        try {
+            $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (Throwable $e) {
+            return ["Invalid JSON in {$filePath}: " . $e->getMessage()];
+        }
+
+        if (!is_array($data)) {
+            return ["Visualization environment manifest must be an object in {$filePath}"];
+        }
+
+        if (($data['schema_version'] ?? '') !== '1.0.0') {
+            $errors[] = "Visualization environment schema_version must be '1.0.0'";
+        }
+
+        $status = $data['status'] ?? null;
+        if ($status !== 'MEASURED' && $status !== 'TEMPLATE_PENDING_MEASUREMENT') {
+            $errors[] = "Visualization environment manifest status must be 'MEASURED' or 'TEMPLATE_PENDING_MEASUREMENT'";
+        }
+
+        if ($status === 'MEASURED') {
+            $cfgSha = $data['provenance_hashes']['benchmark_config_sha256'] ?? null;
+            if (!is_string($cfgSha) || preg_match('/^[0-9a-f]{64}$/i', $cfgSha) !== 1) {
+                $errors[] = "MEASURED visualization environment manifest requires 64-hex benchmark_config_sha256";
+            }
+
+            $libSha = $data['provenance_hashes']['library_manifest_sha256'] ?? null;
+            if (!is_string($libSha) || preg_match('/^[0-9a-f]{64}$/i', $libSha) !== 1) {
+                $errors[] = "MEASURED visualization environment manifest requires 64-hex library_manifest_sha256";
+            }
+
+            $vpWidth = $data['browser_environment']['viewport_width'] ?? null;
+            $vpHeight = $data['browser_environment']['viewport_height'] ?? null;
+            if ($vpWidth !== 1440 || $vpHeight !== 900) {
+                $errors[] = "MEASURED visualization environment manifest requires 1440x900 viewport. Got {$vpWidth}x{$vpHeight}";
             }
         }
 
