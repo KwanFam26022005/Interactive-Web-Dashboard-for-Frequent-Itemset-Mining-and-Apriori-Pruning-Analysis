@@ -1,6 +1,6 @@
 # Danh Mục Tài Liệu Tham Khảo (Authoritative Bibliography)
 
-Tài liệu này tổng hợp toàn bộ các tài liệu học thuật, bộ dữ liệu chuẩn, tài liệu phần mềm và đặc tả tiêu chuẩn công nghệ được sử dụng trong Báo cáo Giữa kỳ. Toàn bộ các mục tham khảo đã được đối chiếu và xác thực trực tiếp qua các nguồn xuất bản gốc (ACM Digital Library, IEEE Xplore, ScienceDirect, VLDB Endowment, UCI ML Repository, IETF RFC Editor, và các kho mã nguồn chính thức).
+Tài liệu này tổng hợp danh mục tài liệu tham khảo được sử dụng trong Báo cáo Giữa kỳ. Mỗi trường siêu dữ liệu trích dẫn dưới đây được giới hạn trong phạm vi thông tin đã được xác thực từ nguồn thẩm quyền chính thức tương ứng; các dữ liệu thực nghiệm và dẫn xuất nội bộ của dự án được theo dõi riêng biệt trong hồ sơ bằng chứng dự án.
 
 ---
 
@@ -25,7 +25,7 @@ Tài liệu này tổng hợp toàn bộ các tài liệu học thuật, bộ d�
    In *Proceedings of the 2000 ACM SIGMOD International Conference on Management of Data (SIGMOD '00)*, Dallas, TX, USA, May 15–18, 2000, pp. 1–12.  
    **DOI:** [10.1145/342009.335372](https://doi.org/10.1145/342009.335372)  
    **Phân loại:** `ACADEMIC_PRIMARY`  
-   **Nội dung hỗ trợ:** Nền tảng lý thuyết thuật toán FP-Growth, cấu trúc dữ liệu cây tiền tố liên kết bộ nhớ (*FP-tree*) và khai phá mẫu tăng trưởng không sinh ứng viên.
+   **Nội dung hỗ trợ:** Nền tảng lý thuyết thuật toán FP-Growth, cấu trúc dữ liệu cây tiền tố liên kết bộ nhớ (*FP-tree*) và khai phá mẫu tăng trưởng không sinh ứng viên tường minh.
 
 4. **[4] Tan, P.-N., Steinbach, M., Karpatne, A., & Kumar, V. (2018).**  
    *Introduction to Data Mining (2nd Edition).*  
@@ -39,28 +39,28 @@ Tài liệu này tổng hợp toàn bộ các tài liệu học thuật, bộ d�
    *IEEE Transactions on Visualization and Computer Graphics*, 17(12), pp. 2301–2309, Dec. 2011.  
    **DOI:** [10.1109/TVCG.2011.185](https://doi.org/10.1109/TVCG.2011.185)  
    **Phân loại:** `ACADEMIC_PRIMARY`  
-   **Nội dung hỗ trợ:** Mô hình biến đổi tài liệu hướng dữ liệu (DOM/SVG) và kiến trúc trực quan hóa web dựa trên phần tử đồ họa vector.
+   **Nội dung hỗ trợ:** Mô hình biến đổi tài liệu hướng dữ liệu (DOM/SVG) và kiến trúc trực quan hóa web dựa trên tiêu chuẩn web mở.
 
 6. **[6] Li, D., Mei, H., Shen, Y., Su, S., Zhang, W., Wang, J., Zu, M., & Chen, W. (2018).**  
    *ECharts: A Declarative Framework for Rapid Construction of Web-based Visualization.*  
    *Visual Informatics*, 2(2), pp. 136–146, June 2018.  
    **DOI:** [10.1016/j.visinf.2018.04.011](https://doi.org/10.1016/j.visinf.2018.04.011)  
    **Phân loại:** `ACADEMIC_PRIMARY`  
-   **Nội dung hỗ trợ:** Kiến trúc khai báo trực quan hóa dữ liệu web và nền tảng hiển thị của Apache ECharts.
+   **Nội dung hỗ trợ:** Kiến trúc khai báo trực quan hóa dữ liệu web và nền tảng hiển thị của ECharts.
 
 ---
 
 ## 2. Bộ Dữ Liệu Chuẩn Thực Nghiệm (Benchmark Dataset)
 
 7. **[7] UCI Machine Learning Repository: Mushroom Data Set.**  
-   *Agaricus and Lepiota Mushroom Dataset (agaricus-lepiota.data).*  
-   **Donor:** Jeff Schlimmer (1987). Derived from *The Audubon Society Field Guide to North American Mushrooms* (1981).  
+   *Mushroom [Dataset].* (1981). UCI Machine Learning Repository.  
+   **Nguồn gốc & Đóng góp:** Donated by Jeff Schlimmer (1987). Derived from *The Audubon Society Field Guide to North American Mushrooms* (1981).  
    **Dataset ID:** 73  
-   **DOI:** [10.24432/C59591](https://doi.org/10.24432/C59591)  
+   **DOI:** [10.24432/C5959T](https://doi.org/10.24432/C5959T)  
    **License:** Creative Commons Attribution 4.0 International (CC BY 4.0)  
    **URL:** [https://archive.ics.uci.edu/dataset/73/mushroom](https://archive.ics.uci.edu/dataset/73/mushroom)  
    **Phân loại:** `DATASET`  
-   **Nội dung hỗ trợ:** Đặc tả bộ dữ liệu thực nghiệm $N = 8,124$ giao dịch, 23 trường phân loại vật lý (gồm lớp $c_1$ và 22 thuộc tính $c_2..c_{23}$), 119 mục phân loại chuẩn hóa.
+   **Phạm vi siêu dữ liệu xuất bản gốc được hỗ trợ:** 8,124 bản ghi, 22 thuộc tính mô tả phân loại + 1 thuộc tính phân lớp, xử lý giá trị khuyết thiếu. *(Ghi chú: Việc ánh xạ thành 23 trường vật lý $c_1..c_{23}$ và định lượng 119 mục phân biệt là dẫn xuất nội bộ từ manifest của dự án).*
 
 ---
 
@@ -69,40 +69,44 @@ Tài liệu này tổng hợp toàn bộ các tài liệu học thuật, bộ d�
 8. **[8] Bostock, M., & D3 Contributors (2024).**  
    *D3.js: JavaScript library for visualizing data (Version 7.9.0).*  
    **License:** ISC License  
-   **Package:** `npm:d3@7.9.0` | **Repository:** [https://github.com/d3/d3](https://github.com/d3/d3)  
-   **URL:** [https://d3js.org/](https://d3js.org/)  
+   **Authoritative Project Source:** [https://d3js.org/](https://d3js.org/) | GitHub: [https://github.com/d3/d3](https://github.com/d3/d3)  
+   **Distribution Package:** `npm:d3@7.9.0`  
    **Phân loại:** `SOFTWARE`  
    **Nội dung hỗ trợ:** Thư viện đối chứng SVG trong thực nghiệm RQ3.
 
 9. **[9] Chart.js Open Source Project (2025).**  
    *Chart.js: Simple yet flexible JavaScript charting for designers & developers (Version 4.4.8).*  
+   **Release Date:** February 2025  
    **License:** MIT License  
-   **Package:** `npm:chart.js@4.4.8` | **Repository:** [https://github.com/chartjs/Chart.js](https://github.com/chartjs/Chart.js)  
-   **URL:** [https://www.chartjs.org/](https://www.chartjs.org/)  
+   **Authoritative Project Source:** [https://www.chartjs.org/](https://www.chartjs.org/) | GitHub: [https://github.com/chartjs/Chart.js](https://github.com/chartjs/Chart.js)  
+   **Distribution Package:** `npm:chart.js@4.4.8`  
    **Phân loại:** `SOFTWARE`  
    **Nội dung hỗ trợ:** Thư viện đối chứng Canvas trong thực nghiệm RQ3.
 
 10. **[10] The Apache Software Foundation (2025).**  
     *Apache ECharts: An Open Source JavaScript Visualization Library (Version 5.6.0).*  
+    **Release Date:** January 2025  
     **License:** Apache License 2.0  
-    **Package:** `npm:echarts@5.6.0` | **Repository:** [https://github.com/apache/echarts](https://github.com/apache/echarts)  
-    **URL:** [https://echarts.apache.org/](https://echarts.apache.org/)  
+    **Authoritative Project Source:** [https://echarts.apache.org/](https://echarts.apache.org/) | GitHub: [https://github.com/apache/echarts](https://github.com/apache/echarts)  
+    **Distribution Package:** `npm:echarts@5.6.0`  
     **Phân loại:** `SOFTWARE`  
     **Nội dung hỗ trợ:** Thư viện trực quan hóa chính của bảng điều khiển web và đối chứng Canvas trong RQ3.
 
-11. **[11] Bootstrap Authors (2024).**  
+11. **[11] Bootstrap Authors (2025).**  
     *Bootstrap: Powerful, extensible, and feature-packed frontend toolkit (Version 5.3.8).*  
+    **Release Date:** August 25, 2025  
     **License:** MIT License  
-    **Package:** `npm:bootstrap@5.3.8` | **Repository:** [https://github.com/twbs/bootstrap](https://github.com/twbs/bootstrap)  
-    **URL:** [https://getbootstrap.com/](https://getbootstrap.com/)  
+    **Authoritative Project Source:** [https://getbootstrap.com/](https://getbootstrap.com/) | GitHub: [https://github.com/twbs/bootstrap](https://github.com/twbs/bootstrap)  
+    **Distribution Channel:** `npm:bootstrap@5.3.8` (vendored distribution in `public/assets/vendor/bootstrap/`)  
     **Phân loại:** `SOFTWARE`  
     **Nội dung hỗ trợ:** Khung giao diện web đáp ứng của bảng điều khiển.
 
 12. **[12] OpenJS Foundation (2023).**  
     *jQuery: Fast, small, and feature-rich JavaScript library (Version 3.7.1).*  
+    **Release Date:** August 28, 2023  
     **License:** MIT License  
-    **Repository:** [https://github.com/jquery/jquery](https://github.com/jquery/jquery)  
-    **URL:** [https://jquery.com/](https://jquery.com/)  
+    **Authoritative Project Source:** [https://jquery.com/](https://jquery.com/) | GitHub: [https://github.com/jquery/jquery](https://github.com/jquery/jquery)  
+    **Distribution Channel:** jQuery Official CDN build (vendored distribution in `public/assets/vendor/jquery/`)  
     **Phân loại:** `SOFTWARE`  
     **Nội dung hỗ trợ:** Xử lý sự kiện DOM và truyền thông AJAX bất đồng bộ phía client.
 
@@ -110,24 +114,24 @@ Tài liệu này tổng hợp toàn bộ các tài liệu học thuật, bộ d�
 
 ## 4. Ngôn Ngữ, Cơ Sở Dữ Liệu & Tiêu Chuẩn Công Nghệ (Standards & Documentation)
 
-13. **[13] The PHP Group (2024).**  
-    *PHP Manual: Language Reference & Runtime Architecture.*  
-    **Environment Runtime:** PHP 8.3.30 (Formal Benchmark Environment) / Language Target: PHP 8.2+  
-    **URL:** [https://www.php.net/docs.php](https://www.php.net/docs.php)  
+13. **[13] The PHP Group.**  
+    *PHP Manual: Language Reference & Runtime Architecture.* n.d.  
+    **URL:** [https://www.php.net/docs.php](https://www.php.net/docs.php) (Accessed: 2026-08-21)  
     **Phân loại:** `DOCUMENTATION`  
+    **Môi trường thực thi đo lường:** PHP 8.3.30 (CLI) (Ghi nhận từ `environment_manifest.json`) / Khả năng tương thích mục tiêu: PHP 8.2+  
     **Nội dung hỗ trợ:** Ngôn ngữ lập trình phụ trợ, cú pháp đối tượng và môi trường thực thi tính toán.
 
-14. **[14] Oracle Corporation (2024).**  
-    *MySQL 8.4 Reference Manual: InnoDB Storage Engine & Performance.*  
-    **Environment Server:** MySQL 8.4.3 (Formal Benchmark Environment)  
-    **URL:** [https://dev.mysql.com/doc/refman/8.4/en/](https://dev.mysql.com/doc/refman/8.4/en/)  
+14. **[14] Oracle Corporation.**  
+    *MySQL 8.4 Reference Manual: InnoDB Storage Engine & Performance.* n.d.  
+    **URL:** [https://dev.mysql.com/doc/refman/8.4/en/](https://dev.mysql.com/doc/refman/8.4/en/) (Accessed: 2026-08-21)  
     **Phân loại:** `DOCUMENTATION`  
+    **Môi trường cơ sở dữ liệu đo lường:** MySQL 8.4.3 (Ghi nhận từ `environment_manifest.json`)  
     **Nội dung hỗ trợ:** Hệ quản trị cơ sở dữ liệu quan hệ, cấu trúc bảng InnoDB và chỉ mục khóa ngoại.
 
 15. **[15] Bray, T. (Ed.) (2017).**  
     *RFC 8259: The JavaScript Object Notation (JSON) Data Interchange Format.*  
-    **Standards Track:** Internet Engineering Task Force (IETF), RFC 8259, STD 90.  
+    **Standards Track:** Internet Engineering Task Force (IETF), RFC 8259, STD 90, December 2017.  
     **DOI:** [10.17487/RFC8259](https://doi.org/10.17487/RFC8259)  
     **URL:** [https://www.rfc-editor.org/info/rfc8259](https://www.rfc-editor.org/info/rfc8259)  
     **Phân loại:** `STANDARD`  
-    **Nội dung hỗ trợ:** Chuẩn định dạng trao đổi dữ liệu JSON giữa PHP backend và AJAX client.
+    **Nội dung hỗ trợ:** Chuẩn định dạng trao đổi dữ liệu JSON giữa máy chủ PHP và máy khách AJAX.

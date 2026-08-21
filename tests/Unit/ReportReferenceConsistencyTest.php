@@ -78,7 +78,19 @@ final class ReportReferenceConsistencyTest
             $assert("Citation [{$id}] is recorded in REFERENCE_VERIFICATION_LEDGER.md", str_contains($ledger, "[{$id}]"));
         }
 
-        // 4. DOI format validation
+        // 4. DOI format validation and forbidden/required values
+        $assert('No incorrect UCI DOI 10.24432/C59591 in draft', !str_contains($draft, '10.24432/C59591'));
+        $assert('No incorrect UCI DOI 10.24432/C59591 in references', !str_contains($refs, '10.24432/C59591'));
+        $assert('No incorrect UCI DOI 10.24432/C59591 in ledger', !str_contains($ledger, '10.24432/C59591'));
+        $assert('Canonical UCI DOI 10.24432/C5959T in draft', str_contains($draft, '10.24432/C5959T'));
+        $assert('Canonical UCI DOI 10.24432/C5959T in references', str_contains($refs, '10.24432/C5959T'));
+        $assert('Canonical UCI DOI 10.24432/C5959T in ledger', str_contains($ledger, '10.24432/C5959T'));
+
+        $assert('No incorrect Bootstrap Authors (2024) in references', !str_contains($refs, 'Bootstrap Authors (2024)'));
+        $assert('Bootstrap 5.3.8 is dated 2025 in references', str_contains($refs, 'Bootstrap Authors (2025)'));
+
+        $assert('119 items statement distinguishes internal project ingestion representation', str_contains($draft, 'tiếp nhận') || str_contains($draft, 'manifest') || str_contains($draft, 'dataset_manifest.json'));
+
         preg_match_all('/10\.\d{4,9}\/[a-zA-Z0-9._\-]+/u', $refs, $doiMatches);
         $dois = array_unique($doiMatches[0]);
         $assert('Valid DOIs found in references', count($dois) >= 5, 'Found DOIs: ' . count($dois));
