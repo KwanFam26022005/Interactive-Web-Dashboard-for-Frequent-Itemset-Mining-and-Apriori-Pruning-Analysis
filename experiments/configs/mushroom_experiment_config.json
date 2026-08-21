@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0.0",
-  "experiment_id": "EXP-MUSHROOM-APRIORI-V1",
+  "experiment_id": "EXP-MUSHROOM-APRIORI-V1R1",
   "dataset": "Mushroom",
   "ingestion_profile": "mushroom",
   "min_support": [
-    0.20,
-    0.15,
-    0.10,
-    0.075,
-    0.05
+    0.60,
+    0.50,
+    0.45,
+    0.40,
+    0.35
   ],
   "min_confidence": 0.75,
   "warmup_iterations": 2,

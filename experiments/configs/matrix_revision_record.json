@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "revision": 1,
+  "phase": "PRE_FORMAL",
+  "previous_experiment_id": "EXP-MUSHROOM-APRIORI-V1",
+  "revised_experiment_id": "EXP-MUSHROOM-APRIORI-V1R1",
+  "original_min_support": [
+    0.20,
+    0.15,
+    0.10,
+    0.075,
+    0.05
+  ],
+  "revised_min_support": [
+    0.60,
+    0.50,
+    0.45,
+    0.40,
+    0.35
+  ],
+  "reason_code": "ORIGINAL_MATRIX_TIMEOUT_GUARDRAIL",
+  "decision_basis": "non-formal feasibility only",
+  "probe_revision": "ea567da6b4d507ad6bf5f4070c76a00011a263e4",
+  "formal_observations_collected_before_revision": false,
+  "notes": "This revision was determined before formal evidence collection. All original support levels (<=0.20) on the 23-attribute dense Mushroom dataset exceeded the 30.0s execution timeout due to exponential candidate explosion. The revised matrix [0.60, 0.50, 0.45, 0.40, 0.35] was proven safe across all three guardrails (max_candidates 250k, timeout 30s, max_rules 50k) during pre-formal probing."
+}

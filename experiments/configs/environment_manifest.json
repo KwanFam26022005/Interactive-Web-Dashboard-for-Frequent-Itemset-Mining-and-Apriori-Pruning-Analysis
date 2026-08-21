@@ -1,7 +1,7 @@
 {
     "schema_version": "1.0.0",
     "status": "MEASURED",
-    "timestamp_utc": "2026-08-20T02:37:35Z",
+    "timestamp_utc": "2026-08-21T13:45:26Z",
     "system": {
         "os_name": "Windows",
         "os_version": "10.0 build 26200 (Windows 11)",
@@ -28,7 +28,7 @@
         "display_scaling_factor": null
     },
     "provenance_hashes": {
-        "experiment_config_sha256": "80d89e77b2ba35779b0721f65e9d3027346d430bc26f227dbaa737418f42d0d4",
+        "experiment_config_sha256": "47861199a9fb4297904fcdf425c8deb97b90666c3ea1d5f9d2b966a5b47a2b31",
         "dataset_sha256": "e65d082030501a3ebcbcd7c9f7c71aa9d28fdfff463bf4cf4716a3fe13ac360e"
     }
 }
