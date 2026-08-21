@@ -1,0 +1,94 @@
+{
+    "schema_version": "1.0.0",
+    "report_phase": "PHASE_5C",
+    "source_revision": "b2b4c36d8b5846fc9447d2ebb22abc489add62ee",
+    "final_report_path": "docs/report/MIDTERM_REPORT_FINAL.md",
+    "final_report_sha256": "c3ee46381e7bcc9f4775b23e3029beeddb187defd15b901925568c0b3d5d443c",
+    "reference_count": 15,
+    "references_file": {
+        "path": "docs/report/REPORT_REFERENCES.md",
+        "sha256": "20e1d1eebaf6c6d40db35dcdb64845002baae42273dec779b0a54acd45dfdf34"
+    },
+    "evidence_map": {
+        "path": "docs/report/REPORT_EVIDENCE_MAP.md",
+        "sha256": "cb27858e0f680e22cface2dfc0d6761c194765c75ec917d88766dfbb6d39545e"
+    },
+    "verification_ledger": {
+        "path": "docs/report/REFERENCE_VERIFICATION_LEDGER.md",
+        "sha256": "793539e8a481832018afa5590eeddd0d8eb6c9b9bef6e19f9ce3446a55073694"
+    },
+    "submission_checklist": {
+        "path": "docs/report/SUBMISSION_CHECKLIST.md",
+        "sha256": "25d1634c0293d30f5010fbce6fa3e2f31d6099352f075accc452cbc37eb95b49"
+    },
+    "canonical_figures": {
+        "F1": {
+            "path": "experiments/figures/F1_apriori_runtime_vs_support.svg",
+            "sha256": "01f26608f18c5d5a51b72ba4a10e81e08b34f2a8f8cfbc7a44dd3bc1afbac15c"
+        },
+        "F2": {
+            "path": "experiments/figures/F2_candidate_volume_vs_support.svg",
+            "sha256": "d7e63ac8ac310c8950bc26da2231f38aa6befa052ce7fb89d9f8fd6d7e89b739"
+        },
+        "F3": {
+            "path": "experiments/figures/F3_pattern_output_vs_support.svg",
+            "sha256": "5ded8c2dc9afac383879766af1c874cd262345fc9b2245860c3b158afa09fad3"
+        },
+        "F4": {
+            "path": "experiments/figures/F4_pruning_dynamics_per_level.svg",
+            "sha256": "513ef1de89e170d4769bf5246afbd8b733d99a346aedd980dd76d06a4a6c84fe"
+        },
+        "F5": {
+            "path": "experiments/figures/F5_visualization_initial_render.svg",
+            "sha256": "3b0c530396501bc6fb5c8d02da68f8671562bec6c382e1abc201e8c89499e999"
+        },
+        "F6": {
+            "path": "experiments/figures/F6_visualization_update.svg",
+            "sha256": "e9eca0375b45e62206c5933ff885a8565839acd1c0d267aa285604e780225918"
+        }
+    },
+    "canonical_tables": {
+        "T1": {
+            "path": "experiments/tables/T1_rq1_support_effect.csv",
+            "sha256": "969432e8ba2a03b33520cecf5d2396d4ea574845c89822aaf7f629072b769466"
+        },
+        "T2": {
+            "path": "experiments/tables/T2_rq2_overall_pruning.csv",
+            "sha256": "ecddf3a435632753052f760d9409fab15099c4edac5edd47ad0a3f6b5e3e5abe"
+        },
+        "T2b": {
+            "path": "experiments/tables/T2b_rq2_per_level_pruning.csv",
+            "sha256": "103be5a479102576e8e4517c63cc5e3844eb1f5f312ea4e95d2c37ad4bc18acb"
+        },
+        "T3": {
+            "path": "experiments/tables/T3_rq3_visualization_performance.csv",
+            "sha256": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210"
+        }
+    },
+    "canonical_phase4_sources": {
+        "mushroom_support_runs": {
+            "path": "experiments/raw/mushroom_support_runs.csv",
+            "sha256": "022a56cbe99344c76a8fd51cbe0329a48e4804815f6b861614fb266cfe5fc641"
+        },
+        "mushroom_pruning_levels": {
+            "path": "experiments/raw/mushroom_pruning_levels.csv",
+            "sha256": "613632ed7fd961ba155b8ca92ad23a2e30d271d6663ffec0d034bd6176303c11"
+        },
+        "mushroom_support_summary": {
+            "path": "experiments/processed/mushroom_support_summary.csv",
+            "sha256": "1b60921ada3edbb2f4625683338729d3e8f0dc090ae9782b3746bbcb7798f0d2"
+        },
+        "mushroom_pruning_summary": {
+            "path": "experiments/processed/mushroom_pruning_summary.csv",
+            "sha256": "b89a2fb983113861a7df23ed3832fc5fa983e3b3bdcbc3784851018540c804f2"
+        },
+        "visualization_runs": {
+            "path": "experiments/raw/visualization_runs.csv",
+            "sha256": "10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781"
+        },
+        "visualization_summary": {
+            "path": "experiments/processed/visualization_summary.csv",
+            "sha256": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210"
+        }
+    }
+}
