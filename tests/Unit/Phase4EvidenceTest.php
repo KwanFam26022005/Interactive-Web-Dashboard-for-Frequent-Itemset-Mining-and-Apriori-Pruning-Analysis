@@ -36,8 +36,6 @@ final class Phase4EvidenceTest
 
         $repoRoot = dirname(__DIR__, 2);
         $processedDir = $repoRoot . '/experiments/processed';
-        $figuresDir = $repoRoot . '/experiments/figures';
-        $tablesDir = $repoRoot . '/experiments/tables';
 
         require_once $repoRoot . '/experiments/bin/generate_evidence_figures.php';
         require_once $repoRoot . '/experiments/bin/generate_evidence_tables.php';
@@ -67,7 +65,12 @@ final class Phase4EvidenceTest
         $expectedSizes = [100, 1000, 5000, 10000];
         $assert('Visualization summary contains exactly 4 workload sizes [100, 1000, 5000, 10000]', $visSizes === $expectedSizes);
 
-        // 3. Determinism & Generation Invariants Test
+        // 3. Generator Source Code Remediation Check: No pseudo-error bar whisker logic
+        $figGenCode = (string)file_get_contents($repoRoot . '/experiments/bin/generate_evidence_figures.php');
+        $assert('Figure generator does not contain median ± IQR/2 whisker logic in F1', !str_contains($figGenCode, '$yTop = $plotBottom - (min($maxY, $med + $halfIqr)'));
+        $assert('Figure generator does not contain median ± IQR/2 whisker logic in F5/F6', !str_contains($figGenCode, '$yTop = $plotBottom - (min($maxY, $val + $halfIqr)'));
+
+        // 4. Determinism & Generation Invariants Test
         $tmpDir1 = sys_get_temp_dir() . '/fim_fig_test1_' . bin2hex(random_bytes(4));
         $tmpDir2 = sys_get_temp_dir() . '/fim_fig_test2_' . bin2hex(random_bytes(4));
 
@@ -96,11 +99,26 @@ final class Phase4EvidenceTest
                 $assert("Figure {$id} contains valid viewBox 1200 800", str_contains($svgContent, 'viewBox="0 0 1200 800"'));
             }
 
+            // Figure F1 Subtitle & X-axis Annotation Check
+            $f1Svg = (string)file_get_contents($figFiles1['F1']);
+            $assert('Figure F1 subtitle states IQR values are reported numerically', str_contains($f1Svg, 'IQR values are reported numerically.'));
+            $assert('Figure F1 contains explicit min count label (min count=2,844)', str_contains($f1Svg, '(min count=2,844)'));
+
+            // Figure F2 Terminology Check
+            $f2Svg = (string)file_get_contents($figFiles1['F2']);
+            $assert('Figure F2 subtitle says Evaluated for Support', str_contains($f2Svg, 'Evaluated for Support'));
+
             // Figure F4 All-Support Coverage Check
             $f4Svg = (string)file_get_contents($figFiles1['F4']);
             foreach ($expectedSupports as $sup) {
                 $assert("Figure F4 explicitly renders facet for support {$sup}", str_contains($f4Svg, "min_support = {$sup}"));
             }
+
+            // Figure F5 & F6 Subtitle Check
+            $f5Svg = (string)file_get_contents($figFiles1['F5']);
+            $assert('Figure F5 subtitle states IQR values are reported numerically', str_contains($f5Svg, 'IQR values are reported numerically.'));
+            $f6Svg = (string)file_get_contents($figFiles1['F6']);
+            $assert('Figure F6 subtitle states IQR values are reported numerically', str_contains($f6Svg, 'IQR values are reported numerically.'));
 
             // Table Determinism & Row Count Checks
             foreach ($tabFiles1 as $id => $path1) {

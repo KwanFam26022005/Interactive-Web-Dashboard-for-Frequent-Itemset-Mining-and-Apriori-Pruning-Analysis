@@ -65,7 +65,7 @@ class EvidenceFigureGenerator
         $builder = new SvgChartBuilder(
             1200, 800,
             'Figure F1: Apriori Execution Time vs. Minimum Support (RQ1)',
-            'Mushroom Dataset (N = 8,124 transactions) | Median of 10 formal repetitions; vertical bars show IQR dispersion.'
+            'Mushroom Dataset (N = 8,124 transactions) | Median of 10 formal repetitions; IQR values are reported numerically.'
         );
 
         $plotLeft = 140;
@@ -76,7 +76,7 @@ class EvidenceFigureGenerator
         $plotHeight = $plotBottom - $plotTop;
 
         $maxY = 16000.0;
-        $supports = array_map(fn($d) => (float)$d['min_support'], $supportData); // [0.35, 0.40, 0.45, 0.50, 0.60]
+        $supports = array_map(fn($d) => (float)$d['min_support'], $supportData);
         $nPoints = count($supports);
 
         // Grid lines and Y-axis ticks (0 to 16,000 ms)
@@ -98,15 +98,16 @@ class EvidenceFigureGenerator
             $med = (float)$row['median_runtime_ms'];
             $iqr = (float)$row['iqr_runtime_ms'];
             $yPos = $plotBottom - ($med / $maxY) * $plotHeight;
-            $points[] = [$xPos, $yPos, $med, $iqr, $row['min_support']];
+            $reqCount = (int)ceil((float)$row['min_support'] * 8124);
+            $points[] = [$xPos, $yPos, $med, $iqr, $row['min_support'], $reqCount];
 
             // X-axis ticks
             $builder->addRaw(sprintf('<line x1="%.1f" y1="%d" x2="%.1f" y2="%d" stroke="#94a3b8" stroke-width="1.5" />', $xPos, $plotBottom, $xPos, $plotBottom + 6));
             $builder->addRaw(sprintf('<text x="%.1f" y="%d" text-anchor="middle" class="axis-label">%.2f</text>', $xPos, $plotBottom + 24, (float)$row['min_support']));
-            $builder->addRaw(sprintf('<text x="%.1f" y="%d" text-anchor="middle" style="font-size:10px;fill:#64748b;">(s=%.0f)</text>', $xPos, $plotBottom + 38, ceil((float)$row['min_support'] * 8124)));
+            $builder->addRaw(sprintf('<text x="%.1f" y="%d" text-anchor="middle" style="font-size:10px;fill:#64748b;">(min count=%s)</text>', $xPos, $plotBottom + 38, number_format($reqCount)));
         }
 
-        // Draw Line connecting points
+        // Draw Line connecting median points
         $pathD = [];
         foreach ($points as $idx => $pt) {
             $cmd = $idx === 0 ? 'M' : 'L';
@@ -114,32 +115,24 @@ class EvidenceFigureGenerator
         }
         $builder->addRaw(sprintf('<path d="%s" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />', implode(' ', $pathD)));
 
-        // Draw Error Bars, Markers, and Labels
+        // Draw Markers and Numerical Annotations (No pseudo-whiskers)
         foreach ($points as $pt) {
-            [$x, $y, $med, $iqr, $sup] = $pt;
-            $halfIqr = $iqr / 2.0;
-            $yTop = $plotBottom - (min($maxY, $med + $halfIqr) / $maxY) * $plotHeight;
-            $yBot = $plotBottom - (max(0.0, $med - $halfIqr) / $maxY) * $plotHeight;
-
-            // Error Bar
-            $builder->addRaw(sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#1d4ed8" stroke-width="2" />', $x, $yTop, $x, $yBot));
-            $builder->addRaw(sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#1d4ed8" stroke-width="2" />', $x - 6, $yTop, $x + 6, $yTop));
-            $builder->addRaw(sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#1d4ed8" stroke-width="2" />', $x - 6, $yBot, $x + 6, $yBot));
+            [$x, $y, $med, $iqr, $sup, $reqCount] = $pt;
 
             // Marker
             $builder->addRaw(sprintf('<circle cx="%.1f" cy="%.1f" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3" />', $x, $y));
 
-            // Data Label
-            $labelOffset = $med > 8000 ? 16 : -14;
+            // Data Labels: Exact Median and Numeric IQR Annotation
+            $labelOffset = $med > 8000 ? 20 : -22;
             $builder->addRaw(sprintf('<text x="%.1f" y="%.1f" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">%s ms</text>', $x, $y + $labelOffset, number_format($med, 1)));
-            $builder->addRaw(sprintf('<text x="%.1f" y="%.1f" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: %.1f)</text>', $x, $y + $labelOffset + ($labelOffset > 0 ? 13 : -11), $iqr));
+            $builder->addRaw(sprintf('<text x="%.1f" y="%.1f" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: %.1f ms)</text>', $x, $y + $labelOffset + ($labelOffset > 0 ? 14 : -12), $iqr));
         }
 
         // Legend box
-        $builder->addRaw('<rect x="860" y="140" width="230" height="60" fill="#f8fafc" stroke="#cbd5e1" rx="4" />');
-        $builder->addRaw('<line x1="880" y1="170" x2="920" y2="170" stroke="#2563eb" stroke-width="3" />');
-        $builder->addRaw('<circle cx="900" cy="170" r="5" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.5" />');
-        $builder->addRaw('<text x="935" y="174" class="legend-text">Apriori Median Runtime</text>');
+        $builder->addRaw('<rect x="830" y="140" width="260" height="60" fill="#f8fafc" stroke="#cbd5e1" rx="4" />');
+        $builder->addRaw('<line x1="850" y1="170" x2="890" y2="170" stroke="#2563eb" stroke-width="3" />');
+        $builder->addRaw('<circle cx="870" cy="170" r="5" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.5" />');
+        $builder->addRaw('<text x="905" y="174" class="legend-text">Apriori Median Runtime</text>');
 
         $file = $this->outputDir . '/F1_apriori_runtime_vs_support.svg';
         file_put_contents($file, $builder->render());
@@ -154,7 +147,7 @@ class EvidenceFigureGenerator
         $builder = new SvgChartBuilder(
             1200, 800,
             'Figure F2: Candidate Search Space Volume vs. Minimum Support (RQ1 / RQ2)',
-            'Mushroom Dataset | Total candidates generated vs. evaluated in database vs. pruned by Apriori property.'
+            'Mushroom Dataset | Comparison of Candidates Generated, Evaluated for Support, and Pruned.'
         );
 
         $plotLeft = 140;
@@ -197,7 +190,7 @@ class EvidenceFigureGenerator
                 'shape' => 'circle',
             ],
             [
-                'name' => 'Candidates Evaluated',
+                'name' => 'Candidates Evaluated for Support',
                 'field' => 'candidates_evaluated',
                 'color' => '#0d9488',
                 'dash' => '6,4',
@@ -244,19 +237,19 @@ class EvidenceFigureGenerator
         }
 
         // Legend
-        $builder->addRaw('<rect x="740" y="150" width="360" height="95" fill="#f8fafc" stroke="#cbd5e1" rx="4" />');
+        $builder->addRaw('<rect x="710" y="150" width="390" height="95" fill="#f8fafc" stroke="#cbd5e1" rx="4" />');
         $ly = 175;
         foreach ($series as $s) {
             $dashAttr = $s['dash'] !== '' ? sprintf('stroke-dasharray="%s"', $s['dash']) : '';
-            $builder->addRaw(sprintf('<line x1="760" y1="%d" x2="800" y2="%d" stroke="%s" stroke-width="2.5" %s />', $ly, $ly, $s['color'], $dashAttr));
+            $builder->addRaw(sprintf('<line x1="730" y1="%d" x2="770" y2="%d" stroke="%s" stroke-width="2.5" %s />', $ly, $ly, $s['color'], $dashAttr));
             if ($s['shape'] === 'circle') {
-                $builder->addRaw(sprintf('<circle cx="780" cy="%d" r="4.5" fill="%s" />', $ly, $s['color']));
+                $builder->addRaw(sprintf('<circle cx="750" cy="%d" r="4.5" fill="%s" />', $ly, $s['color']));
             } elseif ($s['shape'] === 'square') {
-                $builder->addRaw(sprintf('<rect x="775.5" y="%d" width="9" height="9" fill="%s" />', $ly - 4.5, $s['color']));
+                $builder->addRaw(sprintf('<rect x="745.5" y="%d" width="9" height="9" fill="%s" />', $ly - 4.5, $s['color']));
             } elseif ($s['shape'] === 'triangle') {
-                $builder->addRaw(sprintf('<polygon points="780,%d 775,%d 785,%d" fill="%s" />', $ly - 5, $ly + 4, $ly + 4, $s['color']));
+                $builder->addRaw(sprintf('<polygon points="750,%d 745,%d 755,%d" fill="%s" />', $ly - 5, $ly + 4, $ly + 4, $s['color']));
             }
-            $builder->addRaw(sprintf('<text x="815" y="%d" class="legend-text">%s</text>', $ly + 4, $s['name']));
+            $builder->addRaw(sprintf('<text x="785" y="%d" class="legend-text">%s</text>', $ly + 4, $s['name']));
             $ly += 24;
         }
 
@@ -267,7 +260,6 @@ class EvidenceFigureGenerator
 
     /**
      * F3 — Pattern Output Volume vs min_support (RQ1).
-     * Two vertically stacked subpanels sharing min_support X-axis.
      */
     private function generateF3(array $supportData): string
     {
@@ -282,7 +274,7 @@ class EvidenceFigureGenerator
         $plotWidth = $plotRight - $plotLeft;
         $nPoints = count($supportData);
 
-        // Panel 1: Frequent Itemsets (Top: y=120 to y=390)
+        // Panel 1: Frequent Itemsets (Top: y=120 to y=380)
         $p1Top = 120;
         $p1Bottom = 380;
         $p1Height = $p1Bottom - $p1Top;
@@ -350,7 +342,6 @@ class EvidenceFigureGenerator
 
     /**
      * F4 — Apriori Pruning Dynamics Across Itemset Levels (RQ2).
-     * Faceted layout covering ALL five formal support thresholds [0.60, 0.50, 0.45, 0.40, 0.35].
      */
     private function generateF4(array $pruningData): string
     {
@@ -401,13 +392,13 @@ class EvidenceFigureGenerator
             $builder->addRaw(sprintf('<rect x="%.1f" y="%d" width="%.1f" height="%d" fill="#f8fafc" stroke="#cbd5e1" rx="4" />', $fLeft, $topY, $fPlotW, $botY - $topY));
             $builder->addRaw(sprintf('<text x="%.1f" y="%d" text-anchor="middle" style="font-size:13px;font-weight:bold;fill:#1e293b;">min_support = %.2f</text>', $fLeft + $fPlotW / 2, $topY + 20, (float)$sup));
 
-            // Upper Panel: Counts (topY+30 to midY-20)
+            // Upper Panel: Counts (topY+35 to midY-20)
             $uTop = $topY + 35;
             $uBot = $midY - 20;
             $uHeight = $uBot - $uTop;
-            $maxC = 700.0; // max count across all facets for comparability
+            $maxC = 700.0;
 
-            // Lower Panel: Pruning Ratio (midY+15 to botY-35)
+            // Lower Panel: Pruning Ratio (midY+20 to botY-35)
             $lTop = $midY + 20;
             $lBot = $botY - 35;
             $lHeight = $lBot - $lTop;
@@ -480,7 +471,7 @@ class EvidenceFigureGenerator
         $builder = new SvgChartBuilder(
             1200, 800,
             'Figure F5: Initial Visualization Render Latency vs. Workload Size (RQ3)',
-            'Scatter Plot Workload | Double-rAF latency metric | Median of 10 formal repetitions with IQR error bars.'
+            'Scatter Plot Workload | Double-rAF latency metric | Median of 10 formal repetitions; IQR values are reported numerically.'
         );
 
         $this->renderVisBenchmarkChart($builder, $visData, 'median_render_ms', 'iqr_render_ms', 'Median Initial Render Latency (ms)', 260.0);
@@ -498,7 +489,7 @@ class EvidenceFigureGenerator
         $builder = new SvgChartBuilder(
             1200, 800,
             'Figure F6: Visualization In-Place Update Latency vs. Workload Size (RQ3)',
-            'Scatter Plot Workload | In-place coordinate update | Median of 10 formal repetitions with IQR error bars.'
+            'Scatter Plot Workload | In-place coordinate update | Median of 10 formal repetitions; IQR values are reported numerically.'
         );
 
         $this->renderVisBenchmarkChart($builder, $visData, 'median_update_ms', 'iqr_update_ms', 'Median Data Update Latency (ms)', 240.0);
@@ -583,16 +574,8 @@ class EvidenceFigureGenerator
 
             foreach ($pts as $p) {
                 [$x, $y, $val, $iqr] = $p;
-                $halfIqr = $iqr / 2.0;
-                $yTop = $plotBottom - (min($maxY, $val + $halfIqr) / $maxY) * $plotHeight;
-                $yBot = $plotBottom - (max(0.0, $val - $halfIqr) / $maxY) * $plotHeight;
 
-                // Error bar
-                $builder->addRaw(sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="1.8" />', $x, $yTop, $x, $yBot, $cfg['color']));
-                $builder->addRaw(sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="1.8" />', $x - 4, $yTop, $x + 4, $yTop, $cfg['color']));
-                $builder->addRaw(sprintf('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" stroke-width="1.8" />', $x - 4, $yBot, $x + 4, $yBot, $cfg['color']));
-
-                // Marker
+                // Marker (No pseudo-whiskers)
                 if ($cfg['shape'] === 'circle') {
                     $builder->addRaw(sprintf('<circle cx="%.1f" cy="%.1f" r="5" fill="%s" stroke="#ffffff" stroke-width="1.5" />', $x, $y, $cfg['color']));
                 } elseif ($cfg['shape'] === 'square') {
@@ -604,7 +587,7 @@ class EvidenceFigureGenerator
                     $builder->addRaw(sprintf('<polygon points="%s %s %s" fill="%s" stroke="#ffffff" stroke-width="1.5" />', $p1, $p2, $p3, $cfg['color']));
                 }
 
-                // Data label
+                // Data label (Median + numeric IQR annotation without whiskers)
                 $offset = ($libName === 'Chart.js' ? 14 : ($libName === 'D3' ? -10 : -10));
                 $builder->addRaw(sprintf('<text x="%.1f" y="%.1f" text-anchor="middle" class="data-label" style="fill:%s;font-weight:bold;">%.1f</text>', $x, $y + $offset, $cfg['color'], $val));
             }
