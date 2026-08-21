@@ -64,6 +64,7 @@ final class ReportConsistencyTest
         $assert('Draft does not claim asynchronous backend Apriori execution', !str_contains($draft, 'Apriori bất đồng bộ') && !str_contains($draft, 'background mining') && !str_contains($draft, 'tiến trình khai phá Apriori bất đồng bộ'));
         $assert('Draft does not reference fictitious class "App\Services\DatasetService"', !str_contains($draft, 'App\Services\DatasetService'));
         $assert('Draft does not reference bare "App\Mining\Apriori"', !str_contains($draft, 'App\Mining\Apriori`') && !str_contains($draft, 'App\Mining\Apriori '));
+        $assert('Draft does not falsely claim full detailed results are returned in response payload', !str_contains($draft, 'Toàn bộ danh sách hàng ngàn tập mục phổ biến và luật kết hợp chi tiết được trả về trực tiếp'));
 
         // 4. Required Implementation Fidelity Inclusions Checks
         $assert('Draft accurately references table "datasets"', str_contains($draft, '`datasets`') || str_contains($draft, 'datasets'));
@@ -79,7 +80,10 @@ final class ReportConsistencyTest
         $assert('Draft references class "MiningController"', str_contains($draft, 'MiningController'));
 
         $assert('Draft explains synchronous backend mining execution', str_contains($draft, 'đồng bộ trong một vòng đời yêu cầu HTTP') || str_contains($draft, 'backend xử lý đồng bộ'));
-        $assert('Draft documents transient full results policy', str_contains($draft, 'Transient vs. Persistent') || str_contains($draft, 'Chính Sách Lưu Trữ Dữ Liệu Rút Gọn'));
+        $assert('Draft documents transient in-memory result policy', str_contains($draft, 'tồn tại tạm thời trong bộ nhớ') || str_contains($draft, 'transient'));
+        $assert('Draft documents Top-N response serialization contract', str_contains($draft, 'Top-N tập mục phổ biến') && str_contains($draft, 'Top-N luật kết hợp'));
+        $assert('Draft documents result_limits truncation metadata', str_contains($draft, 'result_limits'));
+        $assert('Draft documents absence of public run-history API', str_contains($draft, 'không cung cấp API lịch sử'));
 
         // 5. Required Academic Inclusions Checks
         $assert('Draft explicitly includes RQ1', str_contains($draft, 'RQ1'));

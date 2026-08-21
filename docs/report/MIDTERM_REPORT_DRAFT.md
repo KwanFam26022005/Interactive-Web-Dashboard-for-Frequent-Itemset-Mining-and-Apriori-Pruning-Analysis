@@ -216,8 +216,8 @@ Lược đồ cơ sở dữ liệu MySQL 8.4 InnoDB bao gồm 5 bảng chuẩn:
 - `experiment_runs`: Lưu trữ tóm tắt kết quả của lần chạy khai phá thành công (tham số `min_support`, `min_confidence`, thời gian `runtime_ms`, tổng số ứng viên sinh ra, cắt tỉa, đánh giá, số lượng tập mục phổ biến và số luật).
 - `experiment_run_levels`: Lưu trữ số liệu chẩn đoán cắt tỉa chi tiết từng bậc độ dài $k$ (`generated`, `pruned`, `evaluated`, `frequent`, `source`).
 
-**Chính Sách Lưu Trữ Dữ Liệu Rút Gọn (Transient vs. Persistent Policy):**  
-Hệ thống lưu trữ bền vững các tập dữ liệu chuẩn hóa và bản ghi tóm tắt thực nghiệm rút gọn (`experiment_runs`, `experiment_run_levels`). Toàn bộ danh sách hàng ngàn tập mục phổ biến và luật kết hợp chi tiết được trả về trực tiếp trong payload JSON của HTTP response để phục vụ trực quan hóa trên giao diện mà **không** lưu trữ vào các bảng kết quả cồng kềnh trong cơ sở dữ liệu. Phiên bản MVP hiện tại không cung cấp API truy xuất lịch sử kết quả đã lưu (`GET run-history`).
+**Chính Sách Lưu Trữ Dữ Liệu Rút Gọn và Phản Hồi Top-N (Transient vs. Persistent Policy):**  
+Hệ thống lưu trữ bền vững các tập dữ liệu chuẩn hóa và bản ghi tóm tắt thực nghiệm rút gọn (`experiment_runs`, `experiment_run_levels`). Trong vòng đời request, các kết quả khai phá đầy đủ tồn tại tạm thời trong bộ nhớ để phục vụ tính toán số liệu tổng hợp. Phản hồi HTTP chỉ tuần tự hóa Top-N tập mục phổ biến và Top-N luật kết hợp theo tham số `top_n`, cùng các số liệu tổng hợp, dữ liệu ma trận nhiệt giới hạn và thông tin `result_limits` cho biết dữ liệu có bị cắt bớt hay không. Các tập kết quả chi tiết đầy đủ không được lưu bền vững và MVP không cung cấp API lịch sử để truy xuất lại chúng (`GET run-history`).
 
 ### 6.4 Giao Diện Lập Trình Ứng Dụng (HTTP JSON API Surface)
 Theo quyết định kiến trúc ADR-004, hệ thống công khai các endpoint HTTP hẹp:
