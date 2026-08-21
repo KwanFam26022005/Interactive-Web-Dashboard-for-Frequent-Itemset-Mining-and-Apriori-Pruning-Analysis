@@ -161,16 +161,19 @@ class VisualizationBenchmarkRunner {
                     await VisualizationBenchmarkRunner.settle(100);
                     let instance = null;
                     try {
-                        instance = adapter.create(containerElement, workload, this.config);
-                        await VisualizationBenchmarkRunner.settle(100);
-                        adapter.update(instance, workload, this.config);
-                        await VisualizationBenchmarkRunner.settle(100);
+                        await VisualizationBenchmarkRunner.measureLatency(() => {
+                            instance = adapter.create(containerElement, workload, this.config);
+                        });
+                        await VisualizationBenchmarkRunner.measureLatency(() => {
+                            adapter.update(instance, workload, this.config);
+                        });
                     } finally {
                         if (instance) {
                             try { adapter.destroy(instance); } catch (e) {}
                             instance = null;
                         }
                         containerElement.innerHTML = '';
+                        await VisualizationBenchmarkRunner.settle(100);
                     }
                 }
             }
@@ -228,9 +231,7 @@ class VisualizationBenchmarkRunner {
                     obsRecord.status = 'COUNT_MISMATCH';
                     obsRecord.failure_code = `Expected ${item.workload_size} marks, found ${renderedCount}`;
                 } else {
-                    await VisualizationBenchmarkRunner.settle(100);
-
-                    // Update Render Timing
+                    // In-Place Update Timing (No intermediate settle delay)
                     const updateMs = await VisualizationBenchmarkRunner.measureLatency(() => {
                         adapter.update(instance, workload, this.config);
                     });

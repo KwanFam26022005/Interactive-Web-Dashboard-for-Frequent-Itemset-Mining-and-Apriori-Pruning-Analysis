@@ -1,7 +1,7 @@
 /**
  * In-Browser Deterministic Workload Generator for RQ3 Visualization Benchmark.
  *
- * Implements Mulberry32 PRNG with seed 0xDEADBEEF (3735928559).
+ * Implements literal Mulberry32 PRNG starting from exact frozen initial state 0xDEADBEEF (3735928559).
  */
 class WorkloadGenerator {
     static SEED = 0xDEADBEEF; // 3735928559
@@ -17,7 +17,7 @@ class WorkloadGenerator {
     }
 
     static generateWorkloadForSize(n) {
-        const stateRef = { state: ((WorkloadGenerator.SEED ^ Math.imul(n, 2654435761)) >>> 0) };
+        const stateRef = { state: (WorkloadGenerator.SEED >>> 0) };
 
         const basePoints = [];
         for (let i = 1; i <= n; i++) {

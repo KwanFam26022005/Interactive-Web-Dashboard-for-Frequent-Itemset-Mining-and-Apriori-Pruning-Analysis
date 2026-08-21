@@ -7,6 +7,7 @@ namespace App\Tests\Unit;
 use App\Experiments\ConfigValidator;
 use App\Experiments\LineageHelper;
 use App\Experiments\MiningResultProcessor;
+use App\Experiments\Phase4EvidenceValidator;
 use App\Experiments\VisualizationResultProcessor;
 use App\Experiments\WorkloadGenerator;
 use RuntimeException;
@@ -79,15 +80,36 @@ final class VisualizationBenchmarkTest
         $scheduleSeed = $visCfgData['run_order']['seed'] ?? 0;
         $assert('Workload generator is Mulberry32', ($visCfgData['workloads']['generator'] ?? '') === 'Mulberry32');
         $assert('Workload seed is 0xDEADBEEF', $workloadSeed === '0xDEADBEEF');
+        $assert('WorkloadGenerator::SEED is 0xDEADBEEF (3735928559)', WorkloadGenerator::SEED === 0xDEADBEEF && WorkloadGenerator::SEED === 3735928559);
         $assert('Schedule seed is 42', $scheduleSeed === 42);
         $assert('Workload seed != Schedule seed', $workloadSeed !== (string)$scheduleSeed && ($visCfgData['workloads']['seed_decimal'] ?? 0) !== $scheduleSeed);
 
-        // 5. Single Workload Artifact & Legacy File Prohibition
+        // 5. Mulberry32 Known Vectors & Prefix Property
+        $testState = 0xDEADBEEF;
+        $knownFloats = [0.941370, 0.267196, 0.772033, 0.358161, 0.475542, 0.838231];
+        for ($k = 0; $k < count($knownFloats); $k++) {
+            $actFloat = WorkloadGenerator::nextFloat($testState);
+            $assert("Mulberry32 known vector output {$k} matches {$knownFloats[$k]}", abs($actFloat - $knownFloats[$k]) < 0.000001, "Got {$actFloat}");
+        }
+
+        $w100 = WorkloadGenerator::generateWorkloadForSize(100);
+        $w1000 = WorkloadGenerator::generateWorkloadForSize(1000);
+        $w5000 = WorkloadGenerator::generateWorkloadForSize(5000);
+        $w10000 = WorkloadGenerator::generateWorkloadForSize(10000);
+
+        $assert('N=100 Point 1 is {id:1, x:0.94137, y:0.267196}', $w100['base_points'][0]['id'] === 1 && abs($w100['base_points'][0]['x'] - 0.941370) < 0.000001 && abs($w100['base_points'][0]['y'] - 0.267196) < 0.000001);
+        $assert('N=100 Point 2 is {id:2, x:0.772033, y:0.358161}', $w100['base_points'][1]['id'] === 2 && abs($w100['base_points'][1]['x'] - 0.772033) < 0.000001 && abs($w100['base_points'][1]['y'] - 0.358161) < 0.000001);
+
+        $assert('N=100 base points are identical prefix of N=1000', array_slice($w1000['base_points'], 0, 100) === $w100['base_points']);
+        $assert('N=1000 base points are identical prefix of N=5000', array_slice($w5000['base_points'], 0, 1000) === $w1000['base_points']);
+        $assert('N=5000 base points are identical prefix of N=10000', array_slice($w10000['base_points'], 0, 5000) === $w5000['base_points']);
+
+        // 6. Single Workload Artifact & Legacy File Prohibition
         $canonicalWorkloadFile = $visDir . '/workload_data.json';
         $assert('Single canonical workload_data.json artifact exists', is_file($canonicalWorkloadFile));
         $assert('Formal config does NOT contain legacy workload files map', !isset($visCfgData['workloads']['files']));
 
-        // 6. Workload Invariants: 50% Displacement, Coordinate Bounds, Point Identity
+        // 7. Workload Invariants: 50% Displacement, Coordinate Bounds, Point Identity
         $bundle = json_decode((string)file_get_contents($canonicalWorkloadFile), true);
         $assert('Canonical bundle has schema_version 1.0.0', ($bundle['schema_version'] ?? '') === '1.0.0');
         $assert('Canonical bundle generator is Mulberry32', ($bundle['generator'] ?? '') === 'Mulberry32');
@@ -127,6 +149,8 @@ final class VisualizationBenchmarkTest
                     $identicalCount++;
                 } else {
                     $displacedCount++;
+                    // Invariant: x must remain identical, only y is displaced
+                    $assert("Point {$base['id']} preserves x coordinate on update in N={$size}", $base['x'] === $update['x']);
                     // Check displacement formula: y_i <- round(fmod(y_i + 0.1, 1.0), 6)
                     $expectedY = round(fmod($base['y'] + 0.1, 1.0), 6);
                     $assert("Point {$base['id']} correctly displaced via y+0.1 mod 1.0 in N={$size}", abs($update['y'] - $expectedY) < 0.00001);
@@ -138,14 +162,28 @@ final class VisualizationBenchmarkTest
             $assert("Workload N={$size} has exactly 50% (N/2) identical points ({$identicalCount})", $identicalCount === ($size / 2));
         }
 
-        // 7. Settle Contract, GC Policy & Timing Boundary in Harness
-        $assert('benchmark.js specifies 100 ms settle delay', str_contains($benchmarkJs, 'settle(100)') || str_contains($benchmarkJs, 'settle(ms = 100)'));
+        // 8. Settle Contract, GC Policy & Timing Boundary in Harness
+        $assert('benchmark.js specifies 100 ms inter-trial settle delay', str_contains($benchmarkJs, 'settle(100)') || str_contains($benchmarkJs, 'settle(ms = 100)'));
+        // Settle must NOT be called between initial render measurement and update measurement
+        $hasSettleBetweenRenderAndUpdate = (bool)preg_match('/obsRecord\.render_ms\s*=\s*renderMs;[\s\S]*?await\s+VisualizationBenchmarkRunner\.settle[\s\S]*?obsRecord\.update_ms/i', $benchmarkJs);
+        $assert('benchmark.js does NOT insert settle(100) between render and update measurements', !$hasSettleBetweenRenderAndUpdate);
+
         $assert('benchmark.js contains NO forced GC calls (window.gc)', !str_contains($benchmarkJs, 'window.gc') && !str_contains($benchmarkJs, 'global.gc'));
         $assert('benchmark.js uses performance.now() and double-rAF boundary', str_contains($benchmarkJs, 'performance.now()') && str_contains($benchmarkJs, 'requestAnimationFrame'));
         $assert('Warmup iterations = 2 in config', ($visCfgData['warmup_iterations'] ?? 0) === 2);
         $assert('Formal repetitions = 10 in config', ($visCfgData['formal_repetitions'] ?? 0) === 10);
 
-        // 8. Result Processor: Zero-Valid Group & Contract Hardening
+        // 9. Evidence Validator Classification Tests
+        $miningErrs = Phase4EvidenceValidator::validateMiningEvidence($repoRoot);
+        $assert('Phase4EvidenceValidator reports 0 errors on canonical mining evidence', $miningErrs === [], implode('; ', $miningErrs));
+
+        $diagErrs = Phase4EvidenceValidator::validateDiagnosticArchive($repoRoot);
+        $assert('Phase4EvidenceValidator reports 0 errors on historical diagnostic archive', $diagErrs === [], implode('; ', $diagErrs));
+
+        $rq3Status = Phase4EvidenceValidator::checkCanonicalRq3Status($repoRoot);
+        $assert('Phase4EvidenceValidator classifies canonical RQ3 status as REPLACEMENT_PENDING', ($rq3Status['status'] ?? '') === 'REPLACEMENT_PENDING');
+
+        // 10. Result Processor: Zero-Valid Group & Contract Hardening
         $tmpDir = sys_get_temp_dir() . '/fim_vis_test_' . bin2hex(random_bytes(4));
         mkdir($tmpDir, 0777, true);
 

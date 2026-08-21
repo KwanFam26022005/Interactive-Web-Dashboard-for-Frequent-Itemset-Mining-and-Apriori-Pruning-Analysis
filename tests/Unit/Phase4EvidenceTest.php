@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Unit;
 
 use App\Experiments\MiningResultProcessor;
+use App\Experiments\Phase4EvidenceValidator;
 use EvidenceFigureGenerator;
 use EvidenceTableGenerator;
-use Phase4EvidenceValidator;
 
 final class Phase4EvidenceTest
 {
@@ -39,11 +39,16 @@ final class Phase4EvidenceTest
 
         require_once $repoRoot . '/experiments/bin/generate_evidence_figures.php';
         require_once $repoRoot . '/experiments/bin/generate_evidence_tables.php';
-        require_once $repoRoot . '/experiments/bin/validate_phase4_evidence.php';
 
-        // 1. Source Evidence Hash Preservation (All 6 canonical files)
-        $errors = Phase4EvidenceValidator::validate($repoRoot);
-        $assert('Phase 4 evidence source validator passes with 0 errors', $errors === [], implode('; ', $errors));
+        // 1. Source Evidence Mining Validation & Diagnostic Archive Preservation
+        $miningErrors = Phase4EvidenceValidator::validateMiningEvidence($repoRoot);
+        $assert('Canonical mining evidence validator passes with 0 errors', $miningErrors === [], implode('; ', $miningErrors));
+
+        $diagErrors = Phase4EvidenceValidator::validateDiagnosticArchive($repoRoot);
+        $assert('Historical diagnostic archive validator passes with 0 errors', $diagErrors === [], implode('; ', $diagErrors));
+
+        $rq3Status = Phase4EvidenceValidator::checkCanonicalRq3Status($repoRoot);
+        $assert('Canonical RQ3 replacement status is REPLACEMENT_PENDING', $rq3Status['status'] === 'REPLACEMENT_PENDING');
 
         // 2. Processed-Only Input Policy Check
         $supportData = MiningResultProcessor::readCsv($processedDir . '/mushroom_support_summary.csv');
