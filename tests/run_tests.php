@@ -603,6 +603,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 5A Midterm Report Consistency Tests\n";
+echo "========================================\n\n";
+
+try {
+    $p5aRes = \App\Tests\Unit\ReportConsistencyTest::run();
+    foreach ($p5aRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $p5aRes['passed'];
+    $failed += $p5aRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ReportConsistencyTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 

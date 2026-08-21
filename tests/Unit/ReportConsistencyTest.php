@@ -1,0 +1,89 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Unit;
+
+final class ReportConsistencyTest
+{
+    /**
+     * @return array{passed: int, failed: int, results: list<string>}
+     */
+    public static function run(): array
+    {
+        $passed = 0;
+        $failed = 0;
+        $results = [];
+        $assert = static function (string $name, bool $condition, string $message = '') use (
+            &$passed,
+            &$failed,
+            &$results
+        ): void {
+            if ($condition) {
+                $passed++;
+                $results[] = "[PASS] {$name}";
+                return;
+            }
+
+            $failed++;
+            $results[] = "[FAIL] {$name}" . ($message === '' ? '' : ": {$message}");
+        };
+
+        $repoRoot = dirname(__DIR__, 2);
+        $draftPath = $repoRoot . '/docs/report/MIDTERM_REPORT_DRAFT.md';
+        $outlinePath = $repoRoot . '/docs/report/MIDTERM_REPORT_OUTLINE.md';
+        $mapPath = $repoRoot . '/docs/report/REPORT_EVIDENCE_MAP.md';
+        $refPath = $repoRoot . '/docs/report/REPORT_REFERENCES.md';
+
+        // 1. Check all required report documents exist
+        $assert('MIDTERM_REPORT_DRAFT.md exists and is readable', is_file($draftPath));
+        $assert('MIDTERM_REPORT_OUTLINE.md exists and is readable', is_file($outlinePath));
+        $assert('REPORT_EVIDENCE_MAP.md exists and is readable', is_file($mapPath));
+        $assert('REPORT_REFERENCES.md exists and is readable', is_file($refPath));
+
+        $draft = is_file($draftPath) ? (string)file_get_contents($draftPath) : '';
+        $wordCount = str_word_count(strip_tags($draft));
+        $assert('Draft has substantial academic content (> 2,500 words)', $wordCount >= 2500, "Actual word count: {$wordCount}");
+
+        // 2. Forbidden Overclaims Checks
+        $assert('Draft does not contain "super-linear" claim', !str_contains(strtolower($draft), 'super-linear'));
+        $assert('Draft does not contain "siêu tuyến tính" claim', !str_contains(strtolower($draft), 'siêu tuyến tính'));
+        $assert('Draft does not contain "indistinguishable visual responsiveness"', !str_contains(strtolower($draft), 'indistinguishable visual responsiveness'));
+        $assert('Draft does not assert positive "GPU completion" as metric name', !str_contains($draft, 'thước đo GPU completion') && !str_contains($draft, 'thước đo là GPU completion'));
+        $assert('Draft does not assert positive "presentation completion" as metric name', !str_contains($draft, 'thước đo presentation completion') && !str_contains($draft, 'thước đo là presentation completion'));
+        $assert('Draft does not claim pruning speedup in percent', !str_contains($draft, 'chạy nhanh hơn 29.28%') && !str_contains($draft, 'tăng tốc 29.28%'));
+        $assert('Draft does not claim FP-Growth was implemented', !str_contains($draft, 'đã hiện thực hóa FP-Growth') && !str_contains($draft, 'hiện thực FP-Growth trong dự án này'));
+
+        // 3. Required Academic Inclusions Checks
+        $assert('Draft explicitly includes RQ1', str_contains($draft, 'RQ1'));
+        $assert('Draft explicitly includes RQ2', str_contains($draft, 'RQ2'));
+        $assert('Draft explicitly includes RQ3', str_contains($draft, 'RQ3'));
+
+        $assert('Draft transparently discloses pre-formal support matrix revision', str_contains($draft, '0.20, 0.15, 0.10, 0.075, 0.05') && str_contains($draft, '0.60, 0.50, 0.45, 0.40, 0.35'));
+
+        $assert('Draft references Figure F1', str_contains($draft, 'F1_apriori_runtime_vs_support.svg'));
+        $assert('Draft references Figure F2', str_contains($draft, 'F2_candidate_volume_vs_support.svg'));
+        $assert('Draft references Figure F3', str_contains($draft, 'F3_pattern_output_vs_support.svg'));
+        $assert('Draft references Figure F4', str_contains($draft, 'F4_pruning_dynamics_per_level.svg'));
+        $assert('Draft references Figure F5', str_contains($draft, 'F5_visualization_initial_render.svg'));
+        $assert('Draft references Figure F6', str_contains($draft, 'F6_visualization_update.svg'));
+
+        $assert('Draft references Table T1', str_contains($draft, 'Bảng T1') || str_contains($draft, 'Table T1'));
+        $assert('Draft references Table T2', str_contains($draft, 'Bảng T2') || str_contains($draft, 'Table T2'));
+        $assert('Draft references Table T2b', str_contains($draft, 'Bảng T2b') || str_contains($draft, 'Table T2b'));
+        $assert('Draft references Table T3', str_contains($draft, 'Bảng T3') || str_contains($draft, 'Table T3'));
+
+        $assert('Draft names UCI Mushroom dataset and agaricus-lepiota.data', str_contains($draft, 'UCI Mushroom') && str_contains($draft, 'agaricus-lepiota.data'));
+        $assert('Draft documents transaction count 8,124 and 119 items', str_contains($draft, '8,124') && str_contains($draft, '119'));
+
+        $assert('Draft includes single dataset limitation', str_contains($draft, 'Tập Dữ Liệu Đơn Lẻ') || str_contains($draft, 'tập dữ liệu đơn'));
+        $assert('Draft documents frame quantization limitation', str_contains($draft, 'Lượng Tử Hóa Khung Hình') || str_contains($draft, 'frame-quantized'));
+        $assert('Draft documents browser GC limitation', str_contains($draft, 'Thu Gom Rác') || str_contains($draft, 'Garbage Collection'));
+
+        return [
+            'passed' => $passed,
+            'failed' => $failed,
+            'results' => $results,
+        ];
+    }
+}
