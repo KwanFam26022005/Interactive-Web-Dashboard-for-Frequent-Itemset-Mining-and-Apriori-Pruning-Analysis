@@ -83,9 +83,9 @@ Tài liệu này tổng hợp danh mục tài liệu tham khảo được sử d
    **Phân loại:** `SOFTWARE`  
    **Nội dung hỗ trợ:** Thư viện đối chứng Canvas trong thực nghiệm RQ3.
 
-10. **[10] The Apache Software Foundation (2025).**  
+10. **[10] The Apache Software Foundation (2024).**  
     *Apache ECharts: An Open Source JavaScript Visualization Library (Version 5.6.0).*  
-    **Release Date:** January 2025  
+    **Release Date:** December 28, 2024  
     **License:** Apache License 2.0  
     **Authoritative Project Source:** [https://echarts.apache.org/](https://echarts.apache.org/) | GitHub: [https://github.com/apache/echarts](https://github.com/apache/echarts)  
     **Distribution Package:** `npm:echarts@5.6.0`  

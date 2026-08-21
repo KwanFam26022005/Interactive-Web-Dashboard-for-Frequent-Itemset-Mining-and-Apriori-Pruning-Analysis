@@ -89,6 +89,15 @@ final class ReportReferenceConsistencyTest
         $assert('No incorrect Bootstrap Authors (2024) in references', !str_contains($refs, 'Bootstrap Authors (2024)'));
         $assert('Bootstrap 5.3.8 is dated 2025 in references', str_contains($refs, 'Bootstrap Authors (2025)'));
 
+        $assert('No incorrect The Apache Software Foundation (2025) in references', !str_contains($refs, 'The Apache Software Foundation (2025)'));
+        $assert('No incorrect The Apache Software Foundation (2025) in draft', !str_contains($draft, 'The Apache Software Foundation (2025)'));
+        $assert('No incorrect January 2025 release date for ECharts in references', !str_contains($refs, 'Release Date: January 2025') && !str_contains($refs, 'Released Jan 2025'));
+        $assert('No incorrect Jan 2025 release date for ECharts in ledger', !str_contains($ledger, 'Released Jan 2025'));
+        $assert('Apache ECharts v5.6.0 is dated 2024 in references', str_contains($refs, 'The Apache Software Foundation (2024)'));
+        $assert('Apache ECharts v5.6.0 is dated 2024 in draft', str_contains($draft, 'The Apache Software Foundation (2024)'));
+        $assert('Apache ECharts v5.6.0 release date December 28, 2024 in references', str_contains($refs, 'December 28, 2024'));
+        $assert('Apache ECharts v5.6.0 release date December 28, 2024 in ledger', str_contains($ledger, 'December 28, 2024'));
+
         $assert('119 items statement distinguishes internal project ingestion representation', str_contains($draft, 'tiếp nhận') || str_contains($draft, 'manifest') || str_contains($draft, 'dataset_manifest.json'));
 
         preg_match_all('/10\.\d{4,9}\/[a-zA-Z0-9._\-]+/u', $refs, $doiMatches);
