@@ -1,0 +1,6 @@
+dataset_name,min_support,min_confidence,n_repeats,n_valid,median_runtime_ms,iqr_runtime_ms,median_rule_runtime_ms,iqr_rule_runtime_ms,candidates_generated,candidates_pruned,candidates_evaluated,frequent_itemsets,rules_count,max_k,pruning_ratio
+Mushroom,0.6,0.75,10,10,523.072,317.164,4.128,5.839,185,11,174,51,223,5,0.059459
+Mushroom,0.5,0.75,10,10,1424.078,238.000,14.869,4.530,336,29,307,153,664,5,0.086310
+Mushroom,0.45,0.75,10,10,3322.764,551.320,53.197,7.821,641,115,526,329,1859,6,0.179407
+Mushroom,0.4,0.75,10,10,5737.617,1270.777,119.218,49.984,1104,280,824,565,3576,7,0.253623
+Mushroom,0.35,0.75,10,10,14047.443,5549.082,389.422,234.485,2131,624,1507,1189,11055,7,0.292820
