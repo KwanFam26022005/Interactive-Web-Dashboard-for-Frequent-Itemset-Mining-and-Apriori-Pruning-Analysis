@@ -31,19 +31,24 @@ final class ReportConsistencyTest
 
         $repoRoot = dirname(__DIR__, 2);
         $draftPath = $repoRoot . '/docs/report/MIDTERM_REPORT_DRAFT.md';
+        $finalPath = $repoRoot . '/docs/report/MIDTERM_REPORT_FINAL.md';
+        $checklistPath = $repoRoot . '/docs/report/SUBMISSION_CHECKLIST.md';
         $outlinePath = $repoRoot . '/docs/report/MIDTERM_REPORT_OUTLINE.md';
         $mapPath = $repoRoot . '/docs/report/REPORT_EVIDENCE_MAP.md';
         $refPath = $repoRoot . '/docs/report/REPORT_REFERENCES.md';
 
         // 1. Check all required report documents exist
         $assert('MIDTERM_REPORT_DRAFT.md exists and is readable', is_file($draftPath));
+        $assert('MIDTERM_REPORT_FINAL.md exists and is readable', is_file($finalPath));
+        $assert('SUBMISSION_CHECKLIST.md exists and is readable', is_file($checklistPath));
         $assert('MIDTERM_REPORT_OUTLINE.md exists and is readable', is_file($outlinePath));
         $assert('REPORT_EVIDENCE_MAP.md exists and is readable', is_file($mapPath));
         $assert('REPORT_REFERENCES.md exists and is readable', is_file($refPath));
 
         $draft = is_file($draftPath) ? (string)file_get_contents($draftPath) : '';
-        $wordCount = str_word_count(strip_tags($draft));
-        $assert('Draft has substantial academic content (> 2,500 words)', $wordCount >= 2500, "Actual word count: {$wordCount}");
+        $final = is_file($finalPath) ? (string)file_get_contents($finalPath) : '';
+        $wordCount = str_word_count(strip_tags($final));
+        $assert('Final report has substantial academic content (> 2,500 words)', $wordCount >= 2500, "Actual word count: {$wordCount}");
 
         // 2. Forbidden Overclaims & Phrasing Checks
         $assert('Draft does not contain "super-linear" claim', !str_contains(strtolower($draft), 'super-linear'));

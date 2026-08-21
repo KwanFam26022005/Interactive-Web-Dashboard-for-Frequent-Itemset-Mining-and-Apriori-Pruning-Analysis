@@ -31,23 +31,30 @@ final class ReportReferenceConsistencyTest
 
         $repoRoot = dirname(__DIR__, 2);
         $draftPath = $repoRoot . '/docs/report/MIDTERM_REPORT_DRAFT.md';
+        $finalPath = $repoRoot . '/docs/report/MIDTERM_REPORT_FINAL.md';
         $refPath = $repoRoot . '/docs/report/REPORT_REFERENCES.md';
         $ledgerPath = $repoRoot . '/docs/report/REFERENCE_VERIFICATION_LEDGER.md';
 
         $assert('MIDTERM_REPORT_DRAFT.md exists', is_file($draftPath));
+        $assert('MIDTERM_REPORT_FINAL.md exists', is_file($finalPath));
         $assert('REPORT_REFERENCES.md exists', is_file($refPath));
         $assert('REFERENCE_VERIFICATION_LEDGER.md exists', is_file($ledgerPath));
 
         $draft = is_file($draftPath) ? (string)file_get_contents($draftPath) : '';
+        $final = is_file($finalPath) ? (string)file_get_contents($finalPath) : '';
         $refs = is_file($refPath) ? (string)file_get_contents($refPath) : '';
         $ledger = is_file($ledgerPath) ? (string)file_get_contents($ledgerPath) : '';
 
         // 1. Placeholder and unresolved tag checks
         $assert('No TODO_CITATION placeholders in draft', !str_contains($draft, 'TODO_CITATION'));
+        $assert('No TODO_CITATION placeholders in final report', !str_contains($final, 'TODO_CITATION'));
         $assert('No citation needed placeholders in draft', !str_contains(strtolower($draft), 'citation needed'));
+        $assert('No citation needed placeholders in final report', !str_contains(strtolower($final), 'citation needed'));
         $assert('No [REF?] placeholders in draft', !str_contains($draft, '[REF?]'));
+        $assert('No [REF?] placeholders in final report', !str_contains($final, '[REF?]'));
         $assert('No [NEEDS_REFERENCE_VERIFICATION] in REPORT_REFERENCES.md', !str_contains($refs, '[NEEDS_REFERENCE_VERIFICATION]'));
         $assert('No [NEEDS_REFERENCE_VERIFICATION] in MIDTERM_REPORT_DRAFT.md', !str_contains($draft, '[NEEDS_REFERENCE_VERIFICATION]'));
+        $assert('No [NEEDS_REFERENCE_VERIFICATION] in MIDTERM_REPORT_FINAL.md', !str_contains($final, '[NEEDS_REFERENCE_VERIFICATION]'));
 
         // 2. Citation coverage across key subsections
         $assert('Theory section contains Agrawal et al. 1993 [1]', str_contains($draft, '[1]'));
