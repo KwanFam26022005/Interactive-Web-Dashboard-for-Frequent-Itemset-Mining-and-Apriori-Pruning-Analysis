@@ -97,7 +97,8 @@ class Phase4EvidenceValidator
             } else {
                 if (($m['schema_version'] ?? '') !== '1.0.0') $errors[] = "Manifest schema_version must be 1.0.0";
                 if (($m['phase'] ?? '') !== 'PHASE_4E') $errors[] = "Manifest phase must be PHASE_4E";
-                if (empty($m['generator_revision']) || strlen((string)$m['generator_revision']) !== 40) {
+                $genRev = $m['lineage']['generator_revision'] ?? $m['generator_revision'] ?? '';
+                if (empty($genRev) || strlen((string)$genRev) !== 40) {
                     $errors[] = "Manifest generator_revision must be a 40-char git SHA";
                 }
             }

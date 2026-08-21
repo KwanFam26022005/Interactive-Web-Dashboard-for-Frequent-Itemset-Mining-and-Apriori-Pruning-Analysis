@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <style>
+    text { font-family: Arial, Helvetica, sans-serif; }
+    .title { font-size: 22px; font-weight: bold; fill: #1e293b; }
+    .subtitle { font-size: 13px; fill: #64748b; }
+    .axis-title { font-size: 14px; font-weight: bold; fill: #334155; }
+    .axis-label { font-size: 12px; fill: #475569; }
+    .legend-text { font-size: 13px; fill: #334155; }
+    .grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 3,3; }
+    .axis-line { stroke: #94a3b8; stroke-width: 1.5; }
+    .data-label { font-size: 11px; font-weight: 500; fill: #334155; }
+  </style>
+  <rect width="1200" height="800" fill="#ffffff" />
+  <text x="60" y="45" class="title">Figure F4: Apriori Pruning Dynamics Across Itemset Levels (RQ2)</text>
+  <text x="60" y="70" class="subtitle">Mushroom Dataset | Candidate volume breakdown (upper) and pruning ratio (lower) for ALL five formal support thresholds.</text>
+  <rect x="680" y="45" width="460" height="50" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+  <rect x="700" y="65" width="12" height="12" fill="#3b82f6" />
+  <text x="718" y="76" style="font-size:12px;fill:#334155;">Generated</text>
+  <rect x="785" y="65" width="12" height="12" fill="#0d9488" />
+  <text x="803" y="76" style="font-size:12px;fill:#334155;">Evaluated</text>
+  <rect x="870" y="65" width="12" height="12" fill="#f59e0b" />
+  <text x="888" y="76" style="font-size:12px;fill:#334155;">Pruned</text>
+  <line x1="945" y1="71" x2="975" y2="71" stroke="#dc2626" stroke-width="2.5" />
+  <text x="983" y="76" style="font-size:12px;fill:#334155;">Pruning Ratio</text>
+  <rect x="100.0" y="120" width="188.0" height="590" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+  <text x="194.0" y="140" text-anchor="middle" style="font-size:13px;font-weight:bold;fill:#1e293b;">min_support = 0.60</text>
+  <rect x="103.0" y="408.1" width="9.5" height="51.9" fill="#3b82f6" />
+  <rect x="113.5" y="408.1" width="9.5" height="51.9" fill="#0d9488" />
+  <rect x="124.1" y="460.0" width="9.5" height="0.0" fill="#f59e0b" />
+  <text x="118.8" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=1</text>
+  <rect x="140.6" y="447.8" width="9.5" height="12.2" fill="#3b82f6" />
+  <rect x="151.1" y="447.8" width="9.5" height="12.2" fill="#0d9488" />
+  <rect x="161.7" y="460.0" width="9.5" height="0.0" fill="#f59e0b" />
+  <text x="156.4" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=2</text>
+  <rect x="178.2" y="450.0" width="9.5" height="10.0" fill="#3b82f6" />
+  <rect x="188.7" y="451.7" width="9.5" height="8.3" fill="#0d9488" />
+  <rect x="199.3" y="458.3" width="9.5" height="1.7" fill="#f59e0b" />
+  <text x="194.0" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=3</text>
+  <rect x="215.8" y="454.3" width="9.5" height="5.7" fill="#3b82f6" />
+  <rect x="226.3" y="456.9" width="9.5" height="3.1" fill="#0d9488" />
+  <rect x="236.9" y="457.4" width="9.5" height="2.6" fill="#f59e0b" />
+  <text x="231.6" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=4</text>
+  <rect x="253.4" y="459.1" width="9.5" height="0.9" fill="#3b82f6" />
+  <rect x="263.9" y="459.6" width="9.5" height="0.4" fill="#0d9488" />
+  <rect x="274.5" y="459.6" width="9.5" height="0.4" fill="#f59e0b" />
+  <text x="269.2" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=5</text>
+  <path d="M 118.8 675.0 L 156.4 675.0 L 194.0 644.6 L 231.6 594.2 L 269.2 587.5" fill="none" stroke="#dc2626" stroke-width="2" />
+  <circle cx="118.8" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="156.4" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="194.0" cy="644.6" r="3.5" fill="#dc2626" />
+  <circle cx="231.6" cy="594.2" r="3.5" fill="#dc2626" />
+  <circle cx="269.2" cy="587.5" r="3.5" fill="#dc2626" />
+  <text x="194.0" y="698" text-anchor="middle" style="font-size:10px;fill:#64748b;">(k=1 singleton, k≥2 join-prune)</text>
+  <rect x="308.0" y="120" width="188.0" height="590" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+  <text x="402.0" y="140" text-anchor="middle" style="font-size:13px;font-weight:bold;fill:#1e293b;">min_support = 0.50</text>
+  <rect x="311.0" y="408.1" width="7.4" height="51.9" fill="#3b82f6" />
+  <rect x="319.4" y="408.1" width="7.4" height="51.9" fill="#0d9488" />
+  <rect x="327.9" y="460.0" width="7.4" height="0.0" fill="#f59e0b" />
+  <text x="323.7" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=1</text>
+  <rect x="342.3" y="426.0" width="7.4" height="34.0" fill="#3b82f6" />
+  <rect x="350.8" y="426.0" width="7.4" height="34.0" fill="#0d9488" />
+  <rect x="359.2" y="460.0" width="7.4" height="0.0" fill="#f59e0b" />
+  <text x="355.0" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=2</text>
+  <rect x="373.7" y="427.3" width="7.4" height="32.7" fill="#3b82f6" />
+  <rect x="382.1" y="432.6" width="7.4" height="27.4" fill="#0d9488" />
+  <rect x="390.6" y="454.8" width="7.4" height="5.2" fill="#f59e0b" />
+  <text x="386.3" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=3</text>
+  <rect x="405.0" y="439.1" width="7.4" height="20.9" fill="#3b82f6" />
+  <rect x="413.4" y="443.0" width="7.4" height="17.0" fill="#0d9488" />
+  <rect x="421.9" y="456.1" width="7.4" height="3.9" fill="#f59e0b" />
+  <text x="417.7" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=4</text>
+  <rect x="436.3" y="453.5" width="7.4" height="6.5" fill="#3b82f6" />
+  <rect x="444.8" y="456.5" width="7.4" height="3.5" fill="#0d9488" />
+  <rect x="453.2" y="456.9" width="7.4" height="3.1" fill="#f59e0b" />
+  <text x="449.0" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=5</text>
+  <rect x="467.7" y="459.6" width="7.4" height="0.4" fill="#3b82f6" />
+  <rect x="476.1" y="460.0" width="7.4" height="0.0" fill="#0d9488" />
+  <rect x="484.6" y="459.6" width="7.4" height="0.4" fill="#f59e0b" />
+  <text x="480.3" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=6</text>
+  <path d="M 323.7 675.0 L 355.0 675.0 L 386.3 647.0 L 417.7 642.2 L 449.0 593.3 L 480.3 500.0" fill="none" stroke="#dc2626" stroke-width="2" />
+  <circle cx="323.7" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="355.0" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="386.3" cy="647.0" r="3.5" fill="#dc2626" />
+  <circle cx="417.7" cy="642.2" r="3.5" fill="#dc2626" />
+  <circle cx="449.0" cy="593.3" r="3.5" fill="#dc2626" />
+  <circle cx="480.3" cy="500.0" r="3.5" fill="#dc2626" />
+  <text x="402.0" y="698" text-anchor="middle" style="font-size:10px;fill:#64748b;">(k=1 singleton, k≥2 join-prune)</text>
+  <rect x="516.0" y="120" width="188.0" height="590" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+  <text x="610.0" y="140" text-anchor="middle" style="font-size:13px;font-weight:bold;fill:#1e293b;">min_support = 0.45</text>
+  <rect x="519.0" y="408.1" width="7.4" height="51.9" fill="#3b82f6" />
+  <rect x="527.4" y="408.1" width="7.4" height="51.9" fill="#0d9488" />
+  <rect x="535.9" y="460.0" width="7.4" height="0.0" fill="#f59e0b" />
+  <text x="531.7" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=1</text>
+  <rect x="550.3" y="393.3" width="7.4" height="66.7" fill="#3b82f6" />
+  <rect x="558.8" y="393.3" width="7.4" height="66.7" fill="#0d9488" />
+  <rect x="567.2" y="460.0" width="7.4" height="0.0" fill="#f59e0b" />
+  <text x="563.0" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=2</text>
+  <rect x="581.7" y="383.8" width="7.4" height="76.2" fill="#3b82f6" />
+  <rect x="590.1" y="409.9" width="7.4" height="50.1" fill="#0d9488" />
+  <rect x="598.6" y="433.9" width="7.4" height="26.1" fill="#f59e0b" />
+  <text x="594.3" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=3</text>
+  <rect x="613.0" y="399.4" width="7.4" height="60.6" fill="#3b82f6" />
+  <rect x="621.4" y="418.2" width="7.4" height="41.8" fill="#0d9488" />
+  <rect x="629.9" y="441.3" width="7.4" height="18.7" fill="#f59e0b" />
+  <text x="625.7" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=4</text>
+  <rect x="644.3" y="438.6" width="7.4" height="21.4" fill="#3b82f6" />
+  <rect x="652.8" y="443.9" width="7.4" height="16.1" fill="#0d9488" />
+  <rect x="661.2" y="454.8" width="7.4" height="5.2" fill="#f59e0b" />
+  <text x="657.0" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=5</text>
+  <rect x="675.7" y="457.4" width="7.4" height="2.6" fill="#3b82f6" />
+  <rect x="684.1" y="457.4" width="7.4" height="2.6" fill="#0d9488" />
+  <rect x="692.6" y="460.0" width="7.4" height="0.0" fill="#f59e0b" />
+  <text x="688.3" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=6</text>
+  <path d="M 531.7 675.0 L 563.0 675.0 L 594.3 615.0 L 625.7 620.9 L 657.0 632.1 L 688.3 675.0" fill="none" stroke="#dc2626" stroke-width="2" />
+  <circle cx="531.7" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="563.0" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="594.3" cy="615.0" r="3.5" fill="#dc2626" />
+  <circle cx="625.7" cy="620.9" r="3.5" fill="#dc2626" />
+  <circle cx="657.0" cy="632.1" r="3.5" fill="#dc2626" />
+  <circle cx="688.3" cy="675.0" r="3.5" fill="#dc2626" />
+  <text x="610.0" y="698" text-anchor="middle" style="font-size:10px;fill:#64748b;">(k=1 singleton, k≥2 join-prune)</text>
+  <rect x="724.0" y="120" width="188.0" height="590" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+  <text x="818.0" y="140" text-anchor="middle" style="font-size:13px;font-weight:bold;fill:#1e293b;">min_support = 0.40</text>
+  <rect x="727.0" y="408.1" width="6.0" height="51.9" fill="#3b82f6" />
+  <rect x="734.0" y="408.1" width="6.0" height="51.9" fill="#0d9488" />
+  <rect x="740.9" y="460.0" width="6.0" height="0.0" fill="#f59e0b" />
+  <text x="737.4" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=1</text>
+  <rect x="753.9" y="368.5" width="6.0" height="91.5" fill="#3b82f6" />
+  <rect x="760.8" y="368.5" width="6.0" height="91.5" fill="#0d9488" />
+  <rect x="767.8" y="460.0" width="6.0" height="0.0" fill="#f59e0b" />
+  <text x="764.3" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=2</text>
+  <rect x="780.7" y="320.1" width="6.0" height="139.9" fill="#3b82f6" />
+  <rect x="787.7" y="366.3" width="6.0" height="93.7" fill="#0d9488" />
+  <rect x="794.6" y="413.8" width="6.0" height="46.2" fill="#f59e0b" />
+  <text x="791.1" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=3</text>
+  <rect x="807.6" y="327.1" width="6.0" height="132.9" fill="#3b82f6" />
+  <rect x="814.5" y="379.0" width="6.0" height="81.0" fill="#0d9488" />
+  <rect x="821.5" y="408.1" width="6.0" height="51.9" fill="#f59e0b" />
+  <text x="818.0" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=4</text>
+  <rect x="834.4" y="403.4" width="6.0" height="56.6" fill="#3b82f6" />
+  <rect x="841.4" y="426.0" width="6.0" height="34.0" fill="#0d9488" />
+  <rect x="848.3" y="437.3" width="6.0" height="22.7" fill="#f59e0b" />
+  <text x="844.9" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=5</text>
+  <rect x="861.3" y="452.2" width="6.0" height="7.8" fill="#3b82f6" />
+  <rect x="868.2" y="453.5" width="6.0" height="6.5" fill="#0d9488" />
+  <rect x="875.2" y="458.7" width="6.0" height="1.3" fill="#f59e0b" />
+  <text x="871.7" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=6</text>
+  <rect x="888.1" y="459.6" width="6.0" height="0.4" fill="#3b82f6" />
+  <rect x="895.1" y="459.6" width="6.0" height="0.4" fill="#0d9488" />
+  <rect x="902.0" y="460.0" width="6.0" height="0.0" fill="#f59e0b" />
+  <text x="898.6" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=7</text>
+  <path d="M 737.4 675.0 L 764.3 675.0 L 791.1 617.2 L 818.0 606.7 L 844.9 605.0 L 871.7 645.8 L 898.6 675.0" fill="none" stroke="#dc2626" stroke-width="2" />
+  <circle cx="737.4" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="764.3" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="791.1" cy="617.2" r="3.5" fill="#dc2626" />
+  <circle cx="818.0" cy="606.7" r="3.5" fill="#dc2626" />
+  <circle cx="844.9" cy="605.0" r="3.5" fill="#dc2626" />
+  <circle cx="871.7" cy="645.8" r="3.5" fill="#dc2626" />
+  <circle cx="898.6" cy="675.0" r="3.5" fill="#dc2626" />
+  <text x="818.0" y="698" text-anchor="middle" style="font-size:10px;fill:#64748b;">(k=1 singleton, k≥2 join-prune)</text>
+  <rect x="932.0" y="120" width="188.0" height="590" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+  <text x="1026.0" y="140" text-anchor="middle" style="font-size:13px;font-weight:bold;fill:#1e293b;">min_support = 0.35</text>
+  <rect x="935.0" y="408.1" width="6.0" height="51.9" fill="#3b82f6" />
+  <rect x="942.0" y="408.1" width="6.0" height="51.9" fill="#0d9488" />
+  <rect x="948.9" y="460.0" width="6.0" height="0.0" fill="#f59e0b" />
+  <text x="945.4" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=1</text>
+  <rect x="961.9" y="339.7" width="6.0" height="120.3" fill="#3b82f6" />
+  <rect x="968.8" y="339.7" width="6.0" height="120.3" fill="#0d9488" />
+  <rect x="975.8" y="460.0" width="6.0" height="0.0" fill="#f59e0b" />
+  <text x="972.3" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=2</text>
+  <rect x="988.7" y="214.7" width="6.0" height="245.3" fill="#3b82f6" />
+  <rect x="995.7" y="305.3" width="6.0" height="154.7" fill="#0d9488" />
+  <rect x="1002.6" y="369.4" width="6.0" height="90.6" fill="#f59e0b" />
+  <text x="999.1" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=3</text>
+  <rect x="1015.6" y="177.2" width="6.0" height="282.8" fill="#3b82f6" />
+  <rect x="1022.5" y="283.1" width="6.0" height="176.9" fill="#0d9488" />
+  <rect x="1029.5" y="354.1" width="6.0" height="105.9" fill="#f59e0b" />
+  <text x="1026.0" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=4</text>
+  <rect x="1042.4" y="290.1" width="6.0" height="169.9" fill="#3b82f6" />
+  <rect x="1049.4" y="348.5" width="6.0" height="111.5" fill="#0d9488" />
+  <rect x="1056.3" y="401.6" width="6.0" height="58.4" fill="#f59e0b" />
+  <text x="1052.9" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=5</text>
+  <rect x="1069.3" y="408.6" width="6.0" height="51.4" fill="#3b82f6" />
+  <rect x="1076.2" y="423.4" width="6.0" height="36.6" fill="#0d9488" />
+  <rect x="1083.2" y="445.2" width="6.0" height="14.8" fill="#f59e0b" />
+  <text x="1079.7" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=6</text>
+  <rect x="1096.1" y="453.0" width="6.0" height="7.0" fill="#3b82f6" />
+  <rect x="1103.1" y="455.2" width="6.0" height="4.8" fill="#0d9488" />
+  <rect x="1110.0" y="457.8" width="6.0" height="2.2" fill="#f59e0b" />
+  <text x="1106.6" y="482" text-anchor="middle" style="font-size:11px;fill:#475569;">k=7</text>
+  <path d="M 945.4 675.0 L 972.3 675.0 L 999.1 610.3 L 1026.0 609.5 L 1052.9 614.9 L 1079.7 624.6 L 1106.6 620.3" fill="none" stroke="#dc2626" stroke-width="2" />
+  <circle cx="945.4" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="972.3" cy="675.0" r="3.5" fill="#dc2626" />
+  <circle cx="999.1" cy="610.3" r="3.5" fill="#dc2626" />
+  <circle cx="1026.0" cy="609.5" r="3.5" fill="#dc2626" />
+  <circle cx="1052.9" cy="614.9" r="3.5" fill="#dc2626" />
+  <circle cx="1079.7" cy="624.6" r="3.5" fill="#dc2626" />
+  <circle cx="1106.6" cy="620.3" r="3.5" fill="#dc2626" />
+  <text x="1026.0" y="698" text-anchor="middle" style="font-size:10px;fill:#64748b;">(k=1 singleton, k≥2 join-prune)</text>
+  <text x="60" y="300" text-anchor="middle" transform="rotate(-90 60 300)" class="axis-title">Candidate Volume (k)</text>
+  <text x="60" y="595" text-anchor="middle" transform="rotate(-90 60 595)" class="axis-title">Pruning Ratio (0–100%)</text>
+</svg>

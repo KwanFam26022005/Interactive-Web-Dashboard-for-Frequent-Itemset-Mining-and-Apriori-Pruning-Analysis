@@ -1,0 +1,6 @@
+min_support,candidates_generated,candidates_pruned,candidates_evaluated,pruning_ratio
+0.35,2131,624,1507,0.292820
+0.40,1104,280,824,0.253623
+0.45,641,115,526,0.179407
+0.50,336,29,307,0.086310
+0.60,185,11,174,0.059459
