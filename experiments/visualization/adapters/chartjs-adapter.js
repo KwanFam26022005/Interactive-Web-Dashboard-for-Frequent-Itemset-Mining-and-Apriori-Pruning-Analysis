@@ -35,7 +35,7 @@ const ChartJsAdapter = {
             options: {
                 responsive: false,
                 animation: false,
-                events: [], // Completely disable mouse/interaction event handling
+                events: [], // Disable mouse/interaction event handling
                 parsing: false, // Performance: raw x/y data
                 layout: {
                     padding: { top: 40, right: 40, bottom: 40, left: 50 }
@@ -45,11 +45,14 @@ const ChartJsAdapter = {
                         type: 'linear',
                         min: config.visual_contract.x_domain[0],
                         max: config.visual_contract.x_domain[1],
-                        grid: { display: config.visual_contract.gridlines_enabled ?? false },
+                        grid: {
+                            display: config.visual_contract.gridlines_enabled ?? true,
+                            color: 'rgba(51, 65, 85, 0.5)'
+                        },
                         ticks: {
-                            stepSize: 0.2,
+                            stepSize: 0.25, // Exactly 5 ticks / gridlines: 0.0, 0.25, 0.50, 0.75, 1.00
                             autoSkip: false,
-                            callback: v => Number(v).toFixed(1),
+                            callback: v => Number(v).toFixed(2),
                             font: {
                                 family: fontFamily,
                                 size: fontSize
@@ -60,11 +63,14 @@ const ChartJsAdapter = {
                         type: 'linear',
                         min: config.visual_contract.y_domain[0],
                         max: config.visual_contract.y_domain[1],
-                        grid: { display: config.visual_contract.gridlines_enabled ?? false },
+                        grid: {
+                            display: config.visual_contract.gridlines_enabled ?? true,
+                            color: 'rgba(51, 65, 85, 0.5)'
+                        },
                         ticks: {
-                            stepSize: 0.2,
+                            stepSize: 0.25, // Exactly 5 ticks / gridlines: 0.0, 0.25, 0.50, 0.75, 1.00
                             autoSkip: false,
-                            callback: v => Number(v).toFixed(1),
+                            callback: v => Number(v).toFixed(2),
                             font: {
                                 family: fontFamily,
                                 size: fontSize

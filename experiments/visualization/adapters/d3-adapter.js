@@ -31,14 +31,42 @@ const D3Adapter = {
             .domain(config.visual_contract.y_domain)
             .range([innerHeight, 0]);
 
-        const tickValues = config.visual_contract.axis_tick_values || [0.0, 0.2, 0.4, 0.6, 0.8, 1.0];
+        const gridPositions = config.visual_contract.gridline_positions || [0.0, 0.25, 0.5, 0.75, 1.0];
         const fontFamily = config.visual_contract.axis_font_family || 'Arial';
         const fontSize = config.visual_contract.axis_font_size || 12;
 
+        // Gridlines (when enabled)
+        if (config.visual_contract.gridlines_enabled) {
+            // X Gridlines (vertical lines)
+            g.append('g')
+                .attr('class', 'grid x-grid')
+                .attr('transform', `translate(0,${innerHeight})`)
+                .call(d3.axisBottom(xScale)
+                    .tickValues(gridPositions)
+                    .tickSize(-innerHeight)
+                    .tickFormat('')
+                )
+                .selectAll('line')
+                .style('stroke', '#334155')
+                .style('stroke-opacity', 0.5);
+
+            // Y Gridlines (horizontal lines)
+            g.append('g')
+                .attr('class', 'grid y-grid')
+                .call(d3.axisLeft(yScale)
+                    .tickValues(gridPositions)
+                    .tickSize(-innerWidth)
+                    .tickFormat('')
+                )
+                .selectAll('line')
+                .style('stroke', '#334155')
+                .style('stroke-opacity', 0.5);
+        }
+
         // X Axis
         const xAxis = d3.axisBottom(xScale)
-            .tickValues(tickValues)
-            .tickFormat(d3.format('.1f'));
+            .tickValues(gridPositions)
+            .tickFormat(d3.format('.2f'));
 
         const xAxisG = g.append('g')
             .attr('class', 'x-axis')
@@ -51,8 +79,8 @@ const D3Adapter = {
 
         // Y Axis
         const yAxis = d3.axisLeft(yScale)
-            .tickValues(tickValues)
-            .tickFormat(d3.format('.1f'));
+            .tickValues(gridPositions)
+            .tickFormat(d3.format('.2f'));
 
         const yAxisG = g.append('g')
             .attr('class', 'y-axis')

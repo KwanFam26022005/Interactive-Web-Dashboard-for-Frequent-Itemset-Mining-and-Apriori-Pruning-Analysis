@@ -131,7 +131,7 @@
             margin-top: 12px;
         }
 
-        /* Benchmark Target Area: Fixed 800x600 container */
+        /* Benchmark Target Area: Fixed 800x500 container */
         .chart-stage-wrapper {
             display: flex;
             justify-content: center;
@@ -140,7 +140,7 @@
 
         #chart-stage {
             width: 800px;
-            height: 600px;
+            height: 500px;
             background-color: #ffffff;
             border: 2px solid var(--border-color);
             border-radius: 4px;
@@ -269,7 +269,7 @@
                     worktree_clean: meta.lineage.worktree_clean,
                     config_sha256: meta.provenance_hashes.visualization_benchmark_config_sha256,
                     library_manifest_sha256: meta.provenance_hashes.visualization_library_manifest_sha256,
-                    workload_hashes: meta.provenance_hashes.workloads
+                    workload_sha256: meta.provenance_hashes.workload_data_sha256
                 };
 
                 logToUI(`Git Revision: ${runtimeLineage.git_revision} (clean: ${runtimeLineage.worktree_clean})`);
@@ -313,24 +313,26 @@
                 }
                 logToUI(`Runtime versions verified: ECharts ${echarts.version}, D3 ${d3.version}, Chart.js ${Chart.version}`);
 
-                // 5. Fetch, Hash, and Validate All Materialized Workloads
-                logToUI('Fetching and validating materialized workload JSON files...');
+                // 5. Fetch, Hash, and Validate Canonical Single Workload Bundle
+                logToUI('Fetching and validating canonical workload_data.json bundle...');
+                const wBytes = await fetchPhysicalBytes('workload_data.json');
+                const wSha = await VisualizationBenchmarkRunner.computeSha256(wBytes);
+                if (wSha !== runtimeLineage.workload_sha256) {
+                    throw new Error(`Workload Bundle SHA mismatch: computed ${wSha}, expected ${runtimeLineage.workload_sha256}`);
+                }
+                const wText = new TextDecoder().decode(wBytes);
+                const bundleJson = JSON.parse(wText);
                 verifiedWorkloads = {};
+
                 for (const size of verifiedConfig.workload_sizes) {
-                    const wMeta = verifiedConfig.workloads.files[String(size)];
-                    const wBytes = await fetchPhysicalBytes(`workloads/workload_${size}.json`);
-                    const wSha = await VisualizationBenchmarkRunner.computeSha256(wBytes);
-                    if (wSha !== wMeta.sha256) {
-                        throw new Error(`Workload N=${size} SHA mismatch: computed ${wSha}, expected ${wMeta.sha256}`);
-                    }
-                    const wText = new TextDecoder().decode(wBytes);
-                    const wJson = JSON.parse(wText);
-                    if (wJson.size !== size || wJson.base_points.length !== size || wJson.update_points.length !== size) {
-                        throw new Error(`Workload N=${size} structure invalid: size=${wJson.size}, base=${wJson.base_points.length}, update=${wJson.update_points.length}`);
+                    const wJson = bundleJson.workloads[String(size)] || bundleJson.workloads[size];
+                    if (!wJson || wJson.size !== size || wJson.base_points.length !== size || wJson.update_points.length !== size) {
+                        throw new Error(`Workload N=${size} structure invalid in bundle`);
                     }
                     verifiedWorkloads[size] = wJson;
-                    logToUI(`Workload N=${size} verified: ${wSha.substring(0, 16)}... (points: ${size})`);
+                    logToUI(`Workload N=${size} loaded from bundle (points: ${size})`);
                 }
+                logToUI(`Canonical Workload Bundle verified: ${wSha.substring(0, 16)}...`);
 
                 // 6. Viewport Check for Formal
                 const vpWidth = window.innerWidth;

@@ -7,66 +7,105 @@ namespace App\Experiments;
 /**
  * Deterministic Workload Generator for RQ3 Visualization Benchmark.
  *
- * Uses Numerical Recipes 32-bit LCG (a=1664525, c=1013904223, m=2^32) with seed 42.
+ * Implements Mulberry32 PRNG with seed 0xDEADBEEF (3735928559).
+ * Single canonical artifact: experiments/visualization/workload_data.json
  */
 class WorkloadGenerator
 {
-    public const SEED = 42;
+    public const SEED = 0xDEADBEEF; // 3735928559
     public const WORKLOAD_SIZES = [100, 1000, 5000, 10000];
 
     /**
-     * Advances LCG state and returns a deterministic float in [0, 1).
+     * Advances Mulberry32 state and returns a deterministic float in [0, 1).
      *
      * @param int $state Reference to 32-bit unsigned state
      * @return float Deterministic coordinate in [0, 1) rounded to 6 decimal places
      */
     public static function nextFloat(int &$state): float
     {
-        $state = (1664525 * $state + 1013904223) & 0xFFFFFFFF;
-        return round($state / 4294967296.0, 6);
+        $state = ($state + 0x6D2B79F5) & 0xFFFFFFFF;
+        $t = $state;
+        $t1 = ($t ^ ($t >> 15)) & 0xFFFFFFFF;
+        $t2 = ($t | 1) & 0xFFFFFFFF;
+        $t = (int)fmod((float)$t1 * (float)$t2, 4294967296.0);
+        $t1 = ($t ^ ($t >> 7)) & 0xFFFFFFFF;
+        $t2 = ($t | 61) & 0xFFFFFFFF;
+        $t = ($t + (int)fmod((float)$t1 * (float)$t2, 4294967296.0)) & 0xFFFFFFFF;
+        $res = ($t ^ ($t >> 14)) & 0xFFFFFFFF;
+        return round($res / 4294967296.0, 6);
     }
 
     /**
-     * Generates deterministic workload data for size N.
+     * Generates a single workload dataset for size N.
+     * Exactly 50% (N/2) of points are displaced via y_i <- (y_i + 0.1) mod 1.0.
      *
      * @param int $n Workload point count
-     * @return array{schema_version: string, workload_id: string, size: int, seed: int, domain: array{x: list<int>, y: list<int>}, base_points: list<array{id: int, x: float, y: float}>, update_points: list<array{id: int, x: float, y: float}>}
+     * @return array{size: int, base_points: list<array{id: int, x: float, y: float}>, update_points: list<array{id: int, x: float, y: float}>}
      */
-    public static function generate(int $n): array
+    public static function generateWorkloadForSize(int $n): array
     {
-        // Deterministic stream initialization based on seed and size
-        $baseState = (self::SEED * 1009 + $n) & 0xFFFFFFFF;
-        $updateState = ($baseState * 69069 + 1) & 0xFFFFFFFF;
+        $state = (self::SEED ^ ($n * 2654435761)) & 0xFFFFFFFF;
 
         $basePoints = [];
         for ($i = 1; $i <= $n; $i++) {
             $basePoints[] = [
                 'id' => $i,
-                'x' => self::nextFloat($baseState),
-                'y' => self::nextFloat($baseState),
+                'x' => self::nextFloat($state),
+                'y' => self::nextFloat($state),
             ];
         }
 
+        // Exactly 50% (even-indexed i) displaced: y_i <- round(fmod(y_i + 0.1, 1.0), 6)
         $updatePoints = [];
-        for ($i = 1; $i <= $n; $i++) {
-            $updatePoints[] = [
-                'id' => $i,
-                'x' => self::nextFloat($updateState),
-                'y' => self::nextFloat($updateState),
-            ];
+        for ($i = 0; $i < $n; $i++) {
+            $base = $basePoints[$i];
+            if (($i + 1) % 2 === 0) {
+                $newY = round(fmod($base['y'] + 0.1, 1.0), 6);
+                $updatePoints[] = [
+                    'id' => $base['id'],
+                    'x' => $base['x'],
+                    'y' => $newY,
+                ];
+            } else {
+                $updatePoints[] = [
+                    'id' => $base['id'],
+                    'x' => $base['x'],
+                    'y' => $base['y'],
+                ];
+            }
+        }
+
+        return [
+            'size' => $n,
+            'base_points' => $basePoints,
+            'update_points' => $updatePoints,
+        ];
+    }
+
+    /**
+     * Generates the single canonical workload bundle containing N = 100, 1000, 5000, 10000.
+     *
+     * @return array<string, mixed>
+     */
+    public static function generateCanonicalBundle(): array
+    {
+        $workloads = [];
+        foreach (self::WORKLOAD_SIZES as $size) {
+            $workloads[(string)$size] = self::generateWorkloadForSize($size);
         }
 
         return [
             'schema_version' => '1.0.0',
-            'workload_id' => "WORKLOAD-N{$n}",
-            'size' => $n,
-            'seed' => self::SEED,
+            'benchmark_id' => 'BENCHMARK-VIS-SCATTER-V1',
+            'generator' => 'Mulberry32',
+            'seed' => '0xDEADBEEF',
+            'seed_decimal' => self::SEED,
             'domain' => [
                 'x' => [0, 1],
                 'y' => [0, 1],
             ],
-            'base_points' => $basePoints,
-            'update_points' => $updatePoints,
+            'displacement_rule' => 'y_i <- round(fmod(y_i + 0.1, 1.0), 6) for even point IDs (exactly 50%)',
+            'workloads' => $workloads,
         ];
     }
 }

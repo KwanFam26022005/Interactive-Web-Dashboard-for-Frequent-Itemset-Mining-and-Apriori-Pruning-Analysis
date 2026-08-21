@@ -7,7 +7,7 @@ class VisualizationBenchmarkRunner {
         this.libraryManifest = libraryManifest;
         this.workloads = workloads; // { 100: {...}, 1000: {...}, 5000: {...}, 10000: {...} }
         this.adapters = adapters; // { 'ECharts': EChartsAdapter, 'D3': D3Adapter, 'Chart.js': ChartJsAdapter }
-        this.runtimeLineage = runtimeLineage; // { git_revision, config_sha256, library_manifest_sha256, workload_hashes: {} }
+        this.runtimeLineage = runtimeLineage; // { git_revision, config_sha256, library_manifest_sha256, workload_sha256 }
         this.results = [];
         this.isRunning = false;
         this.onProgress = null;
@@ -29,16 +29,11 @@ class VisualizationBenchmarkRunner {
     }
 
     /**
-     * Settle browser rendering loop by waiting for 2 animation frames.
+     * Settle browser execution loop with fixed 100 ms delay.
+     * Natural GC only — no forced GC invocation.
      */
-    static settle() {
-        return new Promise(resolve => {
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    setTimeout(resolve, 16);
-                });
-            });
-        });
+    static settle(ms = 100) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     /**
@@ -64,7 +59,7 @@ class VisualizationBenchmarkRunner {
 
     /**
      * Generates deterministic execution schedule covering library x size x repetition.
-     * Uses LCG with seed 42 to shuffle items deterministically.
+     * Uses deterministic Fisher-Yates shuffle with seed 42.
      */
     generateSchedule(isSmoke = false, smokeReps = 2) {
         const schedule = [];
@@ -84,7 +79,7 @@ class VisualizationBenchmarkRunner {
             }
         }
 
-        // Deterministic Fisher-Yates shuffle with seed 42
+        // Deterministic Fisher-Yates shuffle with schedule seed 42
         let seed = this.config.run_order.seed;
         for (let i = schedule.length - 1; i > 0; i--) {
             seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
@@ -148,9 +143,10 @@ class VisualizationBenchmarkRunner {
 
         const gitRev = this.runtimeLineage.git_revision || 'UNAVAILABLE';
         const cfgSha = this.runtimeLineage.config_sha256 || 'UNAVAILABLE';
+        const workloadSha = this.runtimeLineage.workload_sha256 || 'UNAVAILABLE';
 
         this.log(`Starting ${isSmoke ? 'SMOKE' : 'FORMAL'} benchmark run (${total} observations scheduled)...`);
-        this.log(`Lineage Git: ${gitRev} | Config SHA: ${cfgSha.substring(0, 16)}...`);
+        this.log(`Lineage Git: ${gitRev} | Config SHA: ${cfgSha.substring(0, 16)}... | Workload SHA: ${workloadSha.substring(0, 16)}...`);
 
         // 1. Warmup phase (unrecorded)
         this.log(`Running ${warmupCount} warmup iterations per library/size...`);
@@ -162,15 +158,18 @@ class VisualizationBenchmarkRunner {
             for (const size of sizes) {
                 const workload = this.workloads[size];
                 for (let w = 1; w <= warmupCount; w++) {
-                    await VisualizationBenchmarkRunner.settle();
+                    await VisualizationBenchmarkRunner.settle(100);
                     let instance = null;
                     try {
                         instance = adapter.create(containerElement, workload, this.config);
-                        await VisualizationBenchmarkRunner.settle();
+                        await VisualizationBenchmarkRunner.settle(100);
                         adapter.update(instance, workload, this.config);
-                        await VisualizationBenchmarkRunner.settle();
+                        await VisualizationBenchmarkRunner.settle(100);
                     } finally {
-                        if (instance) adapter.destroy(instance);
+                        if (instance) {
+                            try { adapter.destroy(instance); } catch (e) {}
+                            instance = null;
+                        }
                         containerElement.innerHTML = '';
                     }
                 }
@@ -188,9 +187,6 @@ class VisualizationBenchmarkRunner {
             obsIdCounter++;
 
             const libMeta = this.config.libraries.find(l => l.name === item.library) || {};
-            const workloadSha = (this.runtimeLineage.workload_hashes && this.runtimeLineage.workload_hashes[item.workload_size])
-                ? this.runtimeLineage.workload_hashes[item.workload_size]
-                : (this.config.workloads?.files?.[String(item.workload_size)]?.sha256 || 'UNAVAILABLE');
 
             const obsRecord = {
                 observation_id: obsId,
@@ -214,7 +210,7 @@ class VisualizationBenchmarkRunner {
                 failure_code: ''
             };
 
-            await VisualizationBenchmarkRunner.settle();
+            await VisualizationBenchmarkRunner.settle(100);
             let instance = null;
 
             try {
@@ -232,7 +228,7 @@ class VisualizationBenchmarkRunner {
                     obsRecord.status = 'COUNT_MISMATCH';
                     obsRecord.failure_code = `Expected ${item.workload_size} marks, found ${renderedCount}`;
                 } else {
-                    await VisualizationBenchmarkRunner.settle();
+                    await VisualizationBenchmarkRunner.settle(100);
 
                     // Update Render Timing
                     const updateMs = await VisualizationBenchmarkRunner.measureLatency(() => {
@@ -250,9 +246,10 @@ class VisualizationBenchmarkRunner {
                     try {
                         adapter.destroy(instance);
                     } catch (e) {}
+                    instance = null;
                 }
                 containerElement.innerHTML = '';
-                await VisualizationBenchmarkRunner.settle();
+                await VisualizationBenchmarkRunner.settle(100);
             }
 
             this.results.push(obsRecord);

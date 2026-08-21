@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0.0",
+  "classification": "NON_CANONICAL_DIAGNOSTIC_PROTOCOL_DEVIATION",
+  "historical_formal_revision": "6276e0888e0f6ef7e8e676a451b80f7831504130",
+  "historical_evidence_commit": "2f362d4a415ecf57bf3fd60d96a38aeaa579567c",
+  "historical_raw_sha256": "10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781",
+  "historical_processed_sha256": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210",
+  "archived_location": "experiments/diagnostic/rq3_6276_protocol_deviation/",
+  "archived_artifacts": {
+    "visualization_runs.csv": "10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781",
+    "visualization_summary.csv": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210",
+    "T3_rq3_visualization_performance.csv": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210",
+    "F5_visualization_initial_render.svg": "3b0c530396501bc6fb5c8d02da68f8671562bec6c382e1abc201e8c89499e999",
+    "F6_visualization_update.svg": "e9eca0375b45e62206c5933ff885a8565839acd1c0d267aa285604e780225918"
+  },
+  "reason": "Formal execution completed successfully but benchmark implementation deviated from the previously frozen Phase-4A RQ3 methodology.",
+  "deviations": [
+    {
+      "id": "DEV-01-CONTAINER-SIZE",
+      "field": "visual_contract.container_dimensions",
+      "frozen_specification": "800 x 500 px",
+      "historical_6276_implementation": "800 x 600 px",
+      "impact": "Altered aspect ratio and drawing surface area for SVG DOM and Canvas rasterization."
+    },
+    {
+      "id": "DEV-02-GRIDLINES-AXES",
+      "field": "visual_contract.gridlines_and_axes",
+      "frozen_specification": "Exactly 5 fixed linear gridlines on each axis across [0, 1]",
+      "historical_6276_implementation": "6 tick positions [0.0, 0.2, 0.4, 0.6, 0.8, 1.0] with gridlines disabled",
+      "impact": "Missing visual gridline rendering load and incorrect tick count."
+    },
+    {
+      "id": "DEV-03-WORKLOAD-PRNG",
+      "field": "workloads.prng_and_seed",
+      "frozen_specification": "Mulberry32 PRNG with seed 0xDEADBEEF",
+      "historical_6276_implementation": "Numerical_Recipes_LCG_32bit with seed 42",
+      "impact": "Workload generation PRNG conflated with execution-order shuffle seed."
+    },
+    {
+      "id": "DEV-04-WORKLOAD-ARTIFACTS",
+      "field": "workloads.file_structure",
+      "frozen_specification": "Single canonical workload artifact (experiments/visualization/workload_data.json)",
+      "historical_6276_implementation": "Four independent workload files (workload_100.json, workload_1000.json, workload_5000.json, workload_10000.json)",
+      "impact": "Fragmented lineage tracking across four independent workload files."
+    },
+    {
+      "id": "DEV-05-UPDATE-DISPLACEMENT",
+      "field": "workloads.update_points_semantics",
+      "frozen_specification": "Exactly 50% (N/2) of points displaced via y_i <- (y_i + 0.1) mod 1.0 while preserving identity and coordinates for remaining 50%",
+      "historical_6276_implementation": "All N update points regenerated as a completely separate coordinate stream",
+      "impact": "Violated in-place partial update semantic model."
+    },
+    {
+      "id": "DEV-06-SETTLE-PROTOCOL",
+      "field": "timing_protocol.inter_trial_settle",
+      "frozen_specification": "Explicit chart destroy/dispose, DOM clearance, reference release, and 100 ms fixed settle delay (natural GC only)",
+      "historical_6276_implementation": "double-rAF + setTimeout(16ms)",
+      "impact": "Insufficient and non-conforming inter-trial settle interval."
+    }
+  ]
+}

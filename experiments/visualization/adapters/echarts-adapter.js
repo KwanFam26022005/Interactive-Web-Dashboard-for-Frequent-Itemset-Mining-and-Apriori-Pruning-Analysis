@@ -38,29 +38,35 @@ const EChartsAdapter = {
                 type: 'value',
                 min: config.visual_contract.x_domain[0],
                 max: config.visual_contract.x_domain[1],
-                interval: 0.2,
-                splitLine: { show: config.visual_contract.gridlines_enabled ?? false },
+                interval: 0.25, // Exactly 5 ticks / gridlines: 0.0, 0.25, 0.50, 0.75, 1.00
+                splitLine: {
+                    show: config.visual_contract.gridlines_enabled ?? true,
+                    lineStyle: { color: 'rgba(51, 65, 85, 0.5)' }
+                },
                 axisLabel: {
                     fontFamily: fontFamily,
                     fontSize: fontSize,
-                    formatter: v => Number(v).toFixed(1)
+                    formatter: v => Number(v).toFixed(2)
                 }
             },
             yAxis: {
                 type: 'value',
                 min: config.visual_contract.y_domain[0],
                 max: config.visual_contract.y_domain[1],
-                interval: 0.2,
-                splitLine: { show: config.visual_contract.gridlines_enabled ?? false },
+                interval: 0.25, // Exactly 5 ticks / gridlines: 0.0, 0.25, 0.50, 0.75, 1.00
+                splitLine: {
+                    show: config.visual_contract.gridlines_enabled ?? true,
+                    lineStyle: { color: 'rgba(51, 65, 85, 0.5)' }
+                },
                 axisLabel: {
                     fontFamily: fontFamily,
                     fontSize: fontSize,
-                    formatter: v => Number(v).toFixed(1)
+                    formatter: v => Number(v).toFixed(2)
                 }
             },
             series: [{
                 type: 'scatter',
-                symbolSize: config.visual_contract.marker_radius * 2, // Diameter
+                symbolSize: config.visual_contract.marker_radius * 2, // Diameter = 8px
                 itemStyle: {
                     color: 'rgba(59, 130, 246, 0.7)'
                 },

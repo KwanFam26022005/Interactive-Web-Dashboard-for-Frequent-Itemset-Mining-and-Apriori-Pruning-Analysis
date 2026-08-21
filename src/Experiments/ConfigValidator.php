@@ -402,8 +402,20 @@ class ConfigValidator
             $errors[] = "Visualization config formal_repetitions must be positive integer";
         }
 
-        if (($data['visual_contract']['container_width'] ?? 0) !== 800 || ($data['visual_contract']['container_height'] ?? 0) !== 600) {
-            $errors[] = "Visualization config visual_contract container must be 800x600";
+        if (($data['visual_contract']['container_width'] ?? 0) !== 800 || ($data['visual_contract']['container_height'] ?? 0) !== 500) {
+            $errors[] = "Visualization config visual_contract container must be 800x500";
+        }
+
+        if (($data['visual_contract']['gridlines_count'] ?? 0) !== 5) {
+            $errors[] = "Visualization config visual_contract must specify exactly 5 gridlines";
+        }
+
+        if (($data['workloads']['generator'] ?? '') !== 'Mulberry32') {
+            $errors[] = "Visualization config workloads generator must be 'Mulberry32'";
+        }
+
+        if (($data['workloads']['seed'] ?? '') !== '0xDEADBEEF') {
+            $errors[] = "Visualization config workloads seed must be '0xDEADBEEF'";
         }
 
         return $errors;

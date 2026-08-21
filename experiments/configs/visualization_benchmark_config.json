@@ -32,7 +32,7 @@
   },
   "visual_contract": {
     "container_width": 800,
-    "container_height": 600,
+    "container_height": 500,
     "viewport_width": 1440,
     "viewport_height": 900,
     "x_domain": [
@@ -43,15 +43,15 @@
       0.0,
       1.0
     ],
-    "axis_tick_values": [
+    "gridlines_count": 5,
+    "gridline_positions": [
       0.0,
-      0.2,
-      0.4,
-      0.6,
-      0.8,
+      0.25,
+      0.5,
+      0.75,
       1.0
     ],
-    "gridlines_enabled": false,
+    "gridlines_enabled": true,
     "axis_font_family": "Arial",
     "axis_font_size": 12,
     "marker_radius": 4,
@@ -66,28 +66,13 @@
   "timing_protocol": {
     "boundary": "render_to_two_frame_observation",
     "api": "performance.now",
-    "frame_synchronization": "double_requestAnimationFrame"
+    "frame_synchronization": "double_requestAnimationFrame",
+    "inter_trial_settle_ms": 100
   },
   "workloads": {
-    "seed": 42,
-    "generator": "Numerical_Recipes_LCG_32bit",
-    "files": {
-      "100": {
-        "path": "experiments/visualization/workloads/workload_100.json",
-        "sha256": "6d5d7b2997eb34afc962ba44cc1602225cac40392f1963c7e8c6b6af580a4f00"
-      },
-      "1000": {
-        "path": "experiments/visualization/workloads/workload_1000.json",
-        "sha256": "a02acfc720e8c40934a036e9e7b7bd67e2507ecece75ef552bec97d374eeef6a"
-      },
-      "5000": {
-        "path": "experiments/visualization/workloads/workload_5000.json",
-        "sha256": "4e0f18ce5dd9532411cab14c6e4633216a8a36331fc602117fc07af1f6f9d436"
-      },
-      "10000": {
-        "path": "experiments/visualization/workloads/workload_10000.json",
-        "sha256": "8b2911770f4e9d06cf8306aa8390b6e9e89c86ad6131e1ee69f0c151f1c1db68"
-      }
-    }
+    "generator": "Mulberry32",
+    "seed": "0xDEADBEEF",
+    "seed_decimal": 3735928559,
+    "canonical_file": "experiments/visualization/workload_data.json"
   }
 }

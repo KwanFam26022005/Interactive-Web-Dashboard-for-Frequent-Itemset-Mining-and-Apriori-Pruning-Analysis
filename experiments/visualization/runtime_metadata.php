@@ -27,11 +27,8 @@ $visConfigSha = LineageHelper::hashFile($visConfigPath);
 $visLibSha = LineageHelper::hashFile($visLibPath);
 $visEnvSha = LineageHelper::hashFile($visEnvPath);
 
-$workloadHashes = [];
-foreach ([100, 1000, 5000, 10000] as $size) {
-    $wPath = $workloadDir . "/workload_{$size}.json";
-    $workloadHashes[(string)$size] = LineageHelper::hashFile($wPath);
-}
+$workloadFilePath = __DIR__ . '/workload_data.json';
+$workloadDataSha = LineageHelper::hashFile($workloadFilePath);
 
 $vendorHashes = [
     'ECharts' => LineageHelper::hashFile($vendorDir . '/echarts/echarts.min.js'),
@@ -51,7 +48,7 @@ $response = [
         'visualization_benchmark_config_sha256' => $visConfigSha,
         'visualization_library_manifest_sha256' => $visLibSha,
         'visualization_environment_manifest_sha256' => $visEnvSha,
-        'workloads' => $workloadHashes,
+        'workload_data_sha256' => $workloadDataSha,
         'vendor' => $vendorHashes,
     ],
     'system' => [
