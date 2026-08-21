@@ -12,7 +12,7 @@
   </style>
   <rect width="1200" height="800" fill="#ffffff" />
   <text x="60" y="45" class="title">Figure F5: Initial Visualization Render Latency vs. Workload Size (RQ3)</text>
-  <text x="60" y="70" class="subtitle">Scatter Plot Workload | Double-rAF latency metric | Median of 10 formal repetitions with IQR error bars.</text>
+  <text x="60" y="70" class="subtitle">Scatter Plot Workload | Double-rAF latency metric | Median of 10 formal repetitions; IQR values are reported numerically.</text>
   <line x1="140" y1="680.0" x2="1120" y2="680.0" class="grid-line" />
   <text x="125" y="684.0" text-anchor="end" class="axis-label">0 ms</text>
   <line x1="140" y1="574.2" x2="1120" y2="574.2" class="grid-line" />
@@ -38,66 +38,30 @@
   <line x1="997.5" y1="680" x2="997.5" y2="686" stroke="#94a3b8" stroke-width="1.5" />
   <text x="997.5" y="704" text-anchor="middle" class="axis-label">10,000</text>
   <path d="M 262.5 641.9 L 507.5 643.0 L 752.5 590.3 L 997.5 530.8" fill="none" stroke="#2563eb" stroke-width="2.5"  />
-  <line x1="262.5" y1="624.3" x2="262.5" y2="659.6" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="258.5" y1="624.3" x2="266.5" y2="624.3" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="258.5" y1="659.6" x2="266.5" y2="659.6" stroke="#2563eb" stroke-width="1.8" />
   <circle cx="262.5" cy="641.9" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5" />
   <text x="262.5" y="655.9" text-anchor="middle" class="data-label" style="fill:#2563eb;font-weight:bold;">18.0</text>
-  <line x1="507.5" y1="641.1" x2="507.5" y2="644.9" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="503.5" y1="641.1" x2="511.5" y2="641.1" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="503.5" y1="644.9" x2="511.5" y2="644.9" stroke="#2563eb" stroke-width="1.8" />
   <circle cx="507.5" cy="643.0" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5" />
   <text x="507.5" y="657.0" text-anchor="middle" class="data-label" style="fill:#2563eb;font-weight:bold;">17.5</text>
-  <line x1="752.5" y1="585.1" x2="752.5" y2="595.5" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="748.5" y1="585.1" x2="756.5" y2="585.1" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="748.5" y1="595.5" x2="756.5" y2="595.5" stroke="#2563eb" stroke-width="1.8" />
   <circle cx="752.5" cy="590.3" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5" />
   <text x="752.5" y="604.3" text-anchor="middle" class="data-label" style="fill:#2563eb;font-weight:bold;">42.4</text>
-  <line x1="997.5" y1="515.1" x2="997.5" y2="546.4" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="993.5" y1="515.1" x2="1001.5" y2="515.1" stroke="#2563eb" stroke-width="1.8" />
-  <line x1="993.5" y1="546.4" x2="1001.5" y2="546.4" stroke="#2563eb" stroke-width="1.8" />
   <circle cx="997.5" cy="530.8" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="1.5" />
   <text x="997.5" y="544.8" text-anchor="middle" class="data-label" style="fill:#2563eb;font-weight:bold;">70.5</text>
   <path d="M 262.5 643.4 L 507.5 641.4 L 752.5 526.1 L 997.5 386.8" fill="none" stroke="#059669" stroke-width="2.5" stroke-dasharray="6,4" />
-  <line x1="262.5" y1="642.1" x2="262.5" y2="644.7" stroke="#059669" stroke-width="1.8" />
-  <line x1="258.5" y1="642.1" x2="266.5" y2="642.1" stroke="#059669" stroke-width="1.8" />
-  <line x1="258.5" y1="644.7" x2="266.5" y2="644.7" stroke="#059669" stroke-width="1.8" />
   <rect x="258.0" y="638.9" width="9" height="9" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
   <text x="262.5" y="633.4" text-anchor="middle" class="data-label" style="fill:#059669;font-weight:bold;">17.3</text>
-  <line x1="507.5" y1="625.5" x2="507.5" y2="657.3" stroke="#059669" stroke-width="1.8" />
-  <line x1="503.5" y1="625.5" x2="511.5" y2="625.5" stroke="#059669" stroke-width="1.8" />
-  <line x1="503.5" y1="657.3" x2="511.5" y2="657.3" stroke="#059669" stroke-width="1.8" />
   <rect x="503.0" y="636.9" width="9" height="9" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
   <text x="507.5" y="631.4" text-anchor="middle" class="data-label" style="fill:#059669;font-weight:bold;">18.2</text>
-  <line x1="752.5" y1="515.4" x2="752.5" y2="536.8" stroke="#059669" stroke-width="1.8" />
-  <line x1="748.5" y1="515.4" x2="756.5" y2="515.4" stroke="#059669" stroke-width="1.8" />
-  <line x1="748.5" y1="536.8" x2="756.5" y2="536.8" stroke="#059669" stroke-width="1.8" />
   <rect x="748.0" y="521.6" width="9" height="9" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
   <text x="752.5" y="516.1" text-anchor="middle" class="data-label" style="fill:#059669;font-weight:bold;">72.8</text>
-  <line x1="997.5" y1="358.7" x2="997.5" y2="414.9" stroke="#059669" stroke-width="1.8" />
-  <line x1="993.5" y1="358.7" x2="1001.5" y2="358.7" stroke="#059669" stroke-width="1.8" />
-  <line x1="993.5" y1="414.9" x2="1001.5" y2="414.9" stroke="#059669" stroke-width="1.8" />
   <rect x="993.0" y="382.3" width="9" height="9" fill="#059669" stroke="#ffffff" stroke-width="1.5" />
   <text x="997.5" y="376.8" text-anchor="middle" class="data-label" style="fill:#059669;font-weight:bold;">138.6</text>
   <path d="M 262.5 627.4 L 507.5 621.7 L 752.5 445.2 L 997.5 209.1" fill="none" stroke="#d97706" stroke-width="2.5" stroke-dasharray="3,3" />
-  <line x1="262.5" y1="610.8" x2="262.5" y2="644.0" stroke="#d97706" stroke-width="1.8" />
-  <line x1="258.5" y1="610.8" x2="266.5" y2="610.8" stroke="#d97706" stroke-width="1.8" />
-  <line x1="258.5" y1="644.0" x2="266.5" y2="644.0" stroke="#d97706" stroke-width="1.8" />
   <polygon points="262.5,621.9 257.5,631.9 267.5,631.9" fill="#d97706" stroke="#ffffff" stroke-width="1.5" />
   <text x="262.5" y="617.4" text-anchor="middle" class="data-label" style="fill:#d97706;font-weight:bold;">24.9</text>
-  <line x1="507.5" y1="614.0" x2="507.5" y2="629.4" stroke="#d97706" stroke-width="1.8" />
-  <line x1="503.5" y1="614.0" x2="511.5" y2="614.0" stroke="#d97706" stroke-width="1.8" />
-  <line x1="503.5" y1="629.4" x2="511.5" y2="629.4" stroke="#d97706" stroke-width="1.8" />
   <polygon points="507.5,616.2 502.5,626.2 512.5,626.2" fill="#d97706" stroke="#ffffff" stroke-width="1.5" />
   <text x="507.5" y="611.7" text-anchor="middle" class="data-label" style="fill:#d97706;font-weight:bold;">27.6</text>
-  <line x1="752.5" y1="436.3" x2="752.5" y2="454.1" stroke="#d97706" stroke-width="1.8" />
-  <line x1="748.5" y1="436.3" x2="756.5" y2="436.3" stroke="#d97706" stroke-width="1.8" />
-  <line x1="748.5" y1="454.1" x2="756.5" y2="454.1" stroke="#d97706" stroke-width="1.8" />
   <polygon points="752.5,439.7 747.5,449.7 757.5,449.7" fill="#d97706" stroke="#ffffff" stroke-width="1.5" />
   <text x="752.5" y="435.2" text-anchor="middle" class="data-label" style="fill:#d97706;font-weight:bold;">111.0</text>
-  <line x1="997.5" y1="168.5" x2="997.5" y2="249.7" stroke="#d97706" stroke-width="1.8" />
-  <line x1="993.5" y1="168.5" x2="1001.5" y2="168.5" stroke="#d97706" stroke-width="1.8" />
-  <line x1="993.5" y1="249.7" x2="1001.5" y2="249.7" stroke="#d97706" stroke-width="1.8" />
   <polygon points="997.5,203.6 992.5,213.6 1002.5,213.6" fill="#d97706" stroke="#ffffff" stroke-width="1.5" />
   <text x="997.5" y="199.1" text-anchor="middle" class="data-label" style="fill:#d97706;font-weight:bold;">222.6</text>
   <rect x="160" y="150" width="350" height="95" fill="#f8fafc" stroke="#cbd5e1" rx="4" />

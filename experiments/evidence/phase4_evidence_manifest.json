@@ -3,6 +3,7 @@
   "phase": "PHASE_4E",
   "dataset": {
     "name": "Mushroom",
+    "filename": "agaricus-lepiota.data",
     "sha256": "e65d082030501a3ebcbcd7c9f7c71aa9d28fdfff463bf4cf4716a3fe13ac360e",
     "transaction_count": 8124,
     "unique_item_count": 119
@@ -12,7 +13,7 @@
     "phase4c_evidence_commit": "b40022fda83e754078c1a5d4fbd028eb58315917",
     "formal_rq3_run_revision": "6276e0888e0f6ef7e8e676a451b80f7831504130",
     "phase4d_evidence_commit": "2f362d4a415ecf57bf3fd60d96a38aeaa579567c",
-    "generator_revision": "018f3242bb347b75ae588ef2abbdb756e0065ebd"
+    "generator_revision": "dadd18ab7cad5989176836cd6d19b8db76293b9a"
   },
   "source_artifacts": {
     "mushroom_support_runs": {
@@ -43,11 +44,11 @@
   "figure_artifacts": {
     "F1": {
       "path": "experiments/figures/F1_apriori_runtime_vs_support.svg",
-      "sha256": "72380d9167d6d3855773bc049a0f119664f25d1031ac2c7535dda73c683dc08d"
+      "sha256": "01f26608f18c5d5a51b72ba4a10e81e08b34f2a8f8cfbc7a44dd3bc1afbac15c"
     },
     "F2": {
       "path": "experiments/figures/F2_candidate_volume_vs_support.svg",
-      "sha256": "b2994c8371ca95321171ddbb4edd05267cd35e6deebc372b52e444412a96e390"
+      "sha256": "d7e63ac8ac310c8950bc26da2231f38aa6befa052ce7fb89d9f8fd6d7e89b739"
     },
     "F3": {
       "path": "experiments/figures/F3_pattern_output_vs_support.svg",
@@ -59,11 +60,11 @@
     },
     "F5": {
       "path": "experiments/figures/F5_visualization_initial_render.svg",
-      "sha256": "6f190d340229a736b4b19267952f8ba3649140b96b0b17f20e9971c362b72883"
+      "sha256": "3b0c530396501bc6fb5c8d02da68f8671562bec6c382e1abc201e8c89499e999"
     },
     "F6": {
       "path": "experiments/figures/F6_visualization_update.svg",
-      "sha256": "6968ca4ebeb15bc37b7afca724853cfb196c92a6afb5777c7f5be729e09a0ac7"
+      "sha256": "e9eca0375b45e62206c5933ff885a8565839acd1c0d267aa285604e780225918"
     }
   },
   "table_artifacts": {

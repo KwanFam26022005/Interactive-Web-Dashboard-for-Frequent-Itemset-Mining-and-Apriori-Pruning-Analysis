@@ -12,7 +12,7 @@
   </style>
   <rect width="1200" height="800" fill="#ffffff" />
   <text x="60" y="45" class="title">Figure F1: Apriori Execution Time vs. Minimum Support (RQ1)</text>
-  <text x="60" y="70" class="subtitle">Mushroom Dataset (N = 8,124 transactions) | Median of 10 formal repetitions; vertical bars show IQR dispersion.</text>
+  <text x="60" y="70" class="subtitle">Mushroom Dataset (N = 8,124 transactions) | Median of 10 formal repetitions; IQR values are reported numerically.</text>
   <line x1="140" y1="680.0" x2="1120" y2="680.0" class="grid-line" />
   <text x="125" y="684.0" text-anchor="end" class="axis-label">0 ms</text>
   <line x1="140" y1="610.0" x2="1120" y2="610.0" class="grid-line" />
@@ -37,52 +37,37 @@
   <text x="55" y="400" text-anchor="middle" transform="rotate(-90 55 400)" class="axis-title">Median Execution Time (ms)</text>
   <line x1="238.0" y1="680" x2="238.0" y2="686" stroke="#94a3b8" stroke-width="1.5" />
   <text x="238.0" y="704" text-anchor="middle" class="axis-label">0.35</text>
-  <text x="238.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(s=2844)</text>
+  <text x="238.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(min count=2,844)</text>
   <line x1="434.0" y1="680" x2="434.0" y2="686" stroke="#94a3b8" stroke-width="1.5" />
   <text x="434.0" y="704" text-anchor="middle" class="axis-label">0.40</text>
-  <text x="434.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(s=3250)</text>
+  <text x="434.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(min count=3,250)</text>
   <line x1="630.0" y1="680" x2="630.0" y2="686" stroke="#94a3b8" stroke-width="1.5" />
   <text x="630.0" y="704" text-anchor="middle" class="axis-label">0.45</text>
-  <text x="630.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(s=3656)</text>
+  <text x="630.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(min count=3,656)</text>
   <line x1="826.0" y1="680" x2="826.0" y2="686" stroke="#94a3b8" stroke-width="1.5" />
   <text x="826.0" y="704" text-anchor="middle" class="axis-label">0.50</text>
-  <text x="826.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(s=4062)</text>
+  <text x="826.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(min count=4,062)</text>
   <line x1="1022.0" y1="680" x2="1022.0" y2="686" stroke="#94a3b8" stroke-width="1.5" />
   <text x="1022.0" y="704" text-anchor="middle" class="axis-label">0.60</text>
-  <text x="1022.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(s=4875)</text>
+  <text x="1022.0" y="718" text-anchor="middle" style="font-size:10px;fill:#64748b;">(min count=4,875)</text>
   <path d="M 238.0 188.3 L 434.0 479.2 L 630.0 563.7 L 826.0 630.2 L 1022.0 661.7" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-  <line x1="238.0" y1="120.0" x2="238.0" y2="285.4" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="232.0" y1="120.0" x2="244.0" y2="120.0" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="232.0" y1="285.4" x2="244.0" y2="285.4" stroke="#1d4ed8" stroke-width="2" />
   <circle cx="238.0" cy="188.3" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3" />
-  <text x="238.0" y="204.3" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">14,047.4 ms</text>
-  <text x="238.0" y="217.3" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 5549.1)</text>
-  <line x1="434.0" y1="456.9" x2="434.0" y2="501.4" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="428.0" y1="456.9" x2="440.0" y2="456.9" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="428.0" y1="501.4" x2="440.0" y2="501.4" stroke="#1d4ed8" stroke-width="2" />
+  <text x="238.0" y="208.3" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">14,047.4 ms</text>
+  <text x="238.0" y="222.3" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 5549.1 ms)</text>
   <circle cx="434.0" cy="479.2" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3" />
-  <text x="434.0" y="465.2" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">5,737.6 ms</text>
-  <text x="434.0" y="454.2" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 1270.8)</text>
-  <line x1="630.0" y1="554.1" x2="630.0" y2="573.4" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="624.0" y1="554.1" x2="636.0" y2="554.1" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="624.0" y1="573.4" x2="636.0" y2="573.4" stroke="#1d4ed8" stroke-width="2" />
+  <text x="434.0" y="457.2" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">5,737.6 ms</text>
+  <text x="434.0" y="445.2" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 1270.8 ms)</text>
   <circle cx="630.0" cy="563.7" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3" />
-  <text x="630.0" y="549.7" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">3,322.8 ms</text>
-  <text x="630.0" y="538.7" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 551.3)</text>
-  <line x1="826.0" y1="626.0" x2="826.0" y2="634.3" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="820.0" y1="626.0" x2="832.0" y2="626.0" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="820.0" y1="634.3" x2="832.0" y2="634.3" stroke="#1d4ed8" stroke-width="2" />
+  <text x="630.0" y="541.7" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">3,322.8 ms</text>
+  <text x="630.0" y="529.7" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 551.3 ms)</text>
   <circle cx="826.0" cy="630.2" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3" />
-  <text x="826.0" y="616.2" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">1,424.1 ms</text>
-  <text x="826.0" y="605.2" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 238.0)</text>
-  <line x1="1022.0" y1="656.1" x2="1022.0" y2="667.2" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="1016.0" y1="656.1" x2="1028.0" y2="656.1" stroke="#1d4ed8" stroke-width="2" />
-  <line x1="1016.0" y1="667.2" x2="1028.0" y2="667.2" stroke="#1d4ed8" stroke-width="2" />
+  <text x="826.0" y="608.2" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">1,424.1 ms</text>
+  <text x="826.0" y="596.2" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 238.0 ms)</text>
   <circle cx="1022.0" cy="661.7" r="6" fill="#ffffff" stroke="#1d4ed8" stroke-width="3" />
-  <text x="1022.0" y="647.7" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">523.1 ms</text>
-  <text x="1022.0" y="636.7" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 317.2)</text>
-  <rect x="860" y="140" width="230" height="60" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
-  <line x1="880" y1="170" x2="920" y2="170" stroke="#2563eb" stroke-width="3" />
-  <circle cx="900" cy="170" r="5" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.5" />
-  <text x="935" y="174" class="legend-text">Apriori Median Runtime</text>
+  <text x="1022.0" y="639.7" text-anchor="middle" class="data-label" style="font-weight:bold;fill:#1e293b;">523.1 ms</text>
+  <text x="1022.0" y="627.7" text-anchor="middle" style="font-size:10px;fill:#64748b;">(IQR: 317.2 ms)</text>
+  <rect x="830" y="140" width="260" height="60" fill="#f8fafc" stroke="#cbd5e1" rx="4" />
+  <line x1="850" y1="170" x2="890" y2="170" stroke="#2563eb" stroke-width="3" />
+  <circle cx="870" cy="170" r="5" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.5" />
+  <text x="905" y="174" class="legend-text">Apriori Median Runtime</text>
 </svg>
