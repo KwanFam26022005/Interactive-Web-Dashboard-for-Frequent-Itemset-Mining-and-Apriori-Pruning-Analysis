@@ -619,6 +619,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 5B Midterm Report Reference Tests\n";
+echo "========================================\n\n";
+
+try {
+    $p5bRes = \App\Tests\Unit\ReportReferenceConsistencyTest::run();
+    foreach ($p5bRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $p5bRes['passed'];
+    $failed += $p5bRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] ReportReferenceConsistencyTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
