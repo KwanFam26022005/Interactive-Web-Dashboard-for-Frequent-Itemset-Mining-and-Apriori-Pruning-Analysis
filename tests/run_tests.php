@@ -571,9 +571,26 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 4D Visualization Benchmark Tests\n";
+echo "========================================\n\n";
+
+try {
+    $visRes = \App\Tests\Unit\VisualizationBenchmarkTest::run();
+    foreach ($visRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $visRes['passed'];
+    $failed += $visRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] VisualizationBenchmarkTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
 exit($failed === 0 ? 0 : 1);
+
 
 

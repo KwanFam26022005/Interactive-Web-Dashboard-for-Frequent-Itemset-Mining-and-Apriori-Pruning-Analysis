@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RQ3 Visualization Benchmark — D3.js vs Chart.js vs ECharts</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --primary-color: #3b82f6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+        }
+
+        .header p {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.btn-secondary {
+            background-color: #475569;
+        }
+
+        button.btn-success {
+            background-color: var(--success-color);
+        }
+
+        .status-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-container {
+            background-color: #334155;
+            border-radius: 4px;
+            height: 12px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            background-color: var(--primary-color);
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .logs {
+            background-color: #020617;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            height: 140px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            color: #38bdf8;
+            margin-top: 12px;
+        }
+
+        /* Benchmark Target Area: Fixed 800x600 container */
+        .chart-stage-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        #chart-stage {
+            width: 800px;
+            height: 600px;
+            background-color: #ffffff;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #334155;
+            color: #f1f5f9;
+        }
+
+        tr:nth-child(even) {
+            background-color: #1e293b;
+        }
+    </style>
+
+    <!-- Pinned Vendor Visualization Libraries -->
+    <script src="vendor/echarts/echarts.min.js"></script>
+    <script src="vendor/d3/d3.min.js"></script>
+    <script src="vendor/chartjs/chart.umd.min.js"></script>
+
+    <!-- Workloads & Adapters -->
+    <script src="workloads/workload_generator.js"></script>
+    <script src="adapters/d3-adapter.js"></script>
+    <script src="adapters/chartjs-adapter.js"></script>
+    <script src="adapters/echarts-adapter.js"></script>
+    <script src="benchmark.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Phase 4D — RQ3 Visualization Performance Benchmark</h1>
+            <p>Evaluating D3.js (SVG), Chart.js (Canvas), and Apache ECharts (Canvas) across identical scatter-plot workloads under standardized double-rAF latency boundaries.</p>
+        </div>
+
+        <div class="controls">
+            <button id="btn-smoke" onclick="startBenchmark(true)">Run Smoke Test (N=100, 2 reps)</button>
+            <button id="btn-formal" class="btn-success" onclick="startBenchmark(false)">Run Formal Benchmark (N=100..10k, 10 reps)</button>
+            <button id="btn-export" class="btn-secondary" onclick="exportCsv()" disabled>Export Raw CSV</button>
+        </div>
+
+        <div class="status-card">
+            <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                <span id="status-text">Status: Ready</span>
+                <span id="progress-text">0 / 0</span>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            <div id="logs" class="logs">Ready to execute benchmark.</div>
+        </div>
+
+        <div class="chart-stage-wrapper">
+            <div id="chart-stage"></div>
+        </div>
+
+        <div class="status-card">
+            <h3 style="margin-top:0;">Summary Results</h3>
+            <div id="summary-container">
+                <p style="color: var(--text-muted); font-size: 13px;">No benchmark results yet. Run smoke or formal benchmark above.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let runner = null;
+        let lastResults = [];
+
+        async function loadBenchmarkConfig() {
+            try {
+                const res = await fetch('../configs/visualization_benchmark_config.json');
+                return await res.json();
+            } catch (e) {
+                // Fallback default config if running as local file
+                return {
+                    schema_version: '1.0.0',
+                    benchmark_id: 'BENCHMARK-VIS-SCATTER-V1',
+                    libraries: [
+                        { name: 'ECharts', version: '5.6.0', renderer: 'canvas' },
+                        { name: 'D3', version: '7.9.0', renderer: 'svg' },
+                        { name: 'Chart.js', version: '4.4.8', renderer: 'canvas' }
+                    ],
+                    workload_sizes: [100, 1000, 5000, 10000],
+                    warmup_iterations: 2,
+                    formal_repetitions: 10,
+                    run_order: { strategy: 'deterministic_shuffle', seed: 42 },
+                    visual_contract: {
+                        container_width: 800,
+                        container_height: 600,
+                        x_domain: [0.0, 1.0],
+                        y_domain: [0.0, 1.0],
+                        marker_radius: 4,
+                        marker_opacity: 0.7
+                    },
+                    workloads: {
+                        files: {
+                            '100': { sha256: '6d5d7b2997eb34afc962ba44cc1602225cac40392f1963c7e8c6b6af580a4f00' },
+                            '1000': { sha256: 'a02acfc720e8c40934a036e9e7b7bd67e2507ecece75ef552bec97d374eeef6a' },
+                            '5000': { sha256: '4e0f18ce5dd9532411cab14c6e4633216a8a36331fc602117fc07af1f6f9d436' },
+                            '10000': { sha256: '8b2911770f4e9d06cf8306aa8390b6e9e89c86ad6131e1ee69f0c151f1c1db68' }
+                        }
+                    }
+                };
+            }
+        }
+
+        async function startBenchmark(isSmoke) {
+            const btnSmoke = document.getElementById('btn-smoke');
+            const btnFormal = document.getElementById('btn-formal');
+            const btnExport = document.getElementById('btn-export');
+            const statusText = document.getElementById('status-text');
+            const progressText = document.getElementById('progress-text');
+            const progressBar = document.getElementById('progress-bar');
+            const logs = document.getElementById('logs');
+            const container = document.getElementById('chart-stage');
+
+            btnSmoke.disabled = true;
+            btnFormal.disabled = true;
+            btnExport.disabled = true;
+            logs.innerHTML = '';
+
+            const config = await loadBenchmarkConfig();
+
+            // Prepare workloads using in-browser deterministic generator
+            const workloads = {};
+            for (const size of config.workload_sizes) {
+                workloads[size] = WorkloadGenerator.generate(size);
+            }
+
+            const adapters = {
+                'ECharts': EChartsAdapter,
+                'D3': D3Adapter,
+                'Chart.js': ChartJsAdapter
+            };
+
+            runner = new VisualizationBenchmarkRunner(config, null, workloads, adapters);
+
+            runner.onLog = (msg) => {
+                const line = document.createElement('div');
+                line.textContent = `[${new Date().toISOString().substring(11, 19)}] ${msg}`;
+                logs.appendChild(line);
+                logs.scrollTop = logs.scrollHeight;
+            };
+
+            runner.onProgress = (prog) => {
+                const pct = Math.round((prog.current / prog.total) * 100);
+                progressBar.style.width = `${pct}%`;
+                progressText.textContent = `${prog.current} / ${prog.total} (${pct}%)`;
+                statusText.textContent = `Running: ${prog.lastRecord.library} (N=${prog.lastRecord.workload_size}, rep ${prog.lastRecord.repeat_index}) -> Render: ${prog.lastRecord.render_ms}ms, Update: ${prog.lastRecord.update_ms}ms`;
+            };
+
+            statusText.textContent = 'Executing benchmark...';
+
+            try {
+                lastResults = await runner.run(container, isSmoke);
+                statusText.textContent = `Benchmark Finished (${lastResults.length} observations)`;
+                btnExport.disabled = false;
+                renderSummaryTable(lastResults);
+            } catch (e) {
+                statusText.textContent = `Error: ${e.message}`;
+            } finally {
+                btnSmoke.disabled = false;
+                btnFormal.disabled = false;
+            }
+        }
+
+        function calculateMedian(arr) {
+            if (!arr || arr.length === 0) return 0;
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+
+        function calculateIqr(arr) {
+            if (!arr || arr.length < 2) return 0;
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            const lower = sorted.length % 2 === 0 ? sorted.slice(0, mid) : sorted.slice(0, mid);
+            const upper = sorted.length % 2 === 0 ? sorted.slice(mid) : sorted.slice(mid + 1);
+            const q1 = calculateMedian(lower);
+            const q3 = calculateMedian(upper);
+            return Math.round((q3 - q1) * 1000) / 1000;
+        }
+
+        function renderSummaryTable(results) {
+            const summaryContainer = document.getElementById('summary-container');
+            const grouped = {};
+
+            for (const r of results) {
+                if (r.status !== 'COMPLETED') continue;
+                const key = `${r.library}|${r.renderer}|${r.workload_size}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        library: r.library,
+                        renderer: r.renderer,
+                        workload_size: r.workload_size,
+                        renders: [],
+                        updates: []
+                    };
+                }
+                grouped[key].renders.push(r.render_ms);
+                grouped[key].updates.push(r.update_ms);
+            }
+
+            let html = `<table>
+                <thead>
+                    <tr>
+                        <th>Library</th>
+                        <th>Renderer</th>
+                        <th>Workload Size (N)</th>
+                        <th>Valid Runs</th>
+                        <th>Median Render (ms)</th>
+                        <th>IQR Render (ms)</th>
+                        <th>Median Update (ms)</th>
+                        <th>IQR Update (ms)</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            for (const key of Object.keys(grouped).sort()) {
+                const g = grouped[key];
+                const medRender = calculateMedian(g.renders).toFixed(3);
+                const iqrRender = calculateIqr(g.renders).toFixed(3);
+                const medUpdate = calculateMedian(g.updates).toFixed(3);
+                const iqrUpdate = calculateIqr(g.updates).toFixed(3);
+
+                html += `<tr>
+                    <td><strong>${g.library}</strong></td>
+                    <td>${g.renderer}</td>
+                    <td>${g.workload_size}</td>
+                    <td>${g.renders.length}</td>
+                    <td>${medRender}</td>
+                    <td>${iqrRender}</td>
+                    <td>${medUpdate}</td>
+                    <td>${iqrUpdate}</td>
+                </tr>`;
+            }
+
+            html += `</tbody></table>`;
+            summaryContainer.innerHTML = html;
+        }
+
+        function exportCsv() {
+            if (!runner || lastResults.length === 0) return;
+            const csv = runner.toCsv();
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `visualization_runs_${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
