@@ -39,6 +39,16 @@ class ConfigValidator
             $errors = array_merge($errors, self::validateEnvironmentManifest($envManifest));
         }
 
+        $visConfig = $configDir . '/visualization_benchmark_config.json';
+        if (is_file($visConfig)) {
+            $errors = array_merge($errors, self::validateVisualizationBenchmarkConfig($visConfig));
+        }
+
+        $visLibManifest = $configDir . '/visualization_library_manifest.json';
+        if (is_file($visLibManifest)) {
+            $errors = array_merge($errors, self::validateVisualizationLibraryManifest($visLibManifest));
+        }
+
         return $errors;
     }
 
@@ -339,6 +349,110 @@ class ConfigValidator
             $dsSha = $data['provenance_hashes']['dataset_sha256'] ?? null;
             if (!is_string($dsSha) || preg_match('/^[0-9a-f]{64}$/i', $dsSha) !== 1) {
                 $errors[] = "MEASURED environment manifest requires 64-hex provenance_hashes.dataset_sha256. Got " . var_export($dsSha, true);
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function validateVisualizationBenchmarkConfig(string $filePath): array
+    {
+        $errors = [];
+        $content = @file_get_contents($filePath);
+        if ($content === false) {
+            return ["Could not read visualization benchmark config: {$filePath}"];
+        }
+
+        try {
+            $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (Throwable $e) {
+            return ["Invalid JSON in {$filePath}: " . $e->getMessage()];
+        }
+
+        if (!is_array($data)) {
+            return ["Visualization benchmark config must be an object in {$filePath}"];
+        }
+
+        if (($data['schema_version'] ?? '') !== '1.0.0') {
+            $errors[] = "Visualization config schema_version must be '1.0.0'";
+        }
+
+        if (empty($data['benchmark_id']) || !is_string($data['benchmark_id'])) {
+            $errors[] = "Visualization config requires a non-empty benchmark_id";
+        }
+
+        if (!isset($data['libraries']) || !is_array($data['libraries']) || count($data['libraries']) !== 3) {
+            $errors[] = "Visualization config must define exactly 3 libraries (ECharts, D3, Chart.js)";
+        }
+
+        $expectedSizes = [100, 1000, 5000, 10000];
+        if (($data['workload_sizes'] ?? []) !== $expectedSizes) {
+            $errors[] = "Visualization config workload_sizes must be [100, 1000, 5000, 10000]";
+        }
+
+        if (!isset($data['formal_repetitions']) || (int)$data['formal_repetitions'] < 1) {
+            $errors[] = "Visualization config formal_repetitions must be positive integer";
+        }
+
+        if (($data['visual_contract']['container_width'] ?? 0) !== 800 || ($data['visual_contract']['container_height'] ?? 0) !== 600) {
+            $errors[] = "Visualization config visual_contract container must be 800x600";
+        }
+
+        return $errors;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function validateVisualizationLibraryManifest(string $filePath): array
+    {
+        $errors = [];
+        $content = @file_get_contents($filePath);
+        if ($content === false) {
+            return ["Could not read visualization library manifest: {$filePath}"];
+        }
+
+        try {
+            $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (Throwable $e) {
+            return ["Invalid JSON in {$filePath}: " . $e->getMessage()];
+        }
+
+        if (!is_array($data) || !isset($data['libraries']) || !is_array($data['libraries'])) {
+            return ["Visualization library manifest must contain a 'libraries' array"];
+        }
+
+        $expectedLibs = ['ECharts', 'D3', 'Chart.js'];
+        $foundLibs = [];
+
+        foreach ($data['libraries'] as $idx => $lib) {
+            $name = $lib['name'] ?? "item_{$idx}";
+            $foundLibs[] = $name;
+
+            if (empty($lib['version'])) {
+                $errors[] = "Library '{$name}' missing version";
+            }
+            if (empty($lib['renderer'])) {
+                $errors[] = "Library '{$name}' missing renderer";
+            }
+            $sha = $lib['raw_sha256'] ?? '';
+            if (!preg_match('/^[0-9a-f]{64}$/i', (string)$sha)) {
+                $errors[] = "Library '{$name}' requires a valid 64-hex raw_sha256";
+            }
+            if (!isset($lib['raw_byte_size']) || (int)$lib['raw_byte_size'] <= 0) {
+                $errors[] = "Library '{$name}' requires positive raw_byte_size";
+            }
+            if (($lib['status'] ?? '') !== 'VERIFIED_FROZEN') {
+                $errors[] = "Library '{$name}' status must be 'VERIFIED_FROZEN'";
+            }
+        }
+
+        foreach ($expectedLibs as $exp) {
+            if (!in_array($exp, $foundLibs, true)) {
+                $errors[] = "Visualization library manifest missing entry for '{$exp}'";
             }
         }
 
