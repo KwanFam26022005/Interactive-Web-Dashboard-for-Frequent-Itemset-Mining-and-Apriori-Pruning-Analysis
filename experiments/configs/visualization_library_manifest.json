@@ -15,7 +15,7 @@
       "acquisition_url": "https://registry.npmjs.org/echarts/-/echarts-5.6.0.tgz",
       "retrieval_date": "2026-08-19",
       "status": "VERIFIED_FROZEN",
-      "notes": "Canvas scatter series, animation:false, progressive:0, hoverLayerThreshold:Infinity, splitLine disabled, tooltip disabled."
+      "notes": "Canvas scatter series, 800x500 container, animation:false, progressive:0, hoverLayerThreshold:Infinity, 5 fixed linear gridlines via 0.25 interval, tooltip disabled."
     },
     {
       "name": "D3",
@@ -31,7 +31,7 @@
       "acquisition_url": "https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js",
       "retrieval_date": "2026-08-21",
       "status": "VERIFIED_FROZEN",
-      "notes": "SVG circle marks bound by point id, d3.scaleLinear, explicit 6 tickValues [0.0..1.0], no transitions, keyed data join."
+      "notes": "SVG circle marks bound by point id, 800x500 container, d3.scaleLinear, 5 fixed tick/gridline positions [0.0, 0.25, 0.5, 0.75, 1.0], no transitions, keyed data join."
     },
     {
       "name": "Chart.js",
@@ -47,7 +47,7 @@
       "acquisition_url": "https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js",
       "retrieval_date": "2026-08-21",
       "status": "VERIFIED_FROZEN",
-      "notes": "Canvas scatter dataset, animation:false, parsing:false, decimation disabled, grid lines disabled, events:[] disabled."
+      "notes": "Canvas scatter dataset, 800x500 container, animation:false, parsing:false, decimation disabled, 5 fixed linear gridlines via stepSize 0.25, events:[] disabled."
     }
   ]
 }

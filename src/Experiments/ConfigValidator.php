@@ -517,10 +517,70 @@ class ConfigValidator
                 $errors[] = "MEASURED visualization environment manifest requires 64-hex library_manifest_sha256";
             }
 
+            $workloadSha = $data['provenance_hashes']['workload_data_sha256'] ?? null;
+            if (!is_string($workloadSha) || preg_match('/^[0-9a-f]{64}$/i', $workloadSha) !== 1) {
+                $errors[] = "MEASURED visualization environment manifest requires 64-hex workload_data_sha256";
+            }
+
+            // Prohibit legacy per-workload hashes in canonical manifest
+            $legacyKeys = ['workload_100_sha256', 'workload_1000_sha256', 'workload_5000_sha256', 'workload_10000_sha256'];
+            foreach ($legacyKeys as $lKey) {
+                if (isset($data['provenance_hashes'][$lKey])) {
+                    $errors[] = "MEASURED visualization environment manifest contains forbidden legacy key '{$lKey}'";
+                }
+            }
+
+            // Validate Browser Environment details
+            $browserName = $data['browser_environment']['browser_name'] ?? null;
+            if ($browserName !== 'Edge') {
+                $errors[] = "MEASURED visualization environment manifest requires browser_name 'Edge'. Got " . var_export($browserName, true);
+            }
+
+            $browserVersion = $data['browser_environment']['browser_version'] ?? null;
+            if ($browserVersion !== '151.0.0.0') {
+                $errors[] = "MEASURED visualization environment manifest requires browser_version '151.0.0.0'. Got " . var_export($browserVersion, true);
+            }
+
             $vpWidth = $data['browser_environment']['viewport_width'] ?? null;
             $vpHeight = $data['browser_environment']['viewport_height'] ?? null;
             if ($vpWidth !== 1440 || $vpHeight !== 900) {
                 $errors[] = "MEASURED visualization environment manifest requires 1440x900 viewport. Got {$vpWidth}x{$vpHeight}";
+            }
+
+            $dpr = $data['browser_environment']['device_pixel_ratio'] ?? null;
+            if ($dpr !== 1.0 && $dpr !== 1) {
+                $errors[] = "MEASURED visualization environment manifest requires device_pixel_ratio 1.0. Got " . var_export($dpr, true);
+            }
+
+            $scaling = $data['browser_environment']['display_scaling_factor'] ?? null;
+            if ($scaling !== 1.0 && $scaling !== 1) {
+                $errors[] = "MEASURED visualization environment manifest requires display_scaling_factor 1.0. Got " . var_export($scaling, true);
+            }
+
+            // Physical Cross-Artifact Checks (when in standard directory layout)
+            $configDir = dirname($filePath);
+            $actualCfgPath = $configDir . '/visualization_benchmark_config.json';
+            if (is_file($actualCfgPath) && is_string($cfgSha)) {
+                $actualCfgSha = hash_file('sha256', $actualCfgPath);
+                if ($cfgSha !== $actualCfgSha) {
+                    $errors[] = "Environment manifest benchmark_config_sha256 mismatch with actual config file (manifest: {$cfgSha}, actual: {$actualCfgSha})";
+                }
+            }
+
+            $actualLibPath = $configDir . '/visualization_library_manifest.json';
+            if (is_file($actualLibPath) && is_string($libSha)) {
+                $actualLibSha = hash_file('sha256', $actualLibPath);
+                if ($libSha !== $actualLibSha) {
+                    $errors[] = "Environment manifest library_manifest_sha256 mismatch with actual library manifest file (manifest: {$libSha}, actual: {$actualLibSha})";
+                }
+            }
+
+            $actualWorkloadPath = dirname($configDir) . '/visualization/workload_data.json';
+            if (is_file($actualWorkloadPath) && is_string($workloadSha)) {
+                $actualWorkloadSha = hash_file('sha256', $actualWorkloadPath);
+                if ($workloadSha !== $actualWorkloadSha) {
+                    $errors[] = "Environment manifest workload_data_sha256 mismatch with actual workload file (manifest: {$workloadSha}, actual: {$actualWorkloadSha})";
+                }
             }
         }
 

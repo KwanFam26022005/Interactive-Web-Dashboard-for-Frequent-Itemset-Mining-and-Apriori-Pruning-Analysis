@@ -43,6 +43,7 @@ final class VisualizationBenchmarkTest
 
         // 1. Lineage Hardening: Ensure NO Phase-4C mining hashes are hard-coded in benchmark.js
         $benchmarkJs = (string)file_get_contents($visDir . '/benchmark.js');
+        $indexHtml = (string)file_get_contents($visDir . '/index.html');
         $hardcodedGitSha = 'fd318b3ca0d3829c0849ee2a5ef783caaae72fdb';
         $hardcodedCfgSha = '47861199a9fb4297904fcdf425c8deb97b90666c3ea1d5f9d2b966a5b47a2b31';
         $assert('benchmark.js does not contain hard-coded Phase-4C Git SHA', !str_contains($benchmarkJs, $hardcodedGitSha));
@@ -162,9 +163,55 @@ final class VisualizationBenchmarkTest
             $assert("Workload N={$size} has exactly 50% (N/2) identical points ({$identicalCount})", $identicalCount === ($size / 2));
         }
 
-        // 8. Settle Contract, GC Policy & Timing Boundary in Harness
+        // 8. Physical Vendor Files & Library Manifest Semantic Reconciliation
+        $visLibData = json_decode((string)file_get_contents($visLibPath), true);
+        $libNotes = implode(' ', array_column($visLibData['libraries'] ?? [], 'notes'));
+        $assert('Library manifest notes do NOT contain "splitLine disabled"', !str_contains($libNotes, 'splitLine disabled'));
+        $assert('Library manifest notes do NOT contain "explicit 6 tickValues"', !str_contains($libNotes, 'explicit 6 tickValues'));
+        $assert('Library manifest notes do NOT contain "grid lines disabled"', !str_contains($libNotes, 'grid lines disabled'));
+        $assert('Library manifest notes accurately describe 5 fixed linear gridlines', str_contains($libNotes, '5 fixed linear gridlines') || str_contains($libNotes, '5 fixed tick/gridline positions'));
+
+        $expectedVendors = [
+            'ECharts' => ['path' => $visDir . '/vendor/echarts/echarts.min.js', 'sha' => 'bf4a223524e40b77c304bec67e1222cf551f14880cf42c69dc046558e11c07b1'],
+            'D3' => ['path' => $visDir . '/vendor/d3/d3.min.js', 'sha' => 'f2094bbf6141b359722c4fe454eb6c4b0f0e42cc10cc7af921fc158fceb86539'],
+            'Chart.js' => ['path' => $visDir . '/vendor/chartjs/chart.umd.min.js', 'sha' => 'c40877e88de4df7201532014e14fb707f0f07a196a4ec63e070544b80184fb00'],
+        ];
+        foreach ($expectedVendors as $vName => $vMeta) {
+            $assert("Vendor {$vName} physical file exists", is_file($vMeta['path']));
+            $actSha = hash_file('sha256', $vMeta['path']);
+            $assert("Vendor {$vName} matches authoritative frozen SHA", $actSha === $vMeta['sha']);
+        }
+
+        // 9. Environment Manifest Provenance Refreeze & Cross-Checks
+        $visEnvData = json_decode((string)file_get_contents($visEnvPath), true);
+        $assert('Environment manifest has single workload_data_sha256', isset($visEnvData['provenance_hashes']['workload_data_sha256']));
+        $assert('Environment manifest does NOT contain legacy workload_100_sha256', !isset($visEnvData['provenance_hashes']['workload_100_sha256']));
+        $assert('Environment manifest does NOT contain legacy workload_1000_sha256', !isset($visEnvData['provenance_hashes']['workload_1000_sha256']));
+        $assert('Environment manifest does NOT contain legacy workload_5000_sha256', !isset($visEnvData['provenance_hashes']['workload_5000_sha256']));
+        $assert('Environment manifest does NOT contain legacy workload_10000_sha256', !isset($visEnvData['provenance_hashes']['workload_10000_sha256']));
+
+        $actCfgSha = hash_file('sha256', $visConfigPath);
+        $actLibSha = hash_file('sha256', $visLibPath);
+        $actWkldSha = hash_file('sha256', $canonicalWorkloadFile);
+        $assert('Environment manifest benchmark_config_sha256 matches actual config SHA', ($visEnvData['provenance_hashes']['benchmark_config_sha256'] ?? '') === $actCfgSha);
+        $assert('Environment manifest library_manifest_sha256 matches actual library manifest SHA', ($visEnvData['provenance_hashes']['library_manifest_sha256'] ?? '') === $actLibSha);
+        $assert('Environment manifest workload_data_sha256 matches actual workload SHA', ($visEnvData['provenance_hashes']['workload_data_sha256'] ?? '') === $actWkldSha);
+
+        // Browser Contract Gating in Manifest
+        $assert('Environment manifest specifies browser_name = Edge', ($visEnvData['browser_environment']['browser_name'] ?? '') === 'Edge');
+        $assert('Environment manifest specifies browser_version = 151.0.0.0', ($visEnvData['browser_environment']['browser_version'] ?? '') === '151.0.0.0');
+        $assert('Environment manifest specifies viewport_width = 1440', ($visEnvData['browser_environment']['viewport_width'] ?? 0) === 1440);
+        $assert('Environment manifest specifies viewport_height = 900', ($visEnvData['browser_environment']['viewport_height'] ?? 0) === 900);
+        $assert('Environment manifest specifies device_pixel_ratio = 1.0', ($visEnvData['browser_environment']['device_pixel_ratio'] ?? 0) === 1.0);
+        $assert('Environment manifest specifies display_scaling_factor = 1.0', ($visEnvData['browser_environment']['display_scaling_factor'] ?? 0) === 1.0);
+
+        // 10. Browser Preflight Gating in index.html
+        $assert('index.html preflight verifies vendor file byte hashes via Web Crypto', str_contains($indexHtml, 'Vendor byte hash mismatch for'));
+        $assert('index.html preflight verifies environment manifest hash & cross-checks', str_contains($indexHtml, 'Environment manifest benchmark_config_sha256') && str_contains($indexHtml, 'Environment manifest library_manifest_sha256'));
+        $assert('index.html formal preflight enforces Edge 151.0.0.0 and 1440x900 at DPR 1.0', str_contains($indexHtml, "detected.browser_name !== 'Edge'") && str_contains($indexHtml, "151.0.0.0") && str_contains($indexHtml, "device_pixel_ratio !== 1.0"));
+
+        // 11. Settle Contract, GC Policy & Timing Boundary in Harness
         $assert('benchmark.js specifies 100 ms inter-trial settle delay', str_contains($benchmarkJs, 'settle(100)') || str_contains($benchmarkJs, 'settle(ms = 100)'));
-        // Settle must NOT be called between initial render measurement and update measurement
         $hasSettleBetweenRenderAndUpdate = (bool)preg_match('/obsRecord\.render_ms\s*=\s*renderMs;[\s\S]*?await\s+VisualizationBenchmarkRunner\.settle[\s\S]*?obsRecord\.update_ms/i', $benchmarkJs);
         $assert('benchmark.js does NOT insert settle(100) between render and update measurements', !$hasSettleBetweenRenderAndUpdate);
 
@@ -173,7 +220,7 @@ final class VisualizationBenchmarkTest
         $assert('Warmup iterations = 2 in config', ($visCfgData['warmup_iterations'] ?? 0) === 2);
         $assert('Formal repetitions = 10 in config', ($visCfgData['formal_repetitions'] ?? 0) === 10);
 
-        // 9. Evidence Validator Classification Tests
+        // 12. Evidence Validator Classification Tests
         $miningErrs = Phase4EvidenceValidator::validateMiningEvidence($repoRoot);
         $assert('Phase4EvidenceValidator reports 0 errors on canonical mining evidence', $miningErrs === [], implode('; ', $miningErrs));
 
@@ -183,7 +230,7 @@ final class VisualizationBenchmarkTest
         $rq3Status = Phase4EvidenceValidator::checkCanonicalRq3Status($repoRoot);
         $assert('Phase4EvidenceValidator classifies canonical RQ3 status as REPLACEMENT_PENDING', ($rq3Status['status'] ?? '') === 'REPLACEMENT_PENDING');
 
-        // 10. Result Processor: Zero-Valid Group & Contract Hardening
+        // 13. Result Processor: Zero-Valid Group & Contract Hardening
         $tmpDir = sys_get_temp_dir() . '/fim_vis_test_' . bin2hex(random_bytes(4));
         mkdir($tmpDir, 0777, true);
 

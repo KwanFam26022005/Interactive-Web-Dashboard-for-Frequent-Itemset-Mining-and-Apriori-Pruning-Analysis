@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "status": "MEASURED",
-  "timestamp_utc": "2026-08-21T14:22:45Z",
+  "timestamp_utc": "2026-08-21T16:55:00Z",
   "system": {
     "os_name": "Windows",
     "os_version": "11",
@@ -20,11 +20,8 @@
     "display_scaling_factor": 1.0
   },
   "provenance_hashes": {
-    "benchmark_config_sha256": "19c6c6cfbe908971fc21fd54a41f4e0598c6ec38bb263f18c3febc525b46691e",
-    "library_manifest_sha256": "da68dcd32b15a7f7cb8b5525ede999202e0b82d9696c9b0a7841a1f388cbff51",
-    "workload_100_sha256": "6d5d7b2997eb34afc962ba44cc1602225cac40392f1963c7e8c6b6af580a4f00",
-    "workload_1000_sha256": "a02acfc720e8c40934a036e9e7b7bd67e2507ecece75ef552bec97d374eeef6a",
-    "workload_5000_sha256": "4e0f18ce5dd9532411cab14c6e4633216a8a36331fc602117fc07af1f6f9d436",
-    "workload_10000_sha256": "8b2911770f4e9d06cf8306aa8390b6e9e89c86ad6131e1ee69f0c151f1c1db68"
+    "benchmark_config_sha256": "cd4a0cd4978924b94b857f5eb9d41046ec2cc1afb60e8d70561c01e9c079137a",
+    "library_manifest_sha256": "e9df75998cf177b60441f8b064b2a47f4baf337cfe52676473d2a02e48378ccf",
+    "workload_data_sha256": "16e3524d9f5dcef2e94abde4507a3b204de2bfa46e2016bc194d761d02ca663e"
   }
 }

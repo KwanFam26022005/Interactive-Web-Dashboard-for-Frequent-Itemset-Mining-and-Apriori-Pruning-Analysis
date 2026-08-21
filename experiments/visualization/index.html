@@ -269,7 +269,9 @@
                     worktree_clean: meta.lineage.worktree_clean,
                     config_sha256: meta.provenance_hashes.visualization_benchmark_config_sha256,
                     library_manifest_sha256: meta.provenance_hashes.visualization_library_manifest_sha256,
-                    workload_sha256: meta.provenance_hashes.workload_data_sha256
+                    environment_manifest_sha256: meta.provenance_hashes.visualization_environment_manifest_sha256,
+                    workload_sha256: meta.provenance_hashes.workload_data_sha256,
+                    vendor_hashes: meta.provenance_hashes.vendor || {}
                 };
 
                 logToUI(`Git Revision: ${runtimeLineage.git_revision} (clean: ${runtimeLineage.worktree_clean})`);
@@ -296,8 +298,20 @@
                 verifiedManifest = JSON.parse(libText);
                 logToUI(`Library Manifest SHA verified: ${libSha}`);
 
-                // 4. Verify In-Browser Runtime Library Versions
-                logToUI('Verifying runtime library versions in browser window...');
+                // 4. Fetch and Verify Physical Vendor Library File Bytes & Runtime Versions
+                logToUI('Fetching and hashing physical vendor library files...');
+                for (const lib of verifiedManifest.libraries) {
+                    const vendorRelUrl = lib.name === 'ECharts' ? 'vendor/echarts/echarts.min.js'
+                        : (lib.name === 'D3' ? 'vendor/d3/d3.min.js' : 'vendor/chartjs/chart.umd.min.js');
+                    const vBytes = await fetchPhysicalBytes(vendorRelUrl);
+                    const vSha = await VisualizationBenchmarkRunner.computeSha256(vBytes);
+                    if (vSha !== lib.raw_sha256) {
+                        throw new Error(`Vendor byte hash mismatch for ${lib.name}: computed ${vSha}, expected ${lib.raw_sha256}`);
+                    }
+                    logToUI(`Vendor ${lib.name} byte SHA verified: ${vSha.substring(0, 16)}...`);
+                }
+
+                // Verify In-Browser Runtime Library Versions
                 const echartsEntry = verifiedManifest.libraries.find(l => l.name === 'ECharts');
                 const d3Entry = verifiedManifest.libraries.find(l => l.name === 'D3');
                 const chartjsEntry = verifiedManifest.libraries.find(l => l.name === 'Chart.js');
@@ -334,12 +348,45 @@
                 }
                 logToUI(`Canonical Workload Bundle verified: ${wSha.substring(0, 16)}...`);
 
-                // 6. Viewport Check for Formal
-                const vpWidth = window.innerWidth;
-                const vpHeight = window.innerHeight;
-                logToUI(`Browser Viewport: ${vpWidth} x ${vpHeight}, DPR: ${window.devicePixelRatio}`);
-                if (isFormal && (vpWidth !== 1440 || vpHeight !== 900)) {
-                    throw new Error(`Formal benchmark requires 1440x900 viewport. Current: ${vpWidth}x${vpHeight}`);
+                // 6. Fetch, Hash, and Validate Visualization Environment Manifest
+                logToUI('Fetching and verifying visualization_environment_manifest.json...');
+                const envBytes = await fetchPhysicalBytes('../configs/visualization_environment_manifest.json');
+                const envSha = await VisualizationBenchmarkRunner.computeSha256(envBytes);
+                if (envSha !== runtimeLineage.environment_manifest_sha256) {
+                    throw new Error(`Environment Manifest SHA mismatch: computed ${envSha}, expected ${runtimeLineage.environment_manifest_sha256}`);
+                }
+                const envText = new TextDecoder().decode(envBytes);
+                const envJson = JSON.parse(envText);
+
+                // Provenance Cross-Checks
+                if (envJson.provenance_hashes.benchmark_config_sha256 !== cfgSha) {
+                    throw new Error(`Environment manifest benchmark_config_sha256 (${envJson.provenance_hashes.benchmark_config_sha256}) does not match physical config SHA (${cfgSha})`);
+                }
+                if (envJson.provenance_hashes.library_manifest_sha256 !== libSha) {
+                    throw new Error(`Environment manifest library_manifest_sha256 (${envJson.provenance_hashes.library_manifest_sha256}) does not match physical library manifest SHA (${libSha})`);
+                }
+                if (envJson.provenance_hashes.workload_data_sha256 !== wSha) {
+                    throw new Error(`Environment manifest workload_data_sha256 (${envJson.provenance_hashes.workload_data_sha256}) does not match physical workload SHA (${wSha})`);
+                }
+                logToUI(`Environment Manifest & Provenance Cross-Checks verified: ${envSha.substring(0, 16)}...`);
+
+                // 7. Exact Browser Environment & DPR Gate
+                const detected = VisualizationBenchmarkRunner.detectEnvironment();
+                logToUI(`Detected Browser: ${detected.browser_name} ${detected.browser_version}, Viewport: ${detected.viewport_width}x${detected.viewport_height}, DPR: ${detected.device_pixel_ratio}`);
+
+                if (isFormal) {
+                    if (detected.browser_name !== 'Edge') {
+                        throw new Error(`Formal benchmark requires browser 'Edge'. Detected: ${detected.browser_name}`);
+                    }
+                    if (detected.browser_version !== '151.0.0.0') {
+                        throw new Error(`Formal benchmark requires Edge version '151.0.0.0'. Detected: ${detected.browser_version}`);
+                    }
+                    if (detected.viewport_width !== 1440 || detected.viewport_height !== 900) {
+                        throw new Error(`Formal benchmark requires exactly 1440x900 viewport. Detected: ${detected.viewport_width}x${detected.viewport_height}`);
+                    }
+                    if (detected.device_pixel_ratio !== 1.0) {
+                        throw new Error(`Formal benchmark requires device_pixel_ratio 1.0. Detected: ${detected.device_pixel_ratio}`);
+                    }
                 }
 
                 preflightPassed = true;
