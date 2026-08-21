@@ -587,6 +587,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Phase 4E Final Evidence & Figure Tests\n";
+echo "========================================\n\n";
+
+try {
+    $p4eRes = \App\Tests\Unit\Phase4EvidenceTest::run();
+    foreach ($p4eRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $p4eRes['passed'];
+    $failed += $p4eRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] Phase4EvidenceTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 
