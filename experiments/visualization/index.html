@@ -371,7 +371,7 @@
                 logToUI(`Environment Manifest & Provenance Cross-Checks verified: ${envSha.substring(0, 16)}...`);
 
                 // 7. Exact Browser Environment & DPR Gate
-                const detected = VisualizationBenchmarkRunner.detectEnvironment();
+                const detected = VisualizationBenchmarkRunner.detectBrowserEnvironment();
                 logToUI(`Detected Browser: ${detected.browser_name} ${detected.browser_version}, Viewport: ${detected.viewport_width}x${detected.viewport_height}, DPR: ${detected.device_pixel_ratio}`);
 
                 if (isFormal) {

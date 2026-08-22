@@ -205,10 +205,19 @@ final class VisualizationBenchmarkTest
         $assert('Environment manifest specifies device_pixel_ratio = 1.0', ($visEnvData['browser_environment']['device_pixel_ratio'] ?? 0) === 1.0);
         $assert('Environment manifest specifies display_scaling_factor = 1.0', ($visEnvData['browser_environment']['display_scaling_factor'] ?? 0) === 1.0);
 
-        // 10. Browser Preflight Gating in index.html
+        // 10. Browser Preflight Gating & Static Method Integration in index.html
         $assert('index.html preflight verifies vendor file byte hashes via Web Crypto', str_contains($indexHtml, 'Vendor byte hash mismatch for'));
         $assert('index.html preflight verifies environment manifest hash & cross-checks', str_contains($indexHtml, 'Environment manifest benchmark_config_sha256') && str_contains($indexHtml, 'Environment manifest library_manifest_sha256'));
         $assert('index.html formal preflight enforces Edge 151.0.0.0 and 1440x900 at DPR 1.0', str_contains($indexHtml, "detected.browser_name !== 'Edge'") && str_contains($indexHtml, "151.0.0.0") && str_contains($indexHtml, "device_pixel_ratio !== 1.0"));
+
+        // Static Method Integration: index.html calls valid methods in benchmark.js
+        $assert('index.html does NOT call non-existent detectEnvironment()', !str_contains($indexHtml, 'VisualizationBenchmarkRunner.detectEnvironment()'));
+        $assert('index.html calls canonical detectBrowserEnvironment()', str_contains($indexHtml, 'VisualizationBenchmarkRunner.detectBrowserEnvironment()'));
+        $assert('index.html calls canonical computeSha256()', str_contains($indexHtml, 'VisualizationBenchmarkRunner.computeSha256('));
+        $assert('benchmark.js implements static detectBrowserEnvironment', str_contains($benchmarkJs, 'static detectBrowserEnvironment()'));
+        $assert('benchmark.js implements static computeSha256', str_contains($benchmarkJs, 'static async computeSha256('));
+        $assert('benchmark.js implements static settle', str_contains($benchmarkJs, 'static settle('));
+        $assert('benchmark.js implements static measureLatency', str_contains($benchmarkJs, 'static measureLatency('));
 
         // 11. Settle Contract, GC Policy & Timing Boundary in Harness
         $assert('benchmark.js specifies 100 ms inter-trial settle delay', str_contains($benchmarkJs, 'settle(100)') || str_contains($benchmarkJs, 'settle(ms = 100)'));
