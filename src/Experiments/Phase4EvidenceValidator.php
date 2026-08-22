@@ -23,6 +23,15 @@ class Phase4EvidenceValidator
     ];
 
     /**
+     * Canonical Accepted Replacement RQ3 Evidence Hashes.
+     */
+    public const CANONICAL_RQ3_HASHES = [
+        'experiments/raw/visualization_runs.csv' => '9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4',
+        'experiments/processed/visualization_summary.csv' => '8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0',
+        'experiments/evidence/rq3_replacement_formal_capture/visualization_runs_browser_export.csv' => '9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4',
+    ];
+
+    /**
      * Historical 6276 Non-Canonical Diagnostic Archival Hashes (For Provenance & Audit).
      */
     public const HISTORICAL_DIAGNOSTIC_RQ3_HASHES = [
@@ -127,6 +136,273 @@ class Phase4EvidenceValidator
     }
 
     /**
+     * Replays the deterministic execution schedule from benchmark config.
+     *
+     * @param string $repoRoot
+     * @return list<array{library: string, workload_size: int, repeat_index: int, execution_order_index: int}>
+     */
+    public static function replayExecutionSchedule(string $repoRoot): array
+    {
+        $cfgPath = $repoRoot . '/experiments/configs/visualization_benchmark_config.json';
+        $config = json_decode((string)file_get_contents($cfgPath), true);
+
+        $libraries = array_column($config['libraries'] ?? [], 'name');
+        $sizes = $config['workload_sizes'] ?? [100, 1000, 5000, 10000];
+        $reps = (int)($config['formal_repetitions'] ?? 10);
+        $seed = (int)($config['run_order']['seed'] ?? 42);
+
+        $schedule = [];
+        foreach ($libraries as $lib) {
+            foreach ($sizes as $size) {
+                for ($r = 1; $r <= $reps; $r++) {
+                    $schedule[] = [
+                        'library' => $lib,
+                        'workload_size' => (int)$size,
+                        'repeat_index' => $r,
+                    ];
+                }
+            }
+        }
+
+        // Deterministic Fisher-Yates shuffle matching benchmark.js (Math.imul / 32-bit uint)
+        for ($i = count($schedule) - 1; $i > 0; $i--) {
+            $seed = ($seed * 1664525 + 1013904223) & 0xFFFFFFFF;
+            $j = (int)floor(($seed / 4294967296) * ($i + 1));
+            $temp = $schedule[$i];
+            $schedule[$i] = $schedule[$j];
+            $schedule[$j] = $temp;
+        }
+
+        $result = [];
+        foreach ($schedule as $idx => $item) {
+            $result[] = [
+                'library' => $item['library'],
+                'workload_size' => $item['workload_size'],
+                'repeat_index' => $item['repeat_index'],
+                'execution_order_index' => $idx + 1,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Validates accepted replacement RQ3 evidence (hashes, structure, lineage, schedule replay, summary recalculation).
+     *
+     * @param string $repoRoot
+     * @return list<string> Errors encountered
+     */
+    public static function validateReplacementRq3Evidence(string $repoRoot): array
+    {
+        $errors = [];
+
+        // 1. Acceptance Record Check
+        $accPath = $repoRoot . '/experiments/evidence/RQ3_REPLACEMENT_ACCEPTANCE.json';
+        if (!is_file($accPath)) {
+            $errors[] = "Missing acceptance record: experiments/evidence/RQ3_REPLACEMENT_ACCEPTANCE.json";
+        } else {
+            $accData = json_decode((string)file_get_contents($accPath), true);
+            if (($accData['status'] ?? '') !== 'CANONICAL_FORMAL_RQ3_EVIDENCE_ACCEPTED') {
+                $errors[] = "Acceptance record status is not CANONICAL_FORMAL_RQ3_EVIDENCE_ACCEPTED";
+            }
+        }
+
+        // 2. Exact Hash Validation
+        foreach (self::CANONICAL_RQ3_HASHES as $relPath => $expSha) {
+            $fullPath = $repoRoot . '/' . $relPath;
+            if (!is_file($fullPath)) {
+                $errors[] = "Missing canonical replacement RQ3 file: {$relPath}";
+                continue;
+            }
+            $actSha = hash_file('sha256', $fullPath);
+            if ($actSha !== $expSha) {
+                $errors[] = "RQ3 file SHA mismatch for {$relPath}: expected {$expSha}, got {$actSha}";
+            }
+        }
+
+        // 3. Browser Export Equality
+        $rawPath = $repoRoot . '/experiments/raw/visualization_runs.csv';
+        $exportPath = $repoRoot . '/experiments/evidence/rq3_replacement_formal_capture/visualization_runs_browser_export.csv';
+        if (is_file($rawPath) && is_file($exportPath)) {
+            $rawSha = hash_file('sha256', $rawPath);
+            $exportSha = hash_file('sha256', $exportPath);
+            if ($rawSha !== $exportSha) {
+                $errors[] = "Browser export SHA ({$exportSha}) does not match canonical raw CSV SHA ({$rawSha})";
+            }
+        }
+
+        if (!is_file($rawPath)) {
+            return $errors;
+        }
+
+        // 4. Raw Structural and Lineage Validation
+        $rawRows = MiningResultProcessor::readCsv($rawPath);
+        if (count($rawRows) !== 120) {
+            $errors[] = "Canonical raw CSV must contain exactly 120 data rows, got " . count($rawRows);
+        }
+
+        $expectedLineage = [
+            'git_revision' => 'dea90c0962f03872e24c6959cea1959782d446a6',
+            'benchmark_config_sha256' => 'cd4a0cd4978924b94b857f5eb9d41046ec2cc1afb60e8d70561c01e9c079137a',
+            'workload_sha256' => '16e3524d9f5dcef2e94abde4507a3b204de2bfa46e2016bc194d761d02ca663e',
+            'browser_name' => 'Edge',
+            'browser_version' => '151.0.0.0',
+            'viewport_width' => 1440,
+            'viewport_height' => 900,
+            'device_pixel_ratio' => 1.0,
+        ];
+
+        $obsIds = [];
+        $execOrders = [];
+        $groups = [];
+        $rawValuesByGroup = [];
+
+        foreach ($rawRows as $idx => $r) {
+            $rowNum = $idx + 1;
+            $obsId = $r['observation_id'] ?? '';
+            if (isset($obsIds[$obsId])) {
+                $errors[] = "Duplicate observation ID: {$obsId}";
+            }
+            $obsIds[$obsId] = true;
+
+            $eo = (int)($r['execution_order_index'] ?? -1);
+            $execOrders[] = $eo;
+
+            $lib = $r['library'] ?? '';
+            $ver = $r['library_version'] ?? '';
+            $ren = $r['renderer'] ?? '';
+            $size = (int)($r['workload_size'] ?? 0);
+            $rep = (int)($r['repeat_index'] ?? 0);
+            $status = $r['status'] ?? '';
+            $failCode = $r['failure_code'] ?? '';
+            $renderMs = $r['render_ms'] ?? '';
+            $updateMs = $r['update_ms'] ?? '';
+
+            // Lineage
+            if (($r['git_revision'] ?? '') !== $expectedLineage['git_revision']) {
+                $errors[] = "Row {$rowNum}: git_revision mismatch";
+            }
+            if (($r['benchmark_config_sha256'] ?? '') !== $expectedLineage['benchmark_config_sha256']) {
+                $errors[] = "Row {$rowNum}: config SHA mismatch";
+            }
+            if (($r['workload_sha256'] ?? '') !== $expectedLineage['workload_sha256']) {
+                $errors[] = "Row {$rowNum}: workload SHA mismatch";
+            }
+            if (($r['browser_name'] ?? '') !== $expectedLineage['browser_name']) {
+                $errors[] = "Row {$rowNum}: browser_name mismatch";
+            }
+            if (($r['browser_version'] ?? '') !== $expectedLineage['browser_version']) {
+                $errors[] = "Row {$rowNum}: browser_version mismatch";
+            }
+            if ((int)($r['viewport_width'] ?? 0) !== $expectedLineage['viewport_width'] ||
+                (int)($r['viewport_height'] ?? 0) !== $expectedLineage['viewport_height']) {
+                $errors[] = "Row {$rowNum}: viewport mismatch";
+            }
+            if (abs((float)($r['device_pixel_ratio'] ?? 0) - $expectedLineage['device_pixel_ratio']) > 0.001) {
+                $errors[] = "Row {$rowNum}: DPR mismatch";
+            }
+
+            // Status and measurements
+            if ($status !== 'COMPLETED') {
+                $errors[] = "Row {$rowNum}: status is not COMPLETED ({$status})";
+            }
+            if ($failCode !== '') {
+                $errors[] = "Row {$rowNum}: failure_code is not empty ({$failCode})";
+            }
+            if (!is_numeric($renderMs) || (float)$renderMs < 0) {
+                $errors[] = "Row {$rowNum}: invalid render_ms ({$renderMs})";
+            }
+            if (!is_numeric($updateMs) || (float)$updateMs < 0) {
+                $errors[] = "Row {$rowNum}: invalid update_ms ({$updateMs})";
+            }
+
+            $grpKey = "{$lib}|{$ren}|{$size}";
+            $groups[$grpKey] = $groups[$grpKey] ?? [];
+            $groups[$grpKey][] = $rep;
+
+            $rawValuesByGroup[$grpKey] = $rawValuesByGroup[$grpKey] ?? ['renders' => [], 'updates' => []];
+            $rawValuesByGroup[$grpKey]['renders'][] = (float)$renderMs;
+            $rawValuesByGroup[$grpKey]['updates'][] = (float)$updateMs;
+        }
+
+        sort($execOrders);
+        if ($execOrders !== range(1, 120)) {
+            $errors[] = "Execution orders must be a continuous sequence 1..120";
+        }
+
+        if (count($groups) !== 12) {
+            $errors[] = "Expected 12 library x workload groups, got " . count($groups);
+        }
+
+        foreach ($groups as $gk => $reps) {
+            sort($reps);
+            if ($reps !== range(1, 10)) {
+                $errors[] = "Group {$gk} repeat indexes must be 1..10, got " . implode(',', $reps);
+            }
+        }
+
+        // 5. Schedule Replay Audit
+        $replayedSchedule = self::replayExecutionSchedule($repoRoot);
+        foreach ($rawRows as $idx => $r) {
+            $eo = (int)$r['execution_order_index'];
+            if (!isset($replayedSchedule[$eo - 1])) {
+                $errors[] = "Replayed schedule missing execution order {$eo}";
+                continue;
+            }
+            $expectedSlot = $replayedSchedule[$eo - 1];
+            if ($r['library'] !== $expectedSlot['library'] ||
+                (int)$r['workload_size'] !== $expectedSlot['workload_size'] ||
+                (int)$r['repeat_index'] !== $expectedSlot['repeat_index']) {
+                $errors[] = "Schedule replay mismatch at execution order {$eo}: expected {$expectedSlot['library']} N={$expectedSlot['workload_size']} rep={$expectedSlot['repeat_index']}, got {$r['library']} N={$r['workload_size']} rep={$r['repeat_index']}";
+            }
+        }
+
+        // 6. Processed Summary Recalculation Audit
+        $summaryPath = $repoRoot . '/experiments/processed/visualization_summary.csv';
+        if (is_file($summaryPath)) {
+            $summaryRows = MiningResultProcessor::readCsv($summaryPath);
+            if (count($summaryRows) !== 12) {
+                $errors[] = "Summary CSV must contain exactly 12 rows, got " . count($summaryRows);
+            }
+
+            foreach ($summaryRows as $sr) {
+                $sKey = "{$sr['library']}|{$sr['renderer']}|{$sr['workload_size']}";
+                if (!isset($rawValuesByGroup[$sKey])) {
+                    $errors[] = "Summary key {$sKey} not found in raw data groups";
+                    continue;
+                }
+
+                if ((int)$sr['n_repeats'] !== 10 || (int)$sr['n_valid'] !== 10) {
+                    $errors[] = "Summary row {$sKey} invalid counts: repeats={$sr['n_repeats']}, valid={$sr['n_valid']}";
+                }
+
+                $renders = $rawValuesByGroup[$sKey]['renders'];
+                $updates = $rawValuesByGroup[$sKey]['updates'];
+
+                $calcMedRender = MiningResultProcessor::calculateMedian($renders);
+                $calcIqrRender = MiningResultProcessor::calculateIqr($renders);
+                $calcMedUpdate = MiningResultProcessor::calculateMedian($updates);
+                $calcIqrUpdate = MiningResultProcessor::calculateIqr($updates);
+
+                if (abs((float)$sr['median_render_ms'] - $calcMedRender) > 0.001) {
+                    $errors[] = "Summary {$sKey} median_render_ms mismatch: stored {$sr['median_render_ms']}, calculated {$calcMedRender}";
+                }
+                if (abs((float)$sr['iqr_render_ms'] - $calcIqrRender) > 0.001) {
+                    $errors[] = "Summary {$sKey} iqr_render_ms mismatch: stored {$sr['iqr_render_ms']}, calculated {$calcIqrRender}";
+                }
+                if (abs((float)$sr['median_update_ms'] - $calcMedUpdate) > 0.001) {
+                    $errors[] = "Summary {$sKey} median_update_ms mismatch: stored {$sr['median_update_ms']}, calculated {$calcMedUpdate}";
+                }
+                if (abs((float)$sr['iqr_update_ms'] - $calcIqrUpdate) > 0.001) {
+                    $errors[] = "Summary {$sKey} iqr_update_ms mismatch: stored {$sr['iqr_update_ms']}, calculated {$calcIqrUpdate}";
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
      * Checks canonical RQ3 replacement status.
      *
      * @param string $repoRoot
@@ -134,6 +410,21 @@ class Phase4EvidenceValidator
      */
     public static function checkCanonicalRq3Status(string $repoRoot): array
     {
+        $accPath = $repoRoot . '/experiments/evidence/RQ3_REPLACEMENT_ACCEPTANCE.json';
+        if (is_file($accPath)) {
+            $rq3Errors = self::validateReplacementRq3Evidence($repoRoot);
+            if ($rq3Errors === []) {
+                return [
+                    'status' => 'ACCEPTED_CANONICAL',
+                    'message' => 'Canonical replacement formal RQ3 evidence is accepted and fully verified.',
+                ];
+            }
+            return [
+                'status' => 'EVIDENCE_ERROR',
+                'message' => 'Canonical replacement RQ3 evidence errors: ' . implode('; ', $rq3Errors),
+            ];
+        }
+
         $deviationFile = $repoRoot . '/experiments/evidence/RQ3_6276_PROTOCOL_DEVIATION.json';
         $blockerFile = $repoRoot . '/docs/report/PHASE_5C_RQ3_PROTOCOL_BLOCKER.md';
 
@@ -147,6 +438,35 @@ class Phase4EvidenceValidator
         return [
             'status' => 'UNKNOWN',
             'message' => 'RQ3 state undetermined.',
+        ];
+    }
+
+    /**
+     * Checks RQ3 derivative (T3, F5, F6) regeneration status.
+     *
+     * @param string $repoRoot
+     * @return array{status: string, message: string}
+     */
+    public static function checkDerivativeStatus(string $repoRoot): array
+    {
+        $t3Path = $repoRoot . '/experiments/tables/T3_rq3_visualization_performance.csv';
+        $f5Path = $repoRoot . '/experiments/figures/F5_visualization_initial_render.svg';
+        $f6Path = $repoRoot . '/experiments/figures/F6_visualization_update.svg';
+
+        if (is_file($t3Path) && is_file($f5Path) && is_file($f6Path)) {
+            // Check if T3 matches historical 6276 SHA
+            $t3Sha = hash_file('sha256', $t3Path);
+            if ($t3Sha === self::HISTORICAL_DIAGNOSTIC_RQ3_HASHES['experiments/diagnostic/rq3_6276_protocol_deviation/T3_rq3_visualization_performance.csv']) {
+                return [
+                    'status' => 'SUPERSEDED_PENDING_REGENERATION',
+                    'message' => 'Current T3/F5/F6 reflect historical 6276 dataset and require regeneration in Phase 4E-R1 from accepted replacement evidence.',
+                ];
+            }
+        }
+
+        return [
+            'status' => 'CURRENT',
+            'message' => 'Derivative figures and tables are current.',
         ];
     }
 }

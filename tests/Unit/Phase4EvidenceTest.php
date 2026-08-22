@@ -48,7 +48,10 @@ final class Phase4EvidenceTest
         $assert('Historical diagnostic archive validator passes with 0 errors', $diagErrors === [], implode('; ', $diagErrors));
 
         $rq3Status = Phase4EvidenceValidator::checkCanonicalRq3Status($repoRoot);
-        $assert('Canonical RQ3 replacement status is REPLACEMENT_PENDING', $rq3Status['status'] === 'REPLACEMENT_PENDING');
+        $assert('Canonical RQ3 replacement status is ACCEPTED_CANONICAL', ($rq3Status['status'] ?? '') === 'ACCEPTED_CANONICAL');
+
+        $derivStatus = Phase4EvidenceValidator::checkDerivativeStatus($repoRoot);
+        $assert('RQ3 derivative status is SUPERSEDED_PENDING_REGENERATION', ($derivStatus['status'] ?? '') === 'SUPERSEDED_PENDING_REGENERATION');
 
         // 2. Processed-Only Input Policy Check
         $supportData = MiningResultProcessor::readCsv($processedDir . '/mushroom_support_summary.csv');

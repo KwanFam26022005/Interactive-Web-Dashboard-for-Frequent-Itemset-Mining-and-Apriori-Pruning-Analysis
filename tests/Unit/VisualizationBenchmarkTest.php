@@ -229,15 +229,24 @@ final class VisualizationBenchmarkTest
         $assert('Warmup iterations = 2 in config', ($visCfgData['warmup_iterations'] ?? 0) === 2);
         $assert('Formal repetitions = 10 in config', ($visCfgData['formal_repetitions'] ?? 0) === 10);
 
-        // 12. Evidence Validator Classification Tests
+        // 12. Evidence Validator Classification & Replacement Acceptance Tests
         $miningErrs = Phase4EvidenceValidator::validateMiningEvidence($repoRoot);
         $assert('Phase4EvidenceValidator reports 0 errors on canonical mining evidence', $miningErrs === [], implode('; ', $miningErrs));
 
         $diagErrs = Phase4EvidenceValidator::validateDiagnosticArchive($repoRoot);
         $assert('Phase4EvidenceValidator reports 0 errors on historical diagnostic archive', $diagErrs === [], implode('; ', $diagErrs));
 
+        $rq3ReplacementErrs = Phase4EvidenceValidator::validateReplacementRq3Evidence($repoRoot);
+        $assert('Phase4EvidenceValidator reports 0 errors on accepted replacement RQ3 evidence', $rq3ReplacementErrs === [], implode('; ', $rq3ReplacementErrs));
+
         $rq3Status = Phase4EvidenceValidator::checkCanonicalRq3Status($repoRoot);
-        $assert('Phase4EvidenceValidator classifies canonical RQ3 status as REPLACEMENT_PENDING', ($rq3Status['status'] ?? '') === 'REPLACEMENT_PENDING');
+        $assert('Phase4EvidenceValidator classifies canonical RQ3 status as ACCEPTED_CANONICAL', ($rq3Status['status'] ?? '') === 'ACCEPTED_CANONICAL');
+
+        $derivStatus = Phase4EvidenceValidator::checkDerivativeStatus($repoRoot);
+        $assert('Phase4EvidenceValidator classifies derivative status as SUPERSEDED_PENDING_REGENERATION', ($derivStatus['status'] ?? '') === 'SUPERSEDED_PENDING_REGENERATION');
+
+        $replayed = Phase4EvidenceValidator::replayExecutionSchedule($repoRoot);
+        $assert('Replayed execution schedule has exactly 120 slots', count($replayed) === 120);
 
         // 13. Result Processor: Zero-Valid Group & Contract Hardening
         $tmpDir = sys_get_temp_dir() . '/fim_vis_test_' . bin2hex(random_bytes(4));

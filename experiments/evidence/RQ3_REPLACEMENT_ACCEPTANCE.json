@@ -1,0 +1,33 @@
+{
+    "schema_version": "1.0.0",
+    "status": "CANONICAL_FORMAL_RQ3_EVIDENCE_ACCEPTED",
+    "formal_run_revision": "dea90c0962f03872e24c6959cea1959782d446a6",
+    "evidence_capture_commit": "cb34745bfdc4838c878aecbc904ad8ade530a62b",
+    "historical_superseded_run_revision": "6276e0888e0f6ef7e8e676a451b80f7831504130",
+    "provenance_hashes": {
+        "raw_path": "experiments/raw/visualization_runs.csv",
+        "raw_sha256": "9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4",
+        "processed_path": "experiments/processed/visualization_summary.csv",
+        "processed_sha256": "8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0",
+        "browser_export_path": "experiments/evidence/rq3_replacement_formal_capture/visualization_runs_browser_export.csv",
+        "browser_export_sha256": "9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4",
+        "benchmark_config_sha256": "cd4a0cd4978924b94b857f5eb9d41046ec2cc1afb60e8d70561c01e9c079137a",
+        "library_manifest_sha256": "e9df75998cf177b60441f8b064b2a47f4baf337cfe52676473d2a02e48378ccf",
+        "environment_manifest_sha256": "01c01709f7f204607a04ed58be48a5101522d3728eeb752bcb355d6942d88e80",
+        "workload_sha256": "16e3524d9f5dcef2e94abde4507a3b204de2bfa46e2016bc194d761d02ca663e"
+    },
+    "execution_metrics": {
+        "scheduled_observations": 120,
+        "completed_observations": 120,
+        "failed_observations": 0,
+        "count_mismatches": 0,
+        "formal_repetitions_per_group": 10,
+        "group_count": 12
+    },
+    "acceptance_metadata": {
+        "accepted_gate": "PHASE_4D_R2_FORMAL_EVIDENCE_CAPTURED",
+        "decision": "ACCEPTED_AS_CANONICAL_RQ3_EVIDENCE",
+        "derivative_status": "SUPERSEDED_PENDING_REGENERATION",
+        "notes": "Replacement formal RQ3 benchmark conforms to frozen Phase-4A methodology (800x500 container, 5 linear gridlines, Mulberry32 PRNG seed 0xDEADBEEF, 50% displacement, 100ms inter-trial settle, no intermediate settle, headed Edge 151.0.0.0 at 1440x900 DPR 1.0). Derivative figures F5/F6 and table T3 remain superseded until regenerated in Phase 4E-R1."
+    }
+}

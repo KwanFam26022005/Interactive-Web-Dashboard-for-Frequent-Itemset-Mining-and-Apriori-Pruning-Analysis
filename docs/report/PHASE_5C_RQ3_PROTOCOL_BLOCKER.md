@@ -51,6 +51,7 @@ Các thành phần sau đây đã được kiểm chứng độc lập và duy t
 
 ## 4. Kế Hoạch Khắc Phục (Remediation Roadmap)
 
-1. **Phase 4D-R1 (Giai đoạn hiện tại):** Phục hồi cấu hình giao thức chuẩn, bộ sinh dữ liệu Mulberry32, tệp `workload_data.json` đơn nhất, các adapter thư viện 800x500 px với 5 đường lưới, và lưu trữ dữ liệu lịch sử vào `experiments/diagnostic/rq3_6276_protocol_deviation/`.
-2. **Phase 4D-R2 (Chờ phê duyệt):** Thực thi phiên chạy hình thức thay thế (120 quan sát) trong môi trường trình duyệt cô lập.
-3. **Phase 5C-R1 (Sau khi có bằng chứng RQ3 mới):** Tái tạo bảng Bảng 3, Hình 5, Hình 6, cập nhật số liệu RQ3 trong `MIDTERM_REPORT_FINAL.md` và đóng băng `REPORT_RELEASE_MANIFEST.json` mới.
+1. **Phase 4D-R1 (Hoàn thành):** Phục hồi cấu hình giao thức chuẩn, bộ sinh dữ liệu Mulberry32, tệp `workload_data.json` đơn nhất, các adapter thư viện 800x500 px với 5 đường lưới, và lưu trữ dữ liệu lịch sử vào `experiments/diagnostic/rq3_6276_protocol_deviation/`.
+2. **Phase 4D-R2 & 4D-R3 (Hoàn thành & Đã chấp thuận):** Thực thi phiên chạy hình thức thay thế (120 quan sát hoàn tất 100% không lỗi) và ghi nhận hồ sơ chấp thuận chuẩn hoá tại `experiments/evidence/RQ3_REPLACEMENT_ACCEPTANCE.json`. Dữ liệu thô và tóm tắt RQ3 thay thế đã chính thức được công nhận.
+3. **Phase 4E-R1 (Tiếp theo):** Tái tạo bảng Bảng 3 (`T3`), Hình 5 (`F5`), Hình 6 (`F6`) từ dữ liệu thực nghiệm RQ3 chuẩn hoá mới.
+4. **Phase 5C-R1 (Giai đoạn cuối):** Cập nhật số liệu và thảo luận RQ3 trong `MIDTERM_REPORT_FINAL.md`, giải phóng hoàn toàn điểm nghẽn và đóng băng `REPORT_RELEASE_MANIFEST.json` mới cho gói nộp bài.
