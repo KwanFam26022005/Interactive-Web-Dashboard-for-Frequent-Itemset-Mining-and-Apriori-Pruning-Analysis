@@ -58,7 +58,25 @@ if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FIL
         }
     }
 
-    // 3. Validate Diagnostic Archive Integrity
+    // 3. Validate Derivatives Scope
+    if ($scope === 'all' || $scope === 'derivatives') {
+        $derivErrors = Phase4EvidenceValidator::validateDerivatives($repoRoot);
+        if ($derivErrors !== []) {
+            echo "[FAIL] Canonical derivative artifacts (Tables T1..T3, Figures F1..F6) errors:\n";
+            foreach ($derivErrors as $e) {
+                echo "  - {$e}\n";
+            }
+            exit(1);
+        }
+        echo "[PASS] Canonical derivative artifacts (Tables T1..T3, Figures F1..F6)\n";
+
+        if ($scope === 'derivatives') {
+            echo "[PASS] Derivatives scope validation completed successfully.\n";
+            exit(0);
+        }
+    }
+
+    // 4. Validate Diagnostic Archive Integrity
     $diagErrors = Phase4EvidenceValidator::validateDiagnosticArchive($repoRoot);
     if ($diagErrors !== []) {
         echo "[FAIL] Diagnostic archive errors:\n";
@@ -69,7 +87,7 @@ if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FIL
     }
     echo "[PASS] Historical RQ3 diagnostic archive integrity (6276 artifacts preserved)\n";
 
-    // 4. Canonical RQ3 Status and Derivative Readiness Check
+    // 5. Canonical RQ3 Status and Derivative Readiness Check
     $rq3Status = Phase4EvidenceValidator::checkCanonicalRq3Status($repoRoot);
     $derivStatus = Phase4EvidenceValidator::checkDerivativeStatus($repoRoot);
 
@@ -82,15 +100,17 @@ if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === __FIL
         exit(2);
     }
 
-    if ($derivStatus['status'] === 'SUPERSEDED_PENDING_REGENERATION') {
-        echo "[BLOCKED] RQ3 derivative figures/tables (T3, F5, F6) pending regeneration (Phase 4E-R1 required)\n";
-        echo "[BLOCKED] Phase-5C submission source remains noncanonical until derivative regeneration\n";
+    if ($derivStatus['status'] !== 'CURRENT') {
+        echo "[BLOCKED] RQ3 derivative figures/tables error: {$derivStatus['message']}\n";
         echo "========================================\n";
-        echo "Summary: RQ1/RQ2 PASS | RQ3 EVIDENCE ACCEPTED | DERIVATIVES PENDING | Overall Status: BLOCKED\n";
+        echo "Summary: RQ1/RQ2 PASS | RQ3 EVIDENCE ACCEPTED | DERIVATIVES ERROR | Overall Status: BLOCKED\n";
         echo "========================================\n";
         exit(2);
     }
 
+    echo "========================================\n";
+    echo "Summary: RQ1/RQ2 PASS | RQ3 EVIDENCE ACCEPTED | DERIVATIVES CURRENT | Phase 4 Complete\n";
+    echo "========================================\n";
     echo "[PASS] All Phase 4 evidence source, table, figure, and manifest checks passed!\n";
     exit(0);
 }

@@ -1,88 +1,95 @@
 {
-  "schema_version": "1.0.0",
-  "phase": "PHASE_4E",
-  "dataset": {
-    "name": "Mushroom",
-    "filename": "agaricus-lepiota.data",
-    "sha256": "e65d082030501a3ebcbcd7c9f7c71aa9d28fdfff463bf4cf4716a3fe13ac360e",
-    "transaction_count": 8124,
-    "unique_item_count": 119
-  },
-  "lineage": {
-    "formal_rq1_rq2_run_revision": "fd318b3ca0d3829c0849ee2a5ef783caaae72fdb",
-    "phase4c_evidence_commit": "b40022fda83e754078c1a5d4fbd028eb58315917",
-    "formal_rq3_run_revision": "6276e0888e0f6ef7e8e676a451b80f7831504130",
-    "phase4d_evidence_commit": "2f362d4a415ecf57bf3fd60d96a38aeaa579567c",
-    "generator_revision": "dadd18ab7cad5989176836cd6d19b8db76293b9a"
-  },
-  "source_artifacts": {
-    "mushroom_support_runs": {
-      "path": "experiments/raw/mushroom_support_runs.csv",
-      "sha256": "022a56cbe99344c76a8fd51cbe0329a48e4804815f6b861614fb266cfe5fc641"
+    "schema_version": "1.0.0",
+    "phase": "PHASE_4E",
+    "dataset": {
+        "name": "Mushroom",
+        "filename": "agaricus-lepiota.data",
+        "sha256": "e65d082030501a3ebcbcd7c9f7c71aa9d28fdfff463bf4cf4716a3fe13ac360e",
+        "transaction_count": 8124,
+        "unique_item_count": 119
     },
-    "mushroom_pruning_levels": {
-      "path": "experiments/raw/mushroom_pruning_levels.csv",
-      "sha256": "613632ed7fd961ba155b8ca92ad23a2e30d271d6663ffec0d034bd6176303c11"
+    "lineage": {
+        "formal_rq1_rq2_run_revision": "fd318b3ca0d3829c0849ee2a5ef783caaae72fdb",
+        "phase4c_evidence_commit": "b40022fda83e754078c1a5d4fbd028eb58315917",
+        "formal_rq3_run_revision": "dea90c0962f03872e24c6959cea1959782d446a6",
+        "rq3_evidence_capture_commit": "cb34745bfdc4838c878aecbc904ad8ade530a62b",
+        "rq3_acceptance_revision": "614658dc59d41eff3e72bca40a4d2d24c8d8d4b2",
+        "generator_revision": "dadd18ab7cad5989176836cd6d19b8db76293b9a"
     },
-    "mushroom_support_summary": {
-      "path": "experiments/processed/mushroom_support_summary.csv",
-      "sha256": "1b60921ada3edbb2f4625683338729d3e8f0dc090ae9782b3746bbcb7798f0d2"
+    "source_artifacts": {
+        "mushroom_support_runs": {
+            "path": "experiments/raw/mushroom_support_runs.csv",
+            "sha256": "022a56cbe99344c76a8fd51cbe0329a48e4804815f6b861614fb266cfe5fc641"
+        },
+        "mushroom_pruning_levels": {
+            "path": "experiments/raw/mushroom_pruning_levels.csv",
+            "sha256": "613632ed7fd961ba155b8ca92ad23a2e30d271d6663ffec0d034bd6176303c11"
+        },
+        "mushroom_support_summary": {
+            "path": "experiments/processed/mushroom_support_summary.csv",
+            "sha256": "1b60921ada3edbb2f4625683338729d3e8f0dc090ae9782b3746bbcb7798f0d2"
+        },
+        "mushroom_pruning_summary": {
+            "path": "experiments/processed/mushroom_pruning_summary.csv",
+            "sha256": "b89a2fb983113861a7df23ed3832fc5fa983e3b3bdcbc3784851018540c804f2"
+        },
+        "visualization_runs": {
+            "path": "experiments/raw/visualization_runs.csv",
+            "sha256": "9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4"
+        },
+        "visualization_summary": {
+            "path": "experiments/processed/visualization_summary.csv",
+            "sha256": "8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0"
+        }
     },
-    "mushroom_pruning_summary": {
-      "path": "experiments/processed/mushroom_pruning_summary.csv",
-      "sha256": "b89a2fb983113861a7df23ed3832fc5fa983e3b3bdcbc3784851018540c804f2"
+    "figure_artifacts": {
+        "F1": {
+            "path": "experiments/figures/F1_apriori_runtime_vs_support.svg",
+            "sha256": "01f26608f18c5d5a51b72ba4a10e81e08b34f2a8f8cfbc7a44dd3bc1afbac15c"
+        },
+        "F2": {
+            "path": "experiments/figures/F2_candidate_volume_vs_support.svg",
+            "sha256": "d7e63ac8ac310c8950bc26da2231f38aa6befa052ce7fb89d9f8fd6d7e89b739"
+        },
+        "F3": {
+            "path": "experiments/figures/F3_pattern_output_vs_support.svg",
+            "sha256": "5ded8c2dc9afac383879766af1c874cd262345fc9b2245860c3b158afa09fad3"
+        },
+        "F4": {
+            "path": "experiments/figures/F4_pruning_dynamics_per_level.svg",
+            "sha256": "513ef1de89e170d4769bf5246afbd8b733d99a346aedd980dd76d06a4a6c84fe"
+        },
+        "F5": {
+            "path": "experiments/figures/F5_visualization_initial_render.svg",
+            "sha256": "c30f1e5a1151f00844cc83e3cb0221490f0f2312f3a0e11fce1eb9bcaa933df3"
+        },
+        "F6": {
+            "path": "experiments/figures/F6_visualization_update.svg",
+            "sha256": "fd3d4421c217a79efca3165eedf5bd744b5510ef67fed6725d240c5bf4d7a48c"
+        }
     },
-    "visualization_runs": {
-      "path": "experiments/raw/visualization_runs.csv",
-      "sha256": "10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781"
+    "table_artifacts": {
+        "T1": {
+            "path": "experiments/tables/T1_rq1_support_effect.csv",
+            "sha256": "969432e8ba2a03b33520cecf5d2396d4ea574845c89822aaf7f629072b769466"
+        },
+        "T2": {
+            "path": "experiments/tables/T2_rq2_overall_pruning.csv",
+            "sha256": "ecddf3a435632753052f760d9409fab15099c4edac5edd47ad0a3f6b5e3e5abe"
+        },
+        "T2b": {
+            "path": "experiments/tables/T2b_rq2_per_level_pruning.csv",
+            "sha256": "103be5a479102576e8e4517c63cc5e3844eb1f5f312ea4e95d2c37ad4bc18acb"
+        },
+        "T3": {
+            "path": "experiments/tables/T3_rq3_visualization_performance.csv",
+            "sha256": "8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0"
+        }
     },
-    "visualization_summary": {
-      "path": "experiments/processed/visualization_summary.csv",
-      "sha256": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210"
+    "historical_noncanonical_rq3": {
+        "historical_run_revision": "6276e0888e0f6ef7e8e676a451b80f7831504130",
+        "archive_directory": "experiments/diagnostic/rq3_6276_protocol_deviation",
+        "invalidation_record": "experiments/evidence/RQ3_6276_PROTOCOL_DEVIATION.json",
+        "status": "SUPERSEDED_BY_CANONICAL_REPLACEMENT"
     }
-  },
-  "figure_artifacts": {
-    "F1": {
-      "path": "experiments/figures/F1_apriori_runtime_vs_support.svg",
-      "sha256": "01f26608f18c5d5a51b72ba4a10e81e08b34f2a8f8cfbc7a44dd3bc1afbac15c"
-    },
-    "F2": {
-      "path": "experiments/figures/F2_candidate_volume_vs_support.svg",
-      "sha256": "d7e63ac8ac310c8950bc26da2231f38aa6befa052ce7fb89d9f8fd6d7e89b739"
-    },
-    "F3": {
-      "path": "experiments/figures/F3_pattern_output_vs_support.svg",
-      "sha256": "5ded8c2dc9afac383879766af1c874cd262345fc9b2245860c3b158afa09fad3"
-    },
-    "F4": {
-      "path": "experiments/figures/F4_pruning_dynamics_per_level.svg",
-      "sha256": "513ef1de89e170d4769bf5246afbd8b733d99a346aedd980dd76d06a4a6c84fe"
-    },
-    "F5": {
-      "path": "experiments/figures/F5_visualization_initial_render.svg",
-      "sha256": "3b0c530396501bc6fb5c8d02da68f8671562bec6c382e1abc201e8c89499e999"
-    },
-    "F6": {
-      "path": "experiments/figures/F6_visualization_update.svg",
-      "sha256": "e9eca0375b45e62206c5933ff885a8565839acd1c0d267aa285604e780225918"
-    }
-  },
-  "table_artifacts": {
-    "T1": {
-      "path": "experiments/tables/T1_rq1_support_effect.csv",
-      "sha256": "969432e8ba2a03b33520cecf5d2396d4ea574845c89822aaf7f629072b769466"
-    },
-    "T2": {
-      "path": "experiments/tables/T2_rq2_overall_pruning.csv",
-      "sha256": "ecddf3a435632753052f760d9409fab15099c4edac5edd47ad0a3f6b5e3e5abe"
-    },
-    "T2b": {
-      "path": "experiments/tables/T2b_rq2_per_level_pruning.csv",
-      "sha256": "103be5a479102576e8e4517c63cc5e3844eb1f5f312ea4e95d2c37ad4bc18acb"
-    },
-    "T3": {
-      "path": "experiments/tables/T3_rq3_visualization_performance.csv",
-      "sha256": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210"
-    }
-  }
 }

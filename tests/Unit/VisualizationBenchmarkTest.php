@@ -243,7 +243,10 @@ final class VisualizationBenchmarkTest
         $assert('Phase4EvidenceValidator classifies canonical RQ3 status as ACCEPTED_CANONICAL', ($rq3Status['status'] ?? '') === 'ACCEPTED_CANONICAL');
 
         $derivStatus = Phase4EvidenceValidator::checkDerivativeStatus($repoRoot);
-        $assert('Phase4EvidenceValidator classifies derivative status as SUPERSEDED_PENDING_REGENERATION', ($derivStatus['status'] ?? '') === 'SUPERSEDED_PENDING_REGENERATION');
+        $assert('Phase4EvidenceValidator classifies derivative status as CURRENT', ($derivStatus['status'] ?? '') === 'CURRENT');
+
+        $derivErrs = Phase4EvidenceValidator::validateDerivatives($repoRoot);
+        $assert('Phase4EvidenceValidator reports 0 errors on canonical derivatives', $derivErrs === [], implode('; ', $derivErrs));
 
         $replayed = Phase4EvidenceValidator::replayExecutionSchedule($repoRoot);
         $assert('Replayed execution schedule has exactly 120 slots', count($replayed) === 120);

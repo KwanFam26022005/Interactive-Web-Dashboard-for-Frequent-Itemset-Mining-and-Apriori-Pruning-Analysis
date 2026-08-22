@@ -13,9 +13,10 @@ All empirical benchmarks in this project are frozen across deterministic revisio
 
 - **Formal RQ1/RQ2 Mining Run Revision:** `fd318b3ca0d3829c0849ee2a5ef783caaae72fdb`
 - **Phase 4C Evidence Commit:** `b40022fda83e754078c1a5d4fbd028eb58315917`
-- **Formal RQ3 Visualization Run Revision:** `6276e0888e0f6ef7e8e676a451b80f7831504130`
-- **Phase 4D Evidence Commit:** `2f362d4a415ecf57bf3fd60d96a38aeaa579567c`
-- **Phase 4E Remediation Generator Revision:** `dadd18ab7cad5989176836cd6d19b8db76293b9a`
+- **Formal RQ3 Visualization Run Revision:** `dea90c0962f03872e24c6959cea1959782d446a6`
+- **Phase 4D RQ3 Evidence Capture Commit:** `cb34745bfdc4838c878aecbc904ad8ade530a62b`
+- **Phase 4D RQ3 Acceptance Revision:** `614658dc59d41eff3e72bca40a4d2d24c8d8d4b2`
+- **Phase 4E Derivative Generator Revision:** `dadd18ab7cad5989176836cd6d19b8db76293b9a`
 
 ---
 
@@ -38,7 +39,7 @@ All empirical benchmarks in this project are frozen across deterministic revisio
 ### Evidence Table (Table T1)
 
 | $\text{min\_support}$ | Required Count | Candidates Generated | Candidates Pruned | Candidates Evaluated | Frequent Itemsets | Rules Count ($\text{conf} \ge 0.75$) | Max $k$ | Median Apriori Runtime (ms) | IQR Runtime (ms) | Pruning Ratio |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **0.60** | 4,875 | 185 | 11 | 174 | 51 | 223 | 5 | **523.072** | 317.164 | 0.059459 |
 | **0.50** | 4,062 | 336 | 29 | 307 | 153 | 664 | 5 | **1,424.078** | 238.000 | 0.086310 |
 | **0.45** | 3,656 | 641 | 115 | 526 | 329 | 1,859 | 6 | **3,322.764** | 551.320 | 0.179407 |
@@ -80,30 +81,41 @@ Apriori-property pruning removed an increasing fraction of candidate itemsets wi
 
 ## 5. Research Question 3 (RQ3): Comparative Front-End Visualization Performance
 
+### Formal Protocol Context
+- **Formal Run Revision:** `dea90c0962f03872e24c6959cea1959782d446a6`
+- **Stage Container:** $800 \times 500\text{ px}$ with 5 fixed linear gridlines per axis
+- **Runtime Environment:** Microsoft Edge `151.0.0.0` at inner viewport $1440 \times 900\text{ px}$, Device Pixel Ratio (DPR) `1.0`, display scaling `1.0`
+- **Workload Data:** Single canonical `workload_data.json` bundle generated via Mulberry32 PRNG (seed `0xDEADBEEF`)
+- **In-Place Update Invariant:** Exact $50\%$ point displacement ($y_i \leftarrow (y_i + 0.1) \pmod{1.0}$) preserving $50\%$ identical base points
+- **Timing & Settle Protocol:** Render-to-two-frame-observation latency (`performance.now()` across `double-requestAnimationFrame` boundary) with $100\text{ ms}$ inter-trial settle delay and natural garbage collection
+- **Design Matrix:** 3 libraries $\times$ 4 workload sizes ($100, 1000, 5000, 10000$) $\times$ 10 formal repetitions = 120 recorded observations (following 24 unrecorded warmup trials)
+
 ### Formal Evidence Table (Table T3)
 
 | Library | Version | Renderer | Workload Size ($N$) | Valid Runs | Median Initial Render (ms) | IQR Initial Render (ms) | Median Data Update (ms) | IQR Data Update (ms) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Chart.js** | 4.4.8 | Canvas | **100** | 10 / 10 | **18.000** | 16.700 | **16.350** | 0.600 |
-| **Chart.js** | 4.4.8 | Canvas | **1,000** | 10 / 10 | **17.500** | 1.800 | **16.950** | 16.600 |
-| **Chart.js** | 4.4.8 | Canvas | **5,000** | 10 / 10 | **42.400** | 4.900 | **39.800** | 7.900 |
-| **Chart.js** | 4.4.8 | Canvas | **10,000** | 10 / 10 | **70.550** | 14.800 | **60.950** | 11.700 |
-| **D3.js** | 7.9.0 | SVG | **100** | 10 / 10 | **17.300** | 1.200 | **17.750** | 15.100 |
-| **D3.js** | 7.9.0 | SVG | **1,000** | 10 / 10 | **18.250** | 15.000 | **17.900** | 13.000 |
-| **D3.js** | 7.9.0 | SVG | **5,000** | 10 / 10 | **72.750** | 10.100 | **57.650** | 10.300 |
-| **D3.js** | 7.9.0 | SVG | **10,000** | 10 / 10 | **138.600** | 26.600 | **117.700** | 19.200 |
-| **Apache ECharts** | 5.6.0 | Canvas | **100** | 10 / 10 | **24.850** | 15.700 | **17.100** | 15.900 |
-| **Apache ECharts** | 5.6.0 | Canvas | **1,000** | 10 / 10 | **27.550** | 7.300 | **32.300** | 8.800 |
-| **Apache ECharts** | 5.6.0 | Canvas | **5,000** | 10 / 10 | **111.000** | 8.400 | **96.250** | 8.900 |
-| **Apache ECharts** | 5.6.0 | Canvas | **10,000** | 10 / 10 | **222.600** | 38.400 | **195.800** | 8.300 |
+| **Chart.js** | 4.4.8 | Canvas | **100** | 10 / 10 | **18.200** | 4.200 | **33.350** | 0.400 |
+| **Chart.js** | 4.4.8 | Canvas | **1,000** | 10 / 10 | **23.000** | 15.500 | **33.300** | 0.100 |
+| **Chart.js** | 4.4.8 | Canvas | **5,000** | 10 / 10 | **20.400** | 14.600 | **33.200** | 0.100 |
+| **Chart.js** | 4.4.8 | Canvas | **10,000** | 10 / 10 | **25.900** | 12.000 | **33.400** | 0.200 |
+| **D3.js** | 7.9.0 | SVG | **100** | 10 / 10 | **18.550** | 3.600 | **33.350** | 0.200 |
+| **D3.js** | 7.9.0 | SVG | **1,000** | 10 / 10 | **31.900** | 12.900 | **33.200** | 0.300 |
+| **D3.js** | 7.9.0 | SVG | **5,000** | 10 / 10 | **37.300** | 7.500 | **33.200** | 13.000 |
+| **D3.js** | 7.9.0 | SVG | **10,000** | 10 / 10 | **72.600** | 13.700 | **64.550** | 16.100 |
+| **Apache ECharts** | 5.6.0 | Canvas | **100** | 10 / 10 | **27.800** | 15.200 | **33.100** | 0.300 |
+| **Apache ECharts** | 5.6.0 | Canvas | **1,000** | 10 / 10 | **18.300** | 9.600 | **33.200** | 0.200 |
+| **Apache ECharts** | 5.6.0 | Canvas | **5,000** | 10 / 10 | **43.200** | 3.300 | **54.550** | 8.600 |
+| **Apache ECharts** | 5.6.0 | Canvas | **10,000** | 10 / 10 | **88.500** | 33.600 | **94.050** | 19.800 |
 
 ### Initial Render & Update Analysis
-- **Small Workloads ($N \le 1,000$):** At $N \le 1,000$, median observations remained near one to two 60-Hz frame intervals. Because the double-rAF protocol is frame-quantized, small differences in this range should not be over-interpreted.
-- **Dense Workloads ($N \ge 5,000$):** Chart.js (Canvas) recorded the lowest latency ($70.550\text{ ms}$ render / $60.950\text{ ms}$ update at $N=10,000$), D3.js (SVG) exhibited intermediate latency ($138.600\text{ ms}$ render / $117.700\text{ ms}$ update), and Apache ECharts (Canvas) scaled to $222.600\text{ ms}$ render / $195.800\text{ ms}$ update under standard non-progressive rendering.
-- **Update vs. Render:** At the larger $N=5,000$ and $N=10,000$ workloads, update latency was lower than initial-render latency for all three libraries. At small workloads, frame-boundary quantization produced exceptions to this pattern.
+- **Small Workloads ($N \le 1,000$):** At the smaller workloads, the measured medians remained near frame-scale observation boundaries and did not support a simple stable ordering across libraries. Initial render medians ranged between $18.200\text{ ms}$ and $31.900\text{ ms}$, while update medians clustered tightly around $33.100\text{ ms} - 33.350\text{ ms}$ (representing two $60\text{-Hz}$ frame observation quantization intervals).
+- **Medium Workload ($N = 5,000$):** At $N = 5,000$, Chart.js recorded the lowest median initial-render latency ($20.400\text{ ms}$), followed by D3.js SVG ($37.300\text{ ms}$) and Apache ECharts Canvas ($43.200\text{ ms}$). For data update, Chart.js and D3.js recorded identical stored medians ($33.200\text{ ms}$), while ECharts scaled to $54.550\text{ ms}$.
+- **Dense Workload ($N = 10,000$):** Under the frozen Edge 151 scatter workload at $N = 10,000$, Chart.js recorded the lowest median render-to-two-frame-observation latency ($25.900\text{ ms}$ render / $33.400\text{ ms}$ update), followed by D3.js SVG ($72.600\text{ ms}$ render / $64.550\text{ ms}$ update) and Apache ECharts Canvas ($88.500\text{ ms}$ render / $94.050\text{ ms}$ update).
+- **Update vs. Render Dynamics:** The relative cost of in-place update versus initial render was library- and workload-dependent in the accepted formal run. For D3 at $N \ge 5,000$, update latency was lower than initial render ($33.200\text{ ms}$ vs $37.300\text{ ms}$ at $N=5,000$; $64.550\text{ ms}$ vs $72.600\text{ ms}$ at $N=10,000$). Conversely, for Chart.js and ECharts, update latency was higher than initial render at several workload points (e.g., Chart.js at $N=10,000$: $33.400\text{ ms}$ update vs $25.900\text{ ms}$ render; ECharts at $N=10,000$: $94.050\text{ ms}$ update vs $88.500\text{ ms}$ render). The accepted evidence does not support a universal claim that in-place updates are uniformly faster than initial creation.
+- **Empirical Trajectory Non-Monotonicity:** The medians did not increase monotonically at every adjacent workload size, particularly near frame-scale observations (e.g., Chart.js render $N=1,000 \to 5,000$: $23.000\text{ ms} \to 20.400\text{ ms}$; ECharts render $N=100 \to 1,000$: $27.800\text{ ms} \to 18.300\text{ ms}$). These represent faithful empirical observations under frame-quantized browser scheduling.
 
 ### Concise Answer
-Under the frozen Chromium/Edge environment, fixed $800 \times 600\text{ px}$ stage, and common render-to-two-frame-observation latency protocol, Chart.js recorded the lowest median latency at larger workloads, followed by D3.js SVG and Apache ECharts Canvas. The observed scaling is consistent with differences in renderer architecture and library processing overhead; this experiment does not independently isolate those internal causes.
+Under the frozen Chromium/Edge 151 environment, $800 \times 500\text{ px}$ stage, and standardized render-to-two-frame-observation latency protocol, Chart.js recorded the lowest median latency at dense workloads ($N=10,000$), followed by D3.js SVG and Apache ECharts Canvas. At smaller workloads ($N \le 1,000$), latencies clustered near discrete frame boundaries without establishing a single universal ranking across libraries or operations.
 
 ---
 
@@ -117,10 +129,10 @@ Under the frozen Chromium/Edge environment, fixed $800 \times 600\text{ px}$ sta
 5. **Fixed Confidence:** Association rule generation was evaluated at a constant threshold ($\text{min\_conf} = 0.75$).
 
 ### Visualization Benchmark Limitations (RQ3)
-1. **Renderer Architecture Coupling:** D3.js was tested with an SVG DOM renderer while Chart.js and ECharts used HTML5 Canvas rasterization. Renderer architecture represents an intrinsic part of the library treatment rather than an isolated algorithmic comparison.
-2. **Double-rAF Frame Quantization:** The double `requestAnimationFrame` metric measures render-to-two-frame-observation latency. Small timing differences below $\sim 16.7\text{ ms}$ reflect discrete browser frame synchronization boundaries rather than continuous execution costs. The metric does not measure GPU, paint, or presentation completion.
-3. **Plot Layout Engine:** Outer stages were fixed at $800 \times 600\text{ px}$, but inner scale margins followed library-native auto-layout.
-4. **Garbage Collection:** Browser runtime garbage collection remains uncontrolled background jitter, mitigated by reporting medians and IQRs.
+1. **Renderer Architecture Coupling:** D3.js was tested with an SVG DOM renderer while Chart.js and ECharts used HTML5 Canvas rasterization. Renderer architecture represents an intrinsic part of the library framework treatment rather than an isolated algorithmic comparison.
+2. **Double-rAF Frame Quantization:** The double `requestAnimationFrame` metric measures render-to-two-frame-observation latency. Timing observations cluster near discrete browser frame synchronization intervals ($16.7\text{ ms}, 33.3\text{ ms}$, etc.). The metric explicitly does not measure GPU, paint, or presentation completion.
+3. **Plot Layout Engine:** Outer stages were fixed at $800 \times 500\text{ px}$ with 5 fixed linear gridlines, but inner scale margins followed library-native auto-layout.
+4. **Garbage Collection:** Browser runtime garbage collection remains uncontrolled background jitter, mitigated by reporting medians and IQRs across 10 formal repetitions per treatment.
 5. **Environment & Workload Scope:** Evaluated under a single frozen Edge/browser environment on 2D numerical scatter plots with unchunked updates and disabled animations.
 
 ---
@@ -145,20 +157,20 @@ Under the frozen Chromium/Edge environment, fixed $800 \times 600\text{ px}$ sta
 - `experiments/raw/mushroom_pruning_levels.csv`: `613632ed7fd961ba155b8ca92ad23a2e30d271d6663ffec0d034bd6176303c11`
 - `experiments/processed/mushroom_support_summary.csv`: `1b60921ada3edbb2f4625683338729d3e8f0dc090ae9782b3746bbcb7798f0d2`
 - `experiments/processed/mushroom_pruning_summary.csv`: `b89a2fb983113861a7df23ed3832fc5fa983e3b3bdcbc3784851018540c804f2`
-- `experiments/raw/visualization_runs.csv`: `10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781`
-- `experiments/processed/visualization_summary.csv`: `f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210`
+- `experiments/raw/visualization_runs.csv`: `9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4`
+- `experiments/processed/visualization_summary.csv`: `8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0`
 
 ### Generated Figure & Table Artifacts
 - `experiments/figures/F1_apriori_runtime_vs_support.svg`: `01f26608f18c5d5a51b72ba4a10e81e08b34f2a8f8cfbc7a44dd3bc1afbac15c`
 - `experiments/figures/F2_candidate_volume_vs_support.svg`: `d7e63ac8ac310c8950bc26da2231f38aa6befa052ce7fb89d9f8fd6d7e89b739`
 - `experiments/figures/F3_pattern_output_vs_support.svg`: `5ded8c2dc9afac383879766af1c874cd262345fc9b2245860c3b158afa09fad3`
 - `experiments/figures/F4_pruning_dynamics_per_level.svg`: `513ef1de89e170d4769bf5246afbd8b733d99a346aedd980dd76d06a4a6c84fe`
-- `experiments/figures/F5_visualization_initial_render.svg`: `3b0c530396501bc6fb5c8d02da68f8671562bec6c382e1abc201e8c89499e999`
-- `experiments/figures/F6_visualization_update.svg`: `e9eca0375b45e62206c5933ff885a8565839acd1c0d267aa285604e780225918`
+- `experiments/figures/F5_visualization_initial_render.svg`: `c30f1e5a1151f00844cc83e3cb0221490f0f2312f3a0e11fce1eb9bcaa933df3`
+- `experiments/figures/F6_visualization_update.svg`: `fd3d4421c217a79efca3165eedf5bd744b5510ef67fed6725d240c5bf4d7a48c`
 - `experiments/tables/T1_rq1_support_effect.csv`: `969432e8ba2a03b33520cecf5d2396d4ea574845c89822aaf7f629072b769466`
 - `experiments/tables/T2_rq2_overall_pruning.csv`: `ecddf3a435632753052f760d9409fab15099c4edac5edd47ad0a3f6b5e3e5abe`
 - `experiments/tables/T2b_rq2_per_level_pruning.csv`: `103be5a479102576e8e4517c63cc5e3844eb1f5f312ea4e95d2c37ad4bc18acb`
-- `experiments/tables/T3_rq3_visualization_performance.csv`: `f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210`
+- `experiments/tables/T3_rq3_visualization_performance.csv`: `8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0`
 
 ---
 
@@ -169,3 +181,4 @@ When drafting the final academic report, adhere strictly to these empirical cons
 2. State the frozen experimental parameter context whenever citing numbers.
 3. Treat renderer architecture (Canvas vs. SVG) as an integrated component of each library framework treatment.
 4. Do not state claims of performance superiority where timing disparities fall within single frame quantization boundaries ($< 16.7\text{ ms}$).
+5. Do not assert that in-place updates are universally faster than initial render across all libraries or workload scales.

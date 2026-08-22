@@ -51,7 +51,10 @@ final class Phase4EvidenceTest
         $assert('Canonical RQ3 replacement status is ACCEPTED_CANONICAL', ($rq3Status['status'] ?? '') === 'ACCEPTED_CANONICAL');
 
         $derivStatus = Phase4EvidenceValidator::checkDerivativeStatus($repoRoot);
-        $assert('RQ3 derivative status is SUPERSEDED_PENDING_REGENERATION', ($derivStatus['status'] ?? '') === 'SUPERSEDED_PENDING_REGENERATION');
+        $assert('RQ3 derivative status is CURRENT', ($derivStatus['status'] ?? '') === 'CURRENT');
+
+        $derivErrors = Phase4EvidenceValidator::validateDerivatives($repoRoot);
+        $assert('validateDerivatives reports 0 errors', $derivErrors === [], implode('; ', $derivErrors));
 
         // 2. Processed-Only Input Policy Check
         $supportData = MiningResultProcessor::readCsv($processedDir . '/mushroom_support_summary.csv');
@@ -162,6 +165,27 @@ final class Phase4EvidenceTest
                 array_map('unlink', glob($tmpDir2 . '/*') ?: []);
                 rmdir($tmpDir2);
             }
+        }
+
+        // 5. Findings & Superseded Values Absence Audit
+        $t3Content = (string)file_get_contents($repoRoot . '/experiments/tables/T3_rq3_visualization_performance.csv');
+        $findingsContent = (string)file_get_contents($repoRoot . '/experiments/reports/PHASE_4_EMPIRICAL_FINDINGS.md');
+        $evidenceMapContent = (string)file_get_contents($repoRoot . '/docs/report/REPORT_EVIDENCE_MAP.md');
+
+        $old6276Values = ['70.550', '60.950', '138.600', '117.700', '222.600', '195.800'];
+        foreach ($old6276Values as $val) {
+            $assert("Current Table T3 does NOT contain historical value {$val}", !str_contains($t3Content, $val));
+            $assert("Current PHASE_4_EMPIRICAL_FINDINGS.md does NOT contain historical value {$val}", !str_contains($findingsContent, $val));
+            $assert("Current REPORT_EVIDENCE_MAP.md does NOT contain historical value {$val}", !str_contains($evidenceMapContent, $val));
+        }
+
+        $assert('PHASE_4_EMPIRICAL_FINDINGS.md specifies 800 x 500 stage', str_contains($findingsContent, '800 \times 500'));
+        $assert('PHASE_4_EMPIRICAL_FINDINGS.md does NOT specify 800 x 600 stage', !str_contains($findingsContent, '800 \times 600'));
+
+        $newValues = ['25.900', '72.600', '88.500', '33.400', '64.550', '94.050'];
+        foreach ($newValues as $val) {
+            $assert("Current Table T3 contains accepted replacement value {$val}", str_contains($t3Content, $val));
+            $assert("Current PHASE_4_EMPIRICAL_FINDINGS.md contains accepted replacement value {$val}", str_contains($findingsContent, $val));
         }
 
         return [

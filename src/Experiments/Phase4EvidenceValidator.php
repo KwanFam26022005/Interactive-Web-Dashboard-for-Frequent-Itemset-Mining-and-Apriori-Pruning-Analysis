@@ -442,6 +442,59 @@ class Phase4EvidenceValidator
     }
 
     /**
+     * Canonical Derivative Artifact Hashes (Phase 4E-R1).
+     */
+    public const CANONICAL_FIGURE_HASHES = [
+        'experiments/figures/F1_apriori_runtime_vs_support.svg' => '01f26608f18c5d5a51b72ba4a10e81e08b34f2a8f8cfbc7a44dd3bc1afbac15c',
+        'experiments/figures/F2_candidate_volume_vs_support.svg' => 'd7e63ac8ac310c8950bc26da2231f38aa6befa052ce7fb89d9f8fd6d7e89b739',
+        'experiments/figures/F3_pattern_output_vs_support.svg' => '5ded8c2dc9afac383879766af1c874cd262345fc9b2245860c3b158afa09fad3',
+        'experiments/figures/F4_pruning_dynamics_per_level.svg' => '513ef1de89e170d4769bf5246afbd8b733d99a346aedd980dd76d06a4a6c84fe',
+        'experiments/figures/F5_visualization_initial_render.svg' => 'c30f1e5a1151f00844cc83e3cb0221490f0f2312f3a0e11fce1eb9bcaa933df3',
+        'experiments/figures/F6_visualization_update.svg' => 'fd3d4421c217a79efca3165eedf5bd744b5510ef67fed6725d240c5bf4d7a48c',
+    ];
+
+    public const CANONICAL_TABLE_HASHES = [
+        'experiments/tables/T1_rq1_support_effect.csv' => '969432e8ba2a03b33520cecf5d2396d4ea574845c89822aaf7f629072b769466',
+        'experiments/tables/T2_rq2_overall_pruning.csv' => 'ecddf3a435632753052f760d9409fab15099c4edac5edd47ad0a3f6b5e3e5abe',
+        'experiments/tables/T2b_rq2_per_level_pruning.csv' => '103be5a479102576e8e4517c63cc5e3844eb1f5f312ea4e95d2c37ad4bc18acb',
+        'experiments/tables/T3_rq3_visualization_performance.csv' => '8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0',
+    ];
+
+    /**
+     * Validates canonical derivative artifacts (figures F1..F6 and tables T1..T3).
+     *
+     * @param string $repoRoot
+     * @return list<string> Errors encountered
+     */
+    public static function validateDerivatives(string $repoRoot): array
+    {
+        $errors = [];
+        foreach (self::CANONICAL_FIGURE_HASHES as $relPath => $expSha) {
+            $fullPath = $repoRoot . '/' . $relPath;
+            if (!is_file($fullPath)) {
+                $errors[] = "Missing canonical figure: {$relPath}";
+                continue;
+            }
+            $actSha = hash_file('sha256', $fullPath);
+            if ($actSha !== $expSha) {
+                $errors[] = "Figure SHA mismatch for {$relPath}: expected {$expSha}, got {$actSha}";
+            }
+        }
+        foreach (self::CANONICAL_TABLE_HASHES as $relPath => $expSha) {
+            $fullPath = $repoRoot . '/' . $relPath;
+            if (!is_file($fullPath)) {
+                $errors[] = "Missing canonical table: {$relPath}";
+                continue;
+            }
+            $actSha = hash_file('sha256', $fullPath);
+            if ($actSha !== $expSha) {
+                $errors[] = "Table SHA mismatch for {$relPath}: expected {$expSha}, got {$actSha}";
+            }
+        }
+        return $errors;
+    }
+
+    /**
      * Checks RQ3 derivative (T3, F5, F6) regeneration status.
      *
      * @param string $repoRoot
@@ -449,24 +502,17 @@ class Phase4EvidenceValidator
      */
     public static function checkDerivativeStatus(string $repoRoot): array
     {
-        $t3Path = $repoRoot . '/experiments/tables/T3_rq3_visualization_performance.csv';
-        $f5Path = $repoRoot . '/experiments/figures/F5_visualization_initial_render.svg';
-        $f6Path = $repoRoot . '/experiments/figures/F6_visualization_update.svg';
-
-        if (is_file($t3Path) && is_file($f5Path) && is_file($f6Path)) {
-            // Check if T3 matches historical 6276 SHA
-            $t3Sha = hash_file('sha256', $t3Path);
-            if ($t3Sha === self::HISTORICAL_DIAGNOSTIC_RQ3_HASHES['experiments/diagnostic/rq3_6276_protocol_deviation/T3_rq3_visualization_performance.csv']) {
-                return [
-                    'status' => 'SUPERSEDED_PENDING_REGENERATION',
-                    'message' => 'Current T3/F5/F6 reflect historical 6276 dataset and require regeneration in Phase 4E-R1 from accepted replacement evidence.',
-                ];
-            }
+        $errors = self::validateDerivatives($repoRoot);
+        if ($errors === []) {
+            return [
+                'status' => 'CURRENT',
+                'message' => 'Derivative figures and tables are current and match canonical replacement evidence.',
+            ];
         }
 
         return [
-            'status' => 'CURRENT',
-            'message' => 'Derivative figures and tables are current.',
+            'status' => 'DERIVATIVE_ERROR',
+            'message' => 'Derivative errors: ' . implode('; ', $errors),
         ];
     }
 }
