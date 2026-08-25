@@ -66,9 +66,12 @@
   - `experiments/raw/mushroom_pruning_levels.csv` (`613632ed7fd961ba155b8ca92ad23a2e30d271d6663ffec0d034bd6176303c11`)
   - `experiments/processed/mushroom_support_summary.csv` (`1b60921ada3edbb2f4625683338729d3e8f0dc090ae9782b3746bbcb7798f0d2`)
   - `experiments/processed/mushroom_pruning_summary.csv` (`b89a2fb983113861a7df23ed3832fc5fa983e3b3bdcbc3784851018540c804f2`)
-  - `experiments/raw/visualization_runs.csv` (`10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781`)
-  - `experiments/processed/visualization_summary.csv` (`f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210`)
-- [x] **Kiểm thử tự động:** Toàn bộ 1,200+ kiểm thử đơn vị, kiểm tra tính nhất quán báo cáo và kiểm tra cấu hình thực nghiệm đều vượt qua với 0 lỗi, 0 cảnh báo.
+  - `experiments/raw/visualization_runs.csv` (`9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4`)
+  - `experiments/processed/visualization_summary.csv` (`8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0`)
+  - `experiments/tables/T3_rq3_visualization_performance.csv` (`8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0`)
+  - `experiments/figures/F5_visualization_initial_render.svg` (`c30f1e5a1151f00844cc83e3cb0221490f0f2312f3a0e11fce1eb9bcaa933df3`)
+  - `experiments/figures/F6_visualization_update.svg` (`fd3d4421c217a79efca3165eedf5bd744b5510ef67fed6725d240c5bf4d7a48c`)
+- [x] **Kiểm thử tự động:** Toàn bộ kiểm thử đơn vị, kiểm tra tính nhất quán báo cáo và kiểm tra cấu hình thực nghiệm đều vượt qua với 0 lỗi, 0 cảnh báo.
 
 ---
 

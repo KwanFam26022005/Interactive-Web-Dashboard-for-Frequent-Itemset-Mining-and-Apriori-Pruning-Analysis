@@ -18,10 +18,10 @@ Báo cáo này trình bày quá trình thiết kế, triển khai và đánh gi�
 
 Hệ thống được phát triển theo kiến trúc phân lớp nhẹ (*lightweight layered architecture*) với các endpoint PHP kết hợp các lớp miền (*domain*), HTTP và lưu trữ (*persistence*) được phân tách trách nhiệm rõ ràng, sử dụng ngăn xếp công nghệ **PHP 8.2+** [13], cơ sở dữ liệu quan hệ **MySQL 8.4** [14], giao diện đáp ứng dựa trên **HTML5/Bootstrap 5** [11] / **jQuery** [12] / **AJAX** kết hợp thư viện trực quan hóa **Apache ECharts** [6], [10]. Điểm cốt lõi của đề tài là sự tích hợp giữa việc xây dựng ứng dụng web với khung nghiên cứu thực nghiệm có kiểm soát nhằm đánh giá ba câu hỏi nghiên cứu (RQ1, RQ2, RQ3).
 
-Dựa trên bộ dữ liệu thực nghiệm chuẩn UCI Mushroom (*agaricus-lepiota.data*, $N = 8,124$ giao dịch [7], được tiếp nhận nội bộ thành 119 mục phân loại chuẩn theo manifest của dự án), các thực nghiệm được thực hiện với 10 lần lặp độc lập sau 2 lần chạy làm nóng, sử dụng phương pháp thống kê phi tham số (Trung vị và Khoảng liên phân vị — IQR). Toàn bộ quan sát thô được lưu giữ đầy đủ; phương pháp trung vị được sử dụng nhằm giảm độ nhạy của thống kê tổng hợp đối với các quan sát cực trị. Kết quả thực nghiệm chỉ ra rằng:
+Dựa trên bộ dữ liệu thực nghiệm chuẩn UCI Mushroom (*agaricus-lepiota.data*, $N = 8,124$ giao dịch [7], được tiếp nhận nội bộ thành 119 mục phân loại chuẩn theo manifest của dự án), các thực nghiệm được thực hiện với 10 lần lặp chính thức sau 2 lần chạy làm nóng, sử dụng phương pháp thống kê phi tham số (Trung vị và Khoảng liên phân vị — IQR). Toàn bộ quan sát thô được lưu giữ đầy đủ; phương pháp trung vị được sử dụng nhằm giảm độ nhạy của thống kê tổng hợp đối với các quan sát cực trị. Kết quả thực nghiệm chỉ ra rằng:
 1. Việc hạ ngưỡng hỗ trợ tối thiểu ($\text{min\_support}$) từ $0.60$ xuống $0.35$ dẫn đến sự mở rộng đáng kể của không gian ứng viên sinh ra (từ $185$ lên $2,131$), khối lượng tập mục phổ biến ($51$ lên $1,189$), số lượng luật kết hợp ($223$ lên $11,055$) và thời gian thực thi trung vị của thuật toán Apriori (từ $523.072\text{ ms}$ lên $14,047.443\text{ ms}$) (RQ1).
 2. Tỷ lệ cắt tỉa ứng viên theo tính chất Apriori (*Apriori-property subset pruning*) [2] gia tăng từ $5.95\%$ lên $29.28\%$ tổng số ứng viên sinh ra khi giảm ngưỡng hỗ trợ, trong đó việc cắt tỉa tập con thực tế bắt đầu loại bỏ ứng viên từ bậc độ dài $k = 3$, giúp loại bỏ hàng trăm ứng viên trước bước đánh giá độ hỗ trợ trên tập dữ liệu giao dịch trong bộ nhớ (RQ2).
-3. Trong thực nghiệm đối chứng hiệu năng hiển thị front-end cô lập dưới thước đo độ trễ quan sát hai khung hình (*render-to-two-frame-observation latency*), Chart.js (Canvas) [9] ghi nhận độ trễ thấp nhất ở khối lượng dữ liệu lớn ($N = 10,000$ điểm), tiếp theo là D3.js (SVG) [5], [8] và Apache ECharts (Canvas) [6], [10], đồng thời ở các quy mô dữ liệu lớn ($N \ge 5,000$), việc cập nhật dữ liệu tại chỗ có độ trễ quan sát thấp hơn so với việc khởi tạo biểu đồ ban đầu trên cả ba thư viện (RQ3).
+3. Trong thực nghiệm đối chứng hiệu năng hiển thị front-end cô lập dưới thước đo độ trễ quan sát hai khung hình (*render-to-two-frame-observation latency*), ở các khối lượng dữ liệu nhỏ ($N \le 1,000$), các quan sát trung vị duy trì gần mức lượng tử hóa khung hình và không thiết lập một trật tự ổn định duy nhất xuyên suốt các thư viện và thao tác. Ở quy mô lớn ($N = 10,000$ điểm), Chart.js (Canvas) [9] ghi nhận độ trễ trung vị thấp nhất ở cả tác vụ khởi tạo và cập nhật, tiếp theo là D3.js (SVG) [5], [8] và Apache ECharts (Canvas) [6], [10]. Mối quan hệ giữa chi phí cập nhật dữ liệu tại chỗ và khởi tạo ban đầu phụ thuộc vào từng thư viện và quy mô dữ liệu (RQ3).
 
 ---
 
@@ -248,11 +248,13 @@ Nhằm bảo đảm tính minh bạch học thuật:
 - Thống kê phi tham số: Báo cáo giá trị **Trung vị (Median)** và **Khoảng liên phân vị (IQR)** theo phương pháp bản lề Tukey nhằm giảm độ nhạy của thống kê tổng hợp đối với các quan sát cực trị. Toàn bộ các quan sát thô đều được lưu giữ đầy đủ, không có dữ liệu nào bị loại bỏ.
 
 ### 7.4 Giao Thức Đo Kiểm Trực Quan Hóa Đối Chứng (RQ3)
-- Môi trường trình duyệt cô lập: Microsoft Edge 151 (Chromium Engine), độ phân giải cửa sổ cố định $1440 \times 900$, Device Pixel Ratio = 1.0, kích thước khung vẽ đồ họa chuẩn $800 \times 600\text{ px}$.
+- Môi trường trình duyệt cô lập: Microsoft Edge 151 (Chromium Engine), độ phân giải cửa sổ cố định $1440 \times 900$, Device Pixel Ratio = 1.0, tỷ lệ co giãn hiển thị 1.0, kích thước khung vẽ đồ họa chuẩn $800 \times 500\text{ px}$ với 5 đường lưới tuyến tính cố định trên mỗi trục tọa độ.
 - Ba thư viện đối chứng: **D3.js v7.9.0** (triển khai SVG) [5], [8], **Chart.js v4.4.8** (triển khai Canvas) [9], **Apache ECharts v5.6.0** (triển khai Canvas) [6], [10].
-- Khối lượng dữ liệu điểm phân tán cố định: $N \in [100, 1000, 5000, 10000]$.
-- Thước đo thời gian chuẩn hóa: **Độ trễ quan sát hai khung hình** (*render-to-two-frame-observation latency*) sử dụng hai lệnh `requestAnimationFrame` liên tiếp.
-- Tổng cộng: 3 thư viện $\times$ 4 quy mô $\times$ 10 lần lặp = **120 quan sát hình thức hoàn chỉnh**.
+- Bộ dữ liệu thử tải chuẩn hóa: Tệp đơn nhất `workload_data.json` sinh bằng PRNG Mulberry32 (seed `0xDEADBEEF`), $N \in [100, 1000, 5000, 10000]$.
+- Ngữ nghĩa cập nhật tại chỗ: Dịch chuyển đúng $50\%$ điểm dữ liệu ($y_i \leftarrow (y_i + 0.1) \pmod{1.0}$) và bảo toàn $50\%$ điểm gốc.
+- Ổn định và thu gom rác: Độ trễ chờ ổn định 100 ms giữa các lần lặp, thu gom rác tự nhiên của trình duyệt.
+- Thước đo thời gian chuẩn hóa: **Độ trễ quan sát hai khung hình** (*render-to-two-frame-observation latency*) sử dụng `performance.now()` kết hợp hai lệnh `requestAnimationFrame` liên tiếp.
+- Tổng cộng: 2 lần làm nóng, 10 lần lặp chính thức $\times$ 3 thư viện $\times$ 4 quy mô = **120 quan sát hình thức hoàn chỉnh**.
 
 ---
 
@@ -352,31 +354,34 @@ Bảng 3 tổng hợp các quan sát độ trễ hiển thị và cập nhật d
 
 | Thư Viện Đồ Họa | Phiên Bản | Kiến Trúc Dựng Hình | Quy Mô Dữ Liệu ($N$) | Số Lần Chạy Hợp Lệ | Độ Trễ Trung Vị Khởi Tạo (ms) | IQR Khởi Tạo (ms) | Độ Trễ Trung Vị Cập Nhật (ms) | IQR Cập Nhật (ms) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Chart.js** [9] | 4.4.8 | Canvas | **100** | 10 / 10 | **18.000** | 16.700 | **16.350** | 0.600 |
-| **Chart.js** [9] | 4.4.8 | Canvas | **1,000** | 10 / 10 | **17.500** | 1.800 | **16.950** | 16.600 |
-| **Chart.js** [9] | 4.4.8 | Canvas | **5,000** | 10 / 10 | **42.400** | 4.900 | **39.800** | 7.900 |
-| **Chart.js** [9] | 4.4.8 | Canvas | **10,000** | 10 / 10 | **70.550** | 14.800 | **60.950** | 11.700 |
-| **D3.js** [8] | 7.9.0 | SVG | **100** | 10 / 10 | **17.300** | 1.200 | **17.750** | 15.100 |
-| **D3.js** [8] | 7.9.0 | SVG | **1,000** | 10 / 10 | **18.250** | 15.000 | **17.900** | 13.000 |
-| **D3.js** [8] | 7.9.0 | SVG | **5,000** | 10 / 10 | **72.750** | 10.100 | **57.650** | 10.300 |
-| **D3.js** [8] | 7.9.0 | SVG | **10,000** | 10 / 10 | **138.600** | 26.600 | **117.700** | 19.200 |
-| **Apache ECharts** [10] | 5.6.0 | Canvas | **100** | 10 / 10 | **24.850** | 15.700 | **17.100** | 15.900 |
-| **Apache ECharts** [10] | 5.6.0 | Canvas | **1,000** | 10 / 10 | **27.550** | 7.300 | **32.300** | 8.800 |
-| **Apache ECharts** [10] | 5.6.0 | Canvas | **5,000** | 10 / 10 | **111.000** | 8.400 | **96.250** | 8.900 |
-| **Apache ECharts** [10] | 5.6.0 | Canvas | **10,000** | 10 / 10 | **222.600** | 38.400 | **195.800** | 8.300 |
+| **Chart.js** [9] | 4.4.8 | Canvas | **100** | 10 / 10 | **18.200** | 4.200 | **33.350** | 0.400 |
+| **Chart.js** [9] | 4.4.8 | Canvas | **1,000** | 10 / 10 | **23.000** | 15.500 | **33.300** | 0.100 |
+| **Chart.js** [9] | 4.4.8 | Canvas | **5,000** | 10 / 10 | **20.400** | 14.600 | **33.200** | 0.100 |
+| **Chart.js** [9] | 4.4.8 | Canvas | **10,000** | 10 / 10 | **25.900** | 12.000 | **33.400** | 0.200 |
+| **D3.js** [8] | 7.9.0 | SVG | **100** | 10 / 10 | **18.550** | 3.600 | **33.350** | 0.200 |
+| **D3.js** [8] | 7.9.0 | SVG | **1,000** | 10 / 10 | **31.900** | 12.900 | **33.200** | 0.300 |
+| **D3.js** [8] | 7.9.0 | SVG | **5,000** | 10 / 10 | **37.300** | 7.500 | **33.200** | 13.000 |
+| **D3.js** [8] | 7.9.0 | SVG | **10,000** | 10 / 10 | **72.600** | 13.700 | **64.550** | 16.100 |
+| **Apache ECharts** [10] | 5.6.0 | Canvas | **100** | 10 / 10 | **27.800** | 15.200 | **33.100** | 0.300 |
+| **Apache ECharts** [10] | 5.6.0 | Canvas | **1,000** | 10 / 10 | **18.300** | 9.600 | **33.200** | 0.200 |
+| **Apache ECharts** [10] | 5.6.0 | Canvas | **5,000** | 10 / 10 | **43.200** | 3.300 | **54.550** | 8.600 |
+| **Apache ECharts** [10] | 5.6.0 | Canvas | **10,000** | 10 / 10 | **88.500** | 33.600 | **94.050** | 19.800 |
 
 ---
 
 #### Phân Tích Hiệu Năng Trực Quan Hóa (Hình 5 và 6)
 
 1. **Vùng Dữ Liệu Nhỏ ($N \le 1,000$):**  
-   Tại $N \le 1,000$, các quan sát trung vị duy trì gần mức một đến hai khoảng khung hình 60 Hz ($16.4\text{ ms} - 32.3\text{ ms}$). Do giao thức double-rAF bị lượng tử hóa theo khung hình (*frame-quantized*), các chênh lệch nhỏ trong vùng này không nên bị suy diễn quá mức.
+   Tại các quy mô nhỏ ($N \le 1,000$), các quan sát trung vị duy trì gần mức lượng tử hóa khung hình ($18.200\text{ ms} - 31.900\text{ ms}$ cho khởi tạo; $33.100\text{ ms} - 33.350\text{ ms}$ cho cập nhật, tương đương hai chu kỳ khung hình 60 Hz) và không phản ánh một trật tự phân hạng ổn định duy nhất giữa các thư viện. Do giao thức double-rAF bị lượng tử hóa theo khung hình (*frame-quantized*), các chênh lệch nhỏ trong vùng này không nên bị suy diễn quá mức.
 
-2. **Vùng Dữ Liệu Lớn ($N \ge 5,000$):**  
-   Khi khối lượng điểm tăng lên $10,000$, Chart.js [9] ghi nhận độ trễ trung vị thấp nhất ($70.550\text{ ms}$ khởi tạo / $60.950\text{ ms}$ cập nhật), D3.js [8] ghi nhận mức trung gian ($138.600\text{ ms}$ khởi tạo / $117.700\text{ ms}$ cập nhật), và Apache ECharts [10] đạt $222.600\text{ ms}$ khởi tạo / $195.800\text{ ms}$ cập nhật dưới chế độ vẽ tiêu chuẩn. Xu hướng thay đổi này nhất quán với các khác biệt về kiến trúc dựng hình và chi phí xử lý khung làm việc của từng thư viện; thực nghiệm đối chứng này không phân lập riêng lẻ các cơ chế nguyên nhân nội bộ.
+2. **Vùng Dữ Liệu Trung Bình và Lớn ($N \ge 5,000$):**  
+   Tại $N = 5,000$, Chart.js [9] ghi nhận độ trễ khởi tạo trung vị thấp nhất ($20.400\text{ ms}$), tiếp theo là D3.js ($37.300\text{ ms}$) và ECharts ($43.200\text{ ms}$); ở tác vụ cập nhật, Chart.js và D3.js ghi nhận giá trị trung vị bằng nhau ở mức độ chính xác 3 chữ số thập phân ($33.200\text{ ms}$), trong khi ECharts đạt $54.550\text{ ms}$. Khi khối lượng điểm tăng lên $10,000$, Chart.js ghi nhận độ trễ trung vị thấp nhất ($25.900\text{ ms}$ khởi tạo / $33.400\text{ ms}$ cập nhật), D3.js [8] ghi nhận mức trung gian ($72.600\text{ ms}$ khởi tạo / $64.550\text{ ms}$ cập nhật), và Apache ECharts [10] đạt $88.500\text{ ms}$ khởi tạo / $94.050\text{ ms}$ cập nhật dưới chế độ vẽ tiêu chuẩn. Xu hướng thay đổi này nhất quán với các khác biệt về kiến trúc dựng hình và chi phí xử lý khung làm việc của từng thư viện trong khuôn khổ thực nghiệm có kiểm soát này; thực nghiệm đối chứng này không phân lập riêng lẻ các cơ chế nguyên nhân nội bộ.
 
 3. **So Sánh Cập Nhật Dữ Liệu Tại Chỗ vs. Khởi Tạo Lần Đầu:**  
-   Tại các quy mô lớn ($N = 5,000$ và $N = 10,000$), độ trễ cập nhật dữ liệu tại chỗ thấp hơn độ trễ khởi tạo ban đầu trên cả ba thư viện (ví dụ D3.js [8] từ $138.600\text{ ms}$ giảm xuống $117.700\text{ ms}$; Chart.js [9] từ $70.550\text{ ms}$ giảm xuống $60.950\text{ ms}$).
+   Mối quan hệ giữa độ trễ cập nhật và khởi tạo ban đầu phụ thuộc vào từng thư viện và quy mô dữ liệu. Đối với D3.js [8] ở $N \ge 5,000$, cập nhật tại chỗ có độ trễ thấp hơn khởi tạo ($33.200\text{ ms}$ vs $37.300\text{ ms}$ tại $N=5,000$; $64.550\text{ ms}$ vs $72.600\text{ ms}$ tại $N=10,000$). Ngược lại, đối với Chart.js và ECharts, độ trễ cập nhật ghi nhận mức cao hơn khởi tạo tại một số điểm quy mô (ví dụ Chart.js tại $N=10,000$: $33.400\text{ ms}$ cập nhật vs $25.900\text{ ms}$ khởi tạo; ECharts tại $N=10,000$: $94.050\text{ ms}$ cập nhật vs $88.500\text{ ms}$ khởi tạo). Dữ liệu thực nghiệm được chấp thuận không hỗ trợ nhận định chung rằng cập nhật tại chỗ luôn luôn nhanh hơn khởi dựng ban đầu trên mọi thư viện.
+
+4. **Tính Phi Đơn Điệu Cục Bộ Của Quan Sát Thực Nghiệm:**  
+   Các giá trị trung vị không tăng đơn điệu tại mọi bước chuyển quy mô liền kề, đặc biệt ở các vùng đo sát ngưỡng chu kỳ khung hình (ví dụ Chart.js khởi tạo $N=1,000 \to 5,000$: $23.000\text{ ms} \to 20.400\text{ ms}$; ECharts khởi tạo $N=100 \to 1,000$: $27.800\text{ ms} \to 18.300\text{ ms}$). Đây là các phản ánh thực nghiệm trung thực dưới cơ chế lập lịch khung hình của trình duyệt web và không bị nắn chỉnh hay làm mịn nhân tạo.
 
 ```text
 [Hình 5: Độ Trễ Khởi Tạo Biểu Đồ Ban Đầu theo Quy Mô Dữ Liệu (RQ3)]
@@ -388,7 +393,7 @@ File: experiments/figures/F6_visualization_update.svg
 Nguồn: Thực nghiệm đối chứng có kiểm soát của nhóm tác giả.
 ```
 
-**Trả lời RQ3:** Dưới khối lượng dữ liệu điểm phân tán trên trình duyệt Edge trong thực nghiệm này, Chart.js (Canvas) ghi nhận độ trễ trung vị thấp nhất ở các khối lượng dữ liệu lớn ($N = 10,000$), tiếp theo là D3.js (SVG) và Apache ECharts (Canvas); đồng thời ở các quy mô dữ liệu lớn ($N \ge 5,000$), việc cập nhật dữ liệu tại chỗ có độ trễ quan sát thấp hơn so với việc khởi tạo biểu đồ ban đầu trên cả ba thư viện.
+**Trả lời RQ3:** Dưới khối lượng dữ liệu điểm phân tán trên trình duyệt Edge trong thực nghiệm có kiểm soát này, ở quy mô lớn ($N = 10,000$), Chart.js (Canvas) ghi nhận độ trễ trung vị thấp nhất ở cả tác vụ khởi tạo ($25.900\text{ ms}$) và cập nhật ($33.400\text{ ms}$), tiếp theo là D3.js (SVG) ($72.600\text{ ms}$ / $64.550\text{ ms}$) và Apache ECharts (Canvas) ($88.500\text{ ms}$ / $94.050\text{ ms}$). Ở quy mô nhỏ ($N \le 1,000$), độ trễ đo được tập trung gần các khoảng lượng tử hóa khung hình và không hình thành một trật tự phân hạng ổn định duy nhất xuyên suốt các thư viện và tác vụ; đồng thời tương quan chi phí giữa cập nhật tại chỗ và khởi tạo ban đầu phụ thuộc vào từng thư viện và quy mô tải.
 
 ---
 
@@ -402,7 +407,7 @@ Kết quả thực nghiệm từ RQ1 và RQ2 cung cấp những hiểu biết ch
 ### 9.2 Lựa Chọn Thư Viện Trực Quan Hóa Trên Bảng Điều Khiển Web
 Kết quả RQ3 lý giải việc lựa chọn thư viện trong kiến trúc hệ thống:
 - Mặc dù Chart.js [9] đạt độ trễ thấp hơn ở tác vụ vẽ điểm phân tán dày đặc, Apache ECharts [6], [10] cung cấp hệ sinh thái tính năng trực quan hóa đa dạng (hỗ trợ ma trận nhiệt tương quan, biểu đồ thanh phân tầng và công cụ chuyển đổi chuỗi dữ liệu khai phá).
-- Trong ứng dụng thực tế của bảng điều khiển web, đa số các tập mẫu phổ biến và luật kết hợp được lọc người dùng nằm trong khoảng $N \le 1,000$, nơi độ trễ của Apache ECharts [10] ($17.1\text{ ms} - 32.3\text{ ms}$) đáp ứng tính mượt mà của giao diện.
+- Trong ứng dụng thực tế của bảng điều khiển web, đa số các tập mẫu phổ biến và luật kết hợp được lọc người dùng nằm trong khoảng $N \le 1,000$, nơi độ trễ của Apache ECharts [10] ($18.3\text{ ms} - 33.2\text{ ms}$) đáp ứng tính mượt mà của giao diện.
 
 ---
 
@@ -418,7 +423,7 @@ Kết quả RQ3 lý giải việc lựa chọn thư viện trong kiến trúc h�
 ### 10.2 Hạn Chế Của Thực Nghiệm Trực Quan Hóa (RQ3)
 1. **Ràng Buộc Kiến Trúc Dựng Hình:** D3.js được triển khai với SVG DOM [5], [8] trong khi Chart.js [9] và ECharts [6], [10] sử dụng Canvas. Kiến trúc dựng hình là một phần cấu thành của đối tượng nghiên cứu, không phải một biến số thuật toán cô lập hoàn toàn.
 2. **Lượng Tử Hóa Khung Hình (Frame Quantization):** Thước đo double-rAF chịu ảnh hưởng bởi chu kỳ quét khung hình 60 Hz ($\sim 16.7\text{ ms}$). Thước đo này đo lường độ trễ từ lúc bắt đầu vẽ đến khi ghi nhận khung hình quan sát thứ hai, không đo lường thời gian hoàn tất phần cứng GPU (*GPU completion*) hay thời gian quét điểm ảnh màn hình (*paint/presentation completion*).
-3. **Bố Cục Vùng Vẽ Nội Bộ:** Kích thước stage tổng thể cố định $800 \times 600\text{ px}$, nhưng lề biên và tính toán trục tọa độ nội bộ tuân theo cơ chế tự động của từng thư viện.
+3. **Bố Cục Vùng Vẽ Nội Bộ:** Kích thước stage tổng thể cố định $800 \times 500\text{ px}$ với 5 đường lưới tuyến tính cố định trên mỗi trục tọa độ, nhưng lề biên và tính toán trục tọa độ nội bộ tuân theo cơ chế tự động của từng thư viện.
 4. **Bộ Thu Gom Rác Trình Duyệt (Garbage Collection):** Hoạt động thu gom rác nền của trình duyệt là yếu tố nhiễu không thể kiểm soát tuyệt đối, được giảm thiểu bằng cách sử dụng thống kê Trung vị và IQR.
 5. **Phạm Vi Tác Vụ:** Chỉ khảo sát biểu đồ phân tán 2D với dữ liệu số thuần túy và tắt toàn bộ hiệu ứng chuyển động (*animations disabled*).
 
@@ -476,13 +481,27 @@ Nhằm bảo đảm tính minh bạch và khả năng tái lập độc lập c�
    - `experiments/raw/mushroom_pruning_levels.csv`: `613632ed7fd961ba155b8ca92ad23a2e30d271d6663ffec0d034bd6176303c11`
    - `experiments/processed/mushroom_support_summary.csv`: `1b60921ada3edbb2f4625683338729d3e8f0dc090ae9782b3746bbcb7798f0d2`
    - `experiments/processed/mushroom_pruning_summary.csv`: `b89a2fb983113861a7df23ed3832fc5fa983e3b3bdcbc3784851018540c804f2`
-   - `experiments/raw/visualization_runs.csv`: `10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781`
-   - `experiments/processed/visualization_summary.csv`: `f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210`
+   - `experiments/raw/visualization_runs.csv`: `9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4`
+   - `experiments/processed/visualization_summary.csv`: `8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0`
 
-3. **Môi Trường & Cấu Hình Đo Lường:**
+3. **Hiện Vật Bảng Biểu & Đồ Họa Dẫn Xuất (Canonical Figures & Tables):**
+   - `experiments/tables/T1_rq1_support_effect.csv`: `969432e8ba2a03b33520cecf5d2396d4ea574845c89822aaf7f629072b769466`
+   - `experiments/tables/T2_rq2_overall_pruning.csv`: `ecddf3a435632753052f760d9409fab15099c4edac5edd47ad0a3f6b5e3e5abe`
+   - `experiments/tables/T2b_rq2_per_level_pruning.csv`: `103be5a479102576e8e4517c63cc5e3844eb1f5f312ea4e95d2c37ad4bc18acb`
+   - `experiments/tables/T3_rq3_visualization_performance.csv`: `8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0`
+   - `experiments/figures/F1_apriori_runtime_vs_support.svg`: `01f26608f18c5d5a51b72ba4a10e81e08b34f2a8f8cfbc7a44dd3bc1afbac15c`
+   - `experiments/figures/F2_candidate_volume_vs_support.svg`: `d7e63ac8ac310c8950bc26da2231f38aa6befa052ce7fb89d9f8fd6d7e89b739`
+   - `experiments/figures/F3_pattern_output_vs_support.svg`: `5ded8c2dc9afac383879766af1c874cd262345fc9b2245860c3b158afa09fad3`
+   - `experiments/figures/F4_pruning_dynamics_per_level.svg`: `513ef1de89e170d4769bf5246afbd8b733d99a346aedd980dd76d06a4a6c84fe`
+   - `experiments/figures/F5_visualization_initial_render.svg`: `c30f1e5a1151f00844cc83e3cb0221490f0f2312f3a0e11fce1eb9bcaa933df3`
+   - `experiments/figures/F6_visualization_update.svg`: `fd3d4421c217a79efca3165eedf5bd744b5510ef67fed6725d240c5bf4d7a48c`
+
+4. **Môi Trường & Cấu Hình Đo Lường:**
    - PHP Runtime: PHP 8.3.30 (CLI) (x64)
    - Database Server: MySQL 8.4.3 (InnoDB)
-   - Trình duyệt benchmark RQ3: Microsoft Edge 151 (Chromium Engine, $1440 \times 900$, DPR = 1.0)
+   - Trình duyệt benchmark RQ3: Microsoft Edge 151 (Chromium Engine, $1440 \times 900$, DPR = 1.0, Stage $800 \times 500\text{ px}$)
+   - Bản sửa đổi thực nghiệm hình thức RQ3: `dea90c0962f03872e24c6959cea1959782d446a6`
+   - Bản ghi nhận chấp thuận RQ3: `experiments/evidence/RQ3_REPLACEMENT_ACCEPTANCE.json` (`614658dc59d41eff3e72bca40a4d2d24c8d8d4b2`)
    - Cấu hình môi trường: `experiments/configs/environment_manifest.json`
 
 ---

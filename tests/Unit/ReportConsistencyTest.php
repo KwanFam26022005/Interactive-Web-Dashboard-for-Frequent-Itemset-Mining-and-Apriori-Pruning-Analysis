@@ -116,6 +116,32 @@ final class ReportConsistencyTest
         $assert('Draft documents frame quantization limitation', str_contains($draft, 'Lượng Tử Hóa Khung Hình') || str_contains($draft, 'frame-quantized'));
         $assert('Draft documents browser GC limitation', str_contains($draft, 'Thu Gom Rác') || str_contains($draft, 'Garbage Collection'));
 
+        // 6. Phase 5C-R1 Final Report & Submission Checklist Specific Integrity Checks
+        $assert('Final report specifies 800 x 500 stage', str_contains($final, '800 \times 500'));
+        $assert('Final report does NOT specify 800 x 600 stage', !str_contains($final, '800 \times 600') && !str_contains($final, '800x600'));
+        $assert('Final report includes render-to-two-frame-observation latency', str_contains($final, 'render-to-two-frame-observation latency'));
+
+        $acceptedRq3Values = ['25.900', '33.400', '72.600', '64.550', '88.500', '94.050', '20.400', '33.200', '37.300', '43.200', '54.550'];
+        foreach ($acceptedRq3Values as $val) {
+            $assert("Final report contains accepted RQ3 value {$val}", str_contains($final, $val));
+        }
+
+        $supersededRq3Values = ['70.550', '60.950', '138.600', '117.700', '222.600', '195.800'];
+        foreach ($supersededRq3Values as $val) {
+            $assert("Final report does NOT contain superseded RQ3 value {$val}", !str_contains($final, $val));
+        }
+
+        $assert('Final report does NOT claim update is lower than render for all three libraries at N>=5000',
+            !str_contains($final, 'việc cập nhật dữ liệu tại chỗ có độ trễ quan sát thấp hơn so với việc khởi tạo biểu đồ ban đầu trên cả ba thư viện') &&
+            !str_contains($final, 'update latency was lower than initial render latency for all three libraries')
+        );
+
+        $checklist = is_file($checklistPath) ? (string)file_get_contents($checklistPath) : '';
+        $assert('Checklist contains accepted raw visualization SHA', str_contains($checklist, '9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4'));
+        $assert('Checklist contains accepted summary visualization SHA', str_contains($checklist, '8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0'));
+        $assert('Checklist does NOT contain superseded raw visualization SHA', !str_contains($checklist, '10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781'));
+        $assert('Checklist does NOT contain superseded summary visualization SHA', !str_contains($checklist, 'f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210'));
+
         return [
             'passed' => $passed,
             'failed' => $failed,
