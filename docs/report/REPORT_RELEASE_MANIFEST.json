@@ -1,9 +1,10 @@
 {
     "schema_version": "1.0.0",
     "report_phase": "PHASE_5C",
-    "source_revision": "b2b4c36d8b5846fc9447d2ebb22abc489add62ee",
+    "source_revision": "69844dfd6e4cf6ffb96baf5c1c4691e3df78a72e",
+    "phase4_evidence_revision": "abb3ada361089b47c7b6aa2dc3e3736d452f0c88",
     "final_report_path": "docs/report/MIDTERM_REPORT_FINAL.md",
-    "final_report_sha256": "c3ee46381e7bcc9f4775b23e3029beeddb187defd15b901925568c0b3d5d443c",
+    "final_report_sha256": "0fd5ce9b57528f985cf4f6fe6867f5e8225b1914d0663a5c0ab55385410e9bae",
     "reference_count": 15,
     "references_file": {
         "path": "docs/report/REPORT_REFERENCES.md",
@@ -11,7 +12,7 @@
     },
     "evidence_map": {
         "path": "docs/report/REPORT_EVIDENCE_MAP.md",
-        "sha256": "cb27858e0f680e22cface2dfc0d6761c194765c75ec917d88766dfbb6d39545e"
+        "sha256": "63f4fa178802a6283d9786a4869ecd22be64d2e7085c95893ac4535cf8b21608"
     },
     "verification_ledger": {
         "path": "docs/report/REFERENCE_VERIFICATION_LEDGER.md",
@@ -19,7 +20,15 @@
     },
     "submission_checklist": {
         "path": "docs/report/SUBMISSION_CHECKLIST.md",
-        "sha256": "25d1634c0293d30f5010fbce6fa3e2f31d6099352f075accc452cbc37eb95b49"
+        "sha256": "7243985af0b21bf64ded5e9e7965e40ebda5a856f3a1d72d9f4f13ce243d66c2"
+    },
+    "phase4_evidence_manifest": {
+        "path": "experiments/evidence/phase4_evidence_manifest.json",
+        "sha256": "ba69e7fba92f067f5407cbf33a72876c730653c7a066ef1842c73afb9a9330c1"
+    },
+    "rq3_acceptance_record": {
+        "path": "experiments/evidence/RQ3_REPLACEMENT_ACCEPTANCE.json",
+        "sha256": "1c1a503e64c79316fb07793385dd4436a6dfdac4da24ea46686102215d3686b0"
     },
     "canonical_figures": {
         "F1": {
@@ -40,11 +49,11 @@
         },
         "F5": {
             "path": "experiments/figures/F5_visualization_initial_render.svg",
-            "sha256": "3b0c530396501bc6fb5c8d02da68f8671562bec6c382e1abc201e8c89499e999"
+            "sha256": "c30f1e5a1151f00844cc83e3cb0221490f0f2312f3a0e11fce1eb9bcaa933df3"
         },
         "F6": {
             "path": "experiments/figures/F6_visualization_update.svg",
-            "sha256": "e9eca0375b45e62206c5933ff885a8565839acd1c0d267aa285604e780225918"
+            "sha256": "fd3d4421c217a79efca3165eedf5bd744b5510ef67fed6725d240c5bf4d7a48c"
         }
     },
     "canonical_tables": {
@@ -62,7 +71,7 @@
         },
         "T3": {
             "path": "experiments/tables/T3_rq3_visualization_performance.csv",
-            "sha256": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210"
+            "sha256": "8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0"
         }
     },
     "canonical_phase4_sources": {
@@ -84,11 +93,11 @@
         },
         "visualization_runs": {
             "path": "experiments/raw/visualization_runs.csv",
-            "sha256": "10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781"
+            "sha256": "9e80833a32f392a2836217287e363f5cb1081afe3ea7a9aba1e0f3c232ed27f4"
         },
         "visualization_summary": {
             "path": "experiments/processed/visualization_summary.csv",
-            "sha256": "f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210"
+            "sha256": "8628fb9568d78f21f9b475b3bd4411a0e15ea889ea1a186022da8de2b6591cc0"
         }
     }
 }

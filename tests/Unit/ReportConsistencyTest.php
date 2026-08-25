@@ -142,6 +142,49 @@ final class ReportConsistencyTest
         $assert('Checklist does NOT contain superseded raw visualization SHA', !str_contains($checklist, '10d6175b2948ed5f96b131085e12c0301ffc1f21dab12d9dd44a7234aac0d781'));
         $assert('Checklist does NOT contain superseded summary visualization SHA', !str_contains($checklist, 'f7ffeb4807363276b4779da8b20dafbe931e33702d0452035f8db83ac4c65210'));
 
+        // 7. Phase 5C-R1 Release Manifest Verification
+        $manifestPath = $repoRoot . '/docs/report/REPORT_RELEASE_MANIFEST.json';
+        $assert('REPORT_RELEASE_MANIFEST.json exists', is_file($manifestPath));
+        if (is_file($manifestPath)) {
+            $manifestJson = (string)file_get_contents($manifestPath);
+            $manifest = json_decode($manifestJson, true);
+            $assert('REPORT_RELEASE_MANIFEST.json parses as valid array', is_array($manifest));
+            if (is_array($manifest)) {
+                $assert('Manifest source_revision is valid commit SHA', (bool)preg_match('/^[0-9a-f]{40}$/', (string)($manifest['source_revision'] ?? '')));
+                $assert('Manifest phase4_evidence_revision is valid commit SHA', (bool)preg_match('/^[0-9a-f]{40}$/', (string)($manifest['phase4_evidence_revision'] ?? '')));
+
+                $finalPhysicalHash = hash_file('sha256', $finalPath);
+                $assert('Manifest final_report_sha256 matches physical file hash', ($manifest['final_report_sha256'] ?? '') === $finalPhysicalHash);
+
+                $singleFiles = ['references_file', 'evidence_map', 'verification_ledger', 'submission_checklist', 'phase4_evidence_manifest', 'rq3_acceptance_record'];
+                foreach ($singleFiles as $key) {
+                    if (isset($manifest[$key]['path'], $manifest[$key]['sha256'])) {
+                        $fullPath = $repoRoot . '/' . $manifest[$key]['path'];
+                        $actualHash = is_file($fullPath) ? hash_file('sha256', $fullPath) : '';
+                        $assert("Manifest entry '{$key}' physical SHA-256 matches", $manifest[$key]['sha256'] === $actualHash, "Expected: {$manifest[$key]['sha256']}, Actual: {$actualHash}");
+                    }
+                }
+
+                $groupKeys = ['canonical_figures', 'canonical_tables', 'canonical_phase4_sources'];
+                foreach ($groupKeys as $grp) {
+                    if (isset($manifest[$grp]) && is_array($manifest[$grp])) {
+                        foreach ($manifest[$grp] as $itemKey => $itemVal) {
+                            $fullPath = $repoRoot . '/' . $itemVal['path'];
+                            $actualHash = is_file($fullPath) ? hash_file('sha256', $fullPath) : '';
+                            $assert("Manifest {$grp} item '{$itemKey}' physical SHA-256 matches", $itemVal['sha256'] === $actualHash, "Expected: {$itemVal['sha256']}, Actual: {$actualHash}");
+                        }
+                    }
+                }
+            }
+        }
+
+        $blockerPath = $repoRoot . '/docs/report/PHASE_5C_RQ3_PROTOCOL_BLOCKER.md';
+        $assert('PHASE_5C_RQ3_PROTOCOL_BLOCKER.md exists', is_file($blockerPath));
+        if (is_file($blockerPath)) {
+            $blockerContent = (string)file_get_contents($blockerPath);
+            $assert('PHASE_5C_RQ3_PROTOCOL_BLOCKER.md status is RESOLVED', str_contains($blockerContent, 'RESOLVED'));
+        }
+
         return [
             'passed' => $passed,
             'failed' => $failed,
