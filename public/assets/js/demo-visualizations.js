@@ -608,8 +608,181 @@
     renderRuleSpace();
   }
 
+  function formatItemset(items) {
+    if (!items || !Array.isArray(items)) return '{}';
+    return '{' + items.join(', ') + '}';
+  }
+
   function renderRuleNetwork() {
-    // Will be fully implemented in Stage D
+    var data = state.lastMiningResult;
+    var allRules = (data && data.rules) ? data.rules : [];
+
+    if (allRules.length === 0) {
+      $('#demo-network-chart').addClass('d-none');
+      $('#demo-network-empty').removeClass('d-none');
+      return;
+    }
+
+    // Client-side filtering only (no API request)
+    var rules;
+    if (state.rulesLimit === '10') {
+      rules = allRules.slice(0, 10);
+    } else if (state.rulesLimit === '20') {
+      rules = allRules.slice(0, 20);
+    } else {
+      rules = allRules;
+    }
+
+    if (rules.length === 0) {
+      $('#demo-network-chart').addClass('d-none');
+      $('#demo-network-empty').removeClass('d-none');
+      return;
+    }
+
+    $('#demo-network-empty').addClass('d-none');
+    $('#demo-network-chart').removeClass('d-none');
+
+    // Build node map and directed edges
+    // Node = Complete itemset side (e.g. {milk, bread}), NOT individual items!
+    // Shared itemsets reuse the exact same node.
+    var nodeMap = {};
+    var edges = [];
+
+    $.each(rules, function (idx, rule) {
+      var antKey = formatItemset(rule.antecedent);
+      var conKey = formatItemset(rule.consequent);
+
+      if (!nodeMap[antKey]) {
+        nodeMap[antKey] = {
+          id: antKey,
+          name: antKey,
+          category: 0,
+          symbolSize: 26,
+          itemStyle: { color: '#3b82f6' },
+          label: { show: true, fontSize: 10, color: '#1e293b' }
+        };
+      }
+
+      if (!nodeMap[conKey]) {
+        nodeMap[conKey] = {
+          id: conKey,
+          name: conKey,
+          category: 1,
+          symbolSize: 26,
+          itemStyle: { color: '#10b981' },
+          label: { show: true, fontSize: 10, color: '#1e293b' }
+        };
+      }
+
+      // Monotonic presentation transforms
+      // Width: 1.5px to 6.0px based on confidence
+      var conf = Number(rule.confidence);
+      var edgeWidth = Math.max(1.5, Math.min(6, 1.5 + conf * 4.5));
+
+      // Opacity: 0.35 to 0.95 based on support
+      var supp = Number(rule.support);
+      var edgeOpacity = Math.max(0.35, Math.min(0.95, 0.35 + supp * 0.6));
+
+      // Lift is used for subtle line color emphasis (does not imply p-value or causality)
+      var liftVal = Number(rule.lift);
+      var edgeColor = liftVal >= 2.0 ? '#8b5cf6' : (liftVal >= 1.0 ? '#6366f1' : '#94a3b8');
+
+      edges.push({
+        source: antKey,
+        target: conKey,
+        lineStyle: {
+          width: edgeWidth,
+          opacity: edgeOpacity,
+          color: edgeColor,
+          curveness: 0.18
+        },
+        rawRule: rule
+      });
+    });
+
+    var nodes = Object.values(nodeMap);
+
+    if (!chartInstances.network) {
+      var container = document.getElementById('demo-network-chart');
+      if (container) {
+        chartInstances.network = echarts.init(container);
+      }
+    }
+    if (!chartInstances.network) {
+      return;
+    }
+
+    var prefersReduced = isReducedMotion();
+
+    var option = {
+      title: {
+        text: 'Association Rule Network (' + rules.length + ' rules displayed)',
+        subtext: 'Node = Complete Itemset Side | Directed Edge = Rule | Width \u221D Confidence | Opacity \u221D Support',
+        left: 'center',
+        top: '1%',
+        textStyle: { fontSize: 13, fontWeight: 600, color: '#1e293b' },
+        subtextStyle: { fontSize: 11, color: '#64748b' }
+      },
+      tooltip: {
+        trigger: 'item',
+        renderMode: 'richText',
+        formatter: function (params) {
+          if (params.dataType === 'edge') {
+            var r = params.data.rawRule;
+            if (!r) return '';
+            return 'Rule: ' + formatItemset(r.antecedent) + ' \u2192 ' + formatItemset(r.consequent) + '\n' +
+              'Support: ' + (Number(r.support) * 100).toFixed(4) + '% (' + Number(r.support_count).toLocaleString() + ' txns)\n' +
+              'Confidence: ' + (Number(r.confidence) * 100).toFixed(2) + '%\n' +
+              'Lift: ' + Number(r.lift).toFixed(4);
+          }
+          return 'Itemset Side: ' + params.name;
+        }
+      },
+      legend: [
+        {
+          data: ['Antecedent (LHS)', 'Consequent (RHS)'],
+          top: '8%',
+          textStyle: { fontSize: 11, color: '#475569' }
+        }
+      ],
+      animation: !prefersReduced,
+      animationDuration: prefersReduced ? 0 : 500,
+      series: [
+        {
+          name: 'Association Rules',
+          type: 'graph',
+          layout: 'force',
+          top: '18%',
+          bottom: '8%',
+          left: '5%',
+          right: '5%',
+          roam: true,
+          draggable: true,
+          force: {
+            repulsion: 260,
+            gravity: 0.12,
+            edgeLength: [90, 180],
+            friction: 0.6
+          },
+          edgeSymbol: ['none', 'arrow'],
+          edgeSymbolSize: [4, 10],
+          emphasis: {
+            focus: 'adjacency',
+            lineStyle: {
+              width: 5
+            }
+          },
+          categories: [
+            { name: 'Antecedent (LHS)', itemStyle: { color: '#3b82f6' } },
+            { name: 'Consequent (RHS)', itemStyle: { color: '#10b981' } }
+          ],
+          data: nodes,
+          links: edges
+        }
+      ]
+    };
+
+    chartInstances.network.setOption(option, true);
   }
 
   function renderRuleSpace() {

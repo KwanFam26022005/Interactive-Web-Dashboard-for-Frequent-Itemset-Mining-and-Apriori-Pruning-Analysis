@@ -121,6 +121,29 @@ class DemoVisualizationContractTest
         $assert('demo-visualizations.js sets apriori cadence to 1200ms', str_contains($demoJs, '1200'));
         $assert('demo-visualizations.js stops automatically at final level', str_contains($demoJs, 'state.aprioriLevelIndex < lvls.length - 1'));
 
+        // -----------------------------------------------------------------
+        // Stage D: Association-Rule Network Contracts
+        // -----------------------------------------------------------------
+        $assert('demo-visualizations.js defines formatItemset helper', str_contains($demoJs, 'function formatItemset'));
+        $assert('formatItemset wraps with braces and commas', str_contains($demoJs, "'{' + items.join(', ') + '}'"));
+        $assert('Node identity preserves multi-item side via formatItemset', str_contains($demoJs, 'var antKey = formatItemset(rule.antecedent)'));
+        $assert('Shared itemsets reuse the same node via nodeMap', str_contains($demoJs, 'if (!nodeMap[antKey])') && str_contains($demoJs, 'if (!nodeMap[conKey])'));
+        $assert('One directed edge per rule', str_contains($demoJs, 'edges.push(') && str_contains($demoJs, 'rawRule: rule'));
+        $assert('Edge width is monotonic transform of confidence', str_contains($demoJs, 'Math.max(1.5, Math.min(6, 1.5 + conf * 4.5))'));
+        $assert('Edge opacity is monotonic transform of support', str_contains($demoJs, 'Math.max(0.35, Math.min(0.95, 0.35 + supp * 0.6))'));
+        $assert('ECharts graph layout is force', str_contains($demoJs, "layout: 'force'"));
+        $assert('Graph roaming and dragging enabled', str_contains($demoJs, 'roam: true') && str_contains($demoJs, 'draggable: true'));
+        $assert('Directed edge arrows enabled', str_contains($demoJs, "edgeSymbol: ['none', 'arrow']"));
+        $assert('Rule network tooltip uses richText mode', str_contains($demoJs, "renderMode: 'richText'"));
+        $assert('Zero-rule state handles empty rules safely', str_contains($demoJs, 'if (allRules.length === 0)'));
+        $assert('Client-side Top 10 rule filter exists', str_contains($demoJs, "allRules.slice(0, 10)"));
+        $assert('Client-side Top 20 rule filter exists', str_contains($demoJs, "allRules.slice(0, 20)"));
+        $assert('No network AJAX request made in demo JS', !str_contains($demoJs, '$.ajax') && !str_contains($demoJs, 'fetch('));
+        $assert('index.php has #demo-network-chart container', str_contains($publicIndex, 'id="demo-network-chart"'));
+        $assert('index.php has #demo-network-empty container', str_contains($publicIndex, 'id="demo-network-empty"'));
+        $assert('index.php has #demo-network-reset button', str_contains($publicIndex, 'id="demo-network-reset"'));
+        $assert('index.php has .demo-network-filter buttons', str_contains($publicIndex, 'demo-network-filter'));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }
