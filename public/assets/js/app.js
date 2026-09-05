@@ -40,6 +40,9 @@
     bindEvents();
     loadDatasets();
     setupResizeHandler();
+    if (window.FIMDemoVisualizations && typeof window.FIMDemoVisualizations.init === 'function') {
+      window.FIMDemoVisualizations.init();
+    }
   }
 
   function bindEvents() {
@@ -407,27 +410,76 @@
   // 5. Mining Result Rendering & KPI Mapping
   // -------------------------------------------------------------------------
 
+  /**
+   * Animates a numeric KPI value with count-up transition (~400-600ms).
+   * Respects prefers-reduced-motion: if enabled, immediately sets final text.
+   * Guarantees the final text is identical to direct formatFn(targetVal).
+   */
+  function animateKpiValue($elem, targetVal, formatFn, duration) {
+    if (targetVal === null || targetVal === undefined) {
+      $elem.text('N/A');
+      return;
+    }
+    var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion || duration <= 0) {
+      $elem.text(formatFn(targetVal));
+      return;
+    }
+    duration = duration || 500;
+    var startTime = null;
+    var startVal = 0;
+    function step(timestamp) {
+      if (!startTime) startTime = timestamp;
+      var elapsed = timestamp - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      var easeProgress = 1 - Math.pow(1 - progress, 3);
+      var currentVal = startVal + (targetVal - startVal) * easeProgress;
+      if (progress < 1) {
+        $elem.text(formatFn(currentVal));
+        requestAnimationFrame(step);
+      } else {
+        $elem.text(formatFn(targetVal)); // EXACT final value
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
   function renderMiningResult(data) {
     // 1. Reveal panels
     $('#kpi-panel').removeClass('d-none');
     $('#viz-panel').removeClass('d-none');
     $('#run-meta-panel').removeClass('d-none');
 
-    // 2. Populate KPI Cards using exact authoritative summary fields (Mandatory Correction 3 & Blueprint Section O)
+    // 2. Populate KPI Cards with subtle count-up animation
     var sum = data.summary;
-    $('#kpi-frequent-itemsets').text(Number(sum.frequent_itemsets).toLocaleString());
-    $('#kpi-rules-count').text(Number(sum.rules_count).toLocaleString());
-    $('#kpi-runtime').text(Number(sum.runtime_ms).toFixed(3) + ' ms');
-    $('#kpi-rule-runtime').text(Number(sum.rule_generation_runtime_ms).toFixed(3) + ' ms');
-    $('#kpi-candidates-generated').text(Number(sum.candidates_generated).toLocaleString());
+    animateKpiValue($('#kpi-frequent-itemsets'), Number(sum.frequent_itemsets), function (v) {
+      return Math.round(v).toLocaleString();
+    }, 500);
+    animateKpiValue($('#kpi-rules-count'), Number(sum.rules_count), function (v) {
+      return Math.round(v).toLocaleString();
+    }, 500);
+    animateKpiValue($('#kpi-runtime'), Number(sum.runtime_ms), function (v) {
+      return v.toFixed(3) + ' ms';
+    }, 500);
+    animateKpiValue($('#kpi-rule-runtime'), Number(sum.rule_generation_runtime_ms), function (v) {
+      return v.toFixed(3) + ' ms';
+    }, 500);
+    animateKpiValue($('#kpi-candidates-generated'), Number(sum.candidates_generated), function (v) {
+      return Math.round(v).toLocaleString();
+    }, 500);
 
     if (sum.pruning_ratio === null || sum.pruning_ratio === undefined) {
       $('#kpi-pruning-ratio').text('N/A');
     } else {
-      $('#kpi-pruning-ratio').text((Number(sum.pruning_ratio) * 100).toFixed(2) + '%');
+      animateKpiValue($('#kpi-pruning-ratio'), Number(sum.pruning_ratio) * 100, function (v) {
+        return v.toFixed(2) + '%';
+      }, 500);
     }
 
-    $('#kpi-max-k').text(String(sum.max_k));
+    animateKpiValue($('#kpi-max-k'), Number(sum.max_k), function (v) {
+      return String(Math.round(v));
+    }, 500);
 
     // 3. Result Limits & Truncation notice
     renderResultLimits(data);
@@ -444,6 +496,11 @@
 
     // 6. Ensure charts have proper dimensions after revealing panel
     resizeAllCharts();
+
+    // 7. Update interactive demo visualizations layer
+    if (window.FIMDemoVisualizations && typeof window.FIMDemoVisualizations.update === 'function') {
+      window.FIMDemoVisualizations.update(data);
+    }
   }
 
   function clearMiningResult() {
@@ -462,6 +519,11 @@
       if (chartInstances.rule) chartInstances.rule.clear();
       if (chartInstances.heatmap) chartInstances.heatmap.clear();
       if (chartInstances.levels) chartInstances.levels.clear();
+    }
+
+    // Reset interactive demo visualizations layer
+    if (window.FIMDemoVisualizations && typeof window.FIMDemoVisualizations.reset === 'function') {
+      window.FIMDemoVisualizations.reset();
     }
   }
 
@@ -544,6 +606,11 @@
     if (chartInstances.rule) chartInstances.rule.resize();
     if (chartInstances.heatmap) chartInstances.heatmap.resize();
     if (chartInstances.levels) chartInstances.levels.resize();
+
+    // Resize demo visualizations layer
+    if (window.FIMDemoVisualizations && typeof window.FIMDemoVisualizations.resize === 'function') {
+      window.FIMDemoVisualizations.resize();
+    }
   }
 
   /**
@@ -634,6 +701,13 @@
         }
       ]
     };
+
+    var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    option.animation = !prefersReducedMotion;
+    option.animationDuration = prefersReducedMotion ? 0 : 500;
+    option.animationEasing = 'cubicOut';
+    option.animationDurationUpdate = prefersReducedMotion ? 0 : 500;
+    option.animationEasingUpdate = 'cubicOut';
 
     chartInstances.itemset.setOption(option, true);
   }

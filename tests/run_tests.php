@@ -635,6 +635,22 @@ try {
 }
 
 echo "\n========================================\n";
+echo "Demo Enhancement Visualization Tests\n";
+echo "========================================\n\n";
+
+try {
+    $demoRes = \App\Tests\Unit\DemoVisualizationContractTest::run();
+    foreach ($demoRes['results'] as $resLine) {
+        echo "{$resLine}\n";
+    }
+    $passed += $demoRes['passed'];
+    $failed += $demoRes['failed'];
+} catch (\Throwable $e) {
+    echo "[FAIL] DemoVisualizationContractTest execution error: " . $e->getMessage() . "\n";
+    $failed++;
+}
+
+echo "\n========================================\n";
 echo "Summary: {$passed} passed, {$failed} failed.\n";
 echo "========================================\n";
 

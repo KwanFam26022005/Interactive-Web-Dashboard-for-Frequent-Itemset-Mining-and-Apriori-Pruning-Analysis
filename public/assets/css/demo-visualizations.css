@@ -1,0 +1,136 @@
+/* ==========================================================================
+   FIM Dashboard — Interactive Research Demo Styles
+   Presentation enhancement only — scoped under #demo-panel
+   ========================================================================== */
+
+/* ── Demo Panel Card ── */
+#demo-panel .card {
+  border-top: 3px solid #6366f1;
+}
+
+#demo-panel .demo-disclaimer {
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* ── Demo Navigation Buttons ── */
+#demo-panel .demo-nav-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+#demo-panel .demo-nav-btn.active {
+  background-color: var(--fim-primary, #2563eb);
+  border-color: var(--fim-primary, #2563eb);
+  color: #fff;
+}
+
+#demo-panel .demo-nav-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  outline: none;
+}
+
+/* ── Demo Chart Containers ── */
+#demo-panel .demo-chart-container {
+  width: 100%;
+  min-height: 400px;
+}
+
+/* ── Metrics Strip ── */
+#demo-panel .demo-metrics-strip {
+  background-color: #f8fafc;
+  border: 1px solid var(--fim-border-color, #e2e8f0);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+#demo-panel .demo-metrics-strip table {
+  margin-bottom: 0;
+  width: 100%;
+}
+
+#demo-panel .demo-metrics-strip th {
+  font-weight: 600;
+  color: #475569;
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+}
+
+#demo-panel .demo-metrics-strip td {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #1e293b;
+  padding: 0.15rem 0.5rem;
+}
+
+/* ── Empty States ── */
+#demo-panel .demo-empty-state {
+  text-align: center;
+  color: #64748b;
+  padding: 2rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ── Network Filter Buttons ── */
+#demo-panel .demo-network-filter.active,
+#demo-panel .demo-rulespace-mode.active {
+  background-color: var(--fim-primary, #2563eb);
+  border-color: var(--fim-primary, #2563eb);
+  color: #fff;
+}
+
+/* ── 3D Disclaimer Badge ── */
+#demo-panel #demo-3d-disclaimer {
+  font-size: 0.65rem;
+  font-weight: 400;
+  max-width: 320px;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+/* ── 3D Rule Detail Panel ── */
+#demo-panel #demo-3d-rule-detail {
+  font-size: 0.8rem;
+}
+
+/* ── Apriori Level Badge ── */
+#demo-panel #demo-apriori-level-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ── Section Headings within Demo ── */
+#demo-panel h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 1px solid var(--fim-border-color, #e2e8f0);
+  padding-bottom: 0.35rem;
+}
+
+/* ── Responsive Rules ── */
+@media (max-width: 767.98px) {
+  #demo-panel .demo-chart-container {
+    min-height: 300px;
+  }
+
+  #demo-panel .demo-metrics-strip {
+    font-size: 0.75rem;
+    overflow-x: auto;
+  }
+
+  #demo-panel .btn-group {
+    flex-wrap: wrap;
+  }
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  #demo-panel .demo-chart-container *,
+  #demo-panel .demo-metrics-strip * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
