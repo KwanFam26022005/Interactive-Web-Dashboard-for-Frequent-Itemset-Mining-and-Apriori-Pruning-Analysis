@@ -312,14 +312,32 @@
   flex-direction: column;
 }
 
-#demo-focus-grid {
+/* ── Rule Space Focus Grid & Collapsible Inspector ── */
+.demo-focus-grid {
+  --focus-inspector-width: 360px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--focus-inspector-width);
+  gap: 1rem;
   height: 100%;
+  width: 100%;
+  transition: grid-template-columns 200ms ease;
+}
+
+.demo-focus-grid.is-collapsed {
+  --focus-inspector-width: 48px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-focus-grid {
+    transition: none !important;
+  }
 }
 
 .demo-focus-chart-pane {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
 }
 
 .demo-focus-chart {
@@ -333,6 +351,8 @@
 
 .demo-focus-detail-pane {
   height: 100%;
+  min-width: 0;
+  transition: width 200ms ease;
 }
 
 .demo-focus-detail-pane .card {
@@ -340,9 +360,87 @@
   background-color: #ffffff;
 }
 
+.demo-focus-toggle-btn {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.demo-focus-toggle-btn:focus-visible {
+  outline: 2px solid var(--fim-primary, #2563eb);
+  outline-offset: 1px;
+}
+
 #demo-focus-rule-detail {
   max-height: calc(100vh - 200px);
   overflow-y: auto;
+}
+
+/* Desktop Collapsed Rail Styling */
+.demo-focus-rail-indicator {
+  display: none;
+}
+
+.demo-focus-grid.is-collapsed .demo-focus-detail-pane {
+  width: var(--focus-inspector-width, 48px);
+  min-width: var(--focus-inspector-width, 48px);
+  max-width: var(--focus-inspector-width, 48px);
+  overflow: hidden;
+}
+
+.demo-focus-grid.is-collapsed .demo-focus-inspector-card {
+  width: 100%;
+  overflow: hidden;
+}
+
+.demo-focus-grid.is-collapsed .demo-focus-inspector-header {
+  padding: 0.5rem 0.25rem !important;
+  justify-content: center !important;
+}
+
+.demo-focus-grid.is-collapsed .demo-focus-header-text,
+.demo-focus-grid.is-collapsed .demo-focus-header-badge {
+  display: none !important;
+}
+
+.demo-focus-grid.is-collapsed .demo-focus-inspector-body {
+  display: none !important;
+}
+
+.demo-focus-grid.is-collapsed .demo-focus-rail-indicator {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1rem 0;
+  cursor: pointer;
+  user-select: none;
+  height: calc(100% - 48px);
+}
+
+.demo-focus-rail-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--fim-primary, #2563eb);
+}
+
+.demo-focus-rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-top: 0.75rem;
+  white-space: nowrap;
 }
 
 .demo-focus-mode.active {
@@ -351,14 +449,69 @@
   color: #ffffff;
 }
 
+/* ── Mobile / Tablet (< 992px) Responsive Behavior ── */
 @media (max-width: 991.98px) {
   .modal-fullscreen .demo-focus-content {
     height: auto;
     min-height: 100vh;
   }
+
   .demo-focus-body {
     overflow-y: auto;
   }
+
+  .demo-focus-grid {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    gap: 1rem;
+  }
+
+  .demo-focus-chart-pane {
+    height: 520px;
+    min-height: 480px;
+    width: 100%;
+  }
+
+  .demo-focus-detail-pane {
+    width: 100% !important;
+    height: auto;
+  }
+
+  .demo-focus-detail-pane .card {
+    width: 100% !important;
+    height: auto;
+  }
+
+  /* Never show vertical rail on mobile */
+  .demo-focus-rail-indicator {
+    display: none !important;
+  }
+
+  /* Mobile collapsed state: keep header visible full-width, collapse only body */
+  .demo-focus-grid.is-collapsed .demo-focus-detail-pane {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .demo-focus-grid.is-collapsed .demo-focus-header-text {
+    display: inline !important;
+  }
+
+  .demo-focus-grid.is-collapsed .demo-focus-header-badge {
+    display: inline-block !important;
+  }
+
+  .demo-focus-grid.is-collapsed .demo-focus-inspector-header {
+    justify-content: space-between !important;
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .demo-focus-grid.is-collapsed .demo-focus-inspector-body {
+    display: none !important;
+  }
+
   #demo-focus-rule-detail {
     max-height: 350px;
   }

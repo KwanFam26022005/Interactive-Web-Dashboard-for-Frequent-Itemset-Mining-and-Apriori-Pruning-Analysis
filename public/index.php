@@ -524,7 +524,7 @@
             </div>
           </div>
           <div class="d-flex align-items-center gap-2 text-muted small">
-            <span class="d-none d-md-inline">Shortcuts: <kbd>1</kbd> 2D, <kbd>2</kbd> 3D, <kbd>R</kbd> Reset View, <kbd>Esc</kbd> Close</span>
+            <span class="d-none d-md-inline">Shortcuts: <kbd>1</kbd> 2D, <kbd>2</kbd> 3D, <kbd>R</kbd> Reset View, <kbd>M</kbd> Metrics, <kbd>Esc</kbd> Close</span>
           </div>
         </div>
 
@@ -535,10 +535,10 @@
             No association rules are available for this mining result.
           </div>
 
-          <!-- Main Focus Grid: ~75-80% chart, ~20-25% detail -->
-          <div class="row g-3 flex-grow-1" id="demo-focus-grid">
-            <!-- Chart Area: ~75-80% -->
-            <div class="col-12 col-lg-8 col-xl-9 demo-focus-chart-pane d-flex flex-column">
+          <!-- Main Focus Grid: ~75-80% chart, ~20-25% detail (collapsible to ~48px) -->
+          <div class="demo-focus-grid flex-grow-1" id="demo-focus-grid">
+            <!-- Chart Area -->
+            <div class="demo-focus-chart-pane d-flex flex-column">
               <div id="demo-focus-rulespace-2d" class="demo-focus-chart flex-grow-1" style="min-height: 520px; width: 100%;"></div>
               <div id="demo-focus-rulespace-3d" class="demo-focus-chart flex-grow-1 d-none" style="min-height: 520px; width: 100%;"></div>
               <div id="demo-focus-3d-fallback" class="demo-empty-state d-none text-danger border rounded p-4 my-auto">
@@ -549,14 +549,26 @@
               </div>
             </div>
 
-            <!-- Selected Rule Detail: ~20-25% -->
-            <div class="col-12 col-lg-4 col-xl-3 demo-focus-detail-pane">
-              <div class="card h-100 border bg-light">
-                <div class="card-header py-2 d-flex justify-content-between align-items-center">
-                  <span class="fw-semibold small">Selected Rule Detail</span>
-                  <span class="badge bg-primary-subtle text-primary small">Deep Inspection</span>
+            <!-- Selected Rule Detail: Collapsible Metrics Inspector -->
+            <div class="demo-focus-detail-pane" id="demo-focus-inspector-pane">
+              <div class="card h-100 border bg-light demo-focus-inspector-card">
+                <div class="card-header py-2 px-2 d-flex justify-content-between align-items-center demo-focus-inspector-header">
+                  <div class="d-flex align-items-center gap-2 demo-focus-inspector-title-group text-truncate">
+                    <button type="button" id="demo-focus-inspector-toggle" class="btn btn-sm btn-outline-secondary demo-focus-toggle-btn"
+                            aria-controls="demo-focus-rule-detail" aria-expanded="true"
+                            aria-label="Collapse rule detail panel" title="Collapse rule detail panel">
+                      <span class="demo-focus-toggle-icon" aria-hidden="true">&lsaquo;</span>
+                    </button>
+                    <span class="fw-semibold small demo-focus-header-text text-truncate">Selected Rule Detail</span>
+                  </div>
+                  <span class="badge bg-primary-subtle text-primary small demo-focus-header-badge">Deep Inspection</span>
                 </div>
-                <div class="card-body p-2 overflow-auto" id="demo-focus-rule-detail" aria-live="polite">
+                <!-- Collapsed vertical rail indicator (Desktop only) -->
+                <div class="demo-focus-rail-indicator d-none" id="demo-focus-rail-indicator" role="button" tabindex="0" aria-label="Expand rule detail panel" title="Expand rule detail panel">
+                  <span class="demo-focus-rail-icon" aria-hidden="true">&#x1F4CB;</span>
+                  <span class="demo-focus-rail-label">Rule Info</span>
+                </div>
+                <div class="card-body p-2 overflow-auto demo-focus-inspector-body" id="demo-focus-rule-detail" aria-live="polite">
                   <!-- Populated dynamically -->
                 </div>
               </div>

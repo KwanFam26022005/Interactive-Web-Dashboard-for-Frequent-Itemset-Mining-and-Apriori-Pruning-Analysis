@@ -326,6 +326,29 @@ class DemoVisualizationContractTest
         $assert('Collapsible metrics elements implemented in demo-visualizations.js', str_contains($demoJs, 'demo-metrics-collapsible') && str_contains($demoJs, 'demo-collapsible-summary'));
         $assert('Collapsible metrics styled in demo-visualizations.css', str_contains($demoCss, '.demo-metrics-collapsible') && str_contains($demoCss, '.demo-collapsible-summary'));
 
+        // -----------------------------------------------------------------
+        // Stage I: Collapsible Rule Metrics Inspector Contracts
+        // -----------------------------------------------------------------
+        $assert('Inspector toggle button exists in index.php', str_contains($publicIndex, 'id="demo-focus-inspector-toggle"'));
+        $assert('Inspector toggle button specifies aria-controls="demo-focus-rule-detail"', str_contains($publicIndex, 'aria-controls="demo-focus-rule-detail"'));
+        $assert('Inspector toggle button specifies initial aria-expanded="true"', str_contains($publicIndex, 'aria-expanded="true"'));
+        $assert('Inspector toggle updates aria-expanded dynamically in JS', str_contains($demoJs, "attr('aria-expanded', 'false')") && str_contains($demoJs, "attr('aria-expanded', 'true')"));
+        $assert('Expanded and collapsed CSS classes defined', str_contains($demoCss, '.demo-focus-grid') && str_contains($demoCss, '.demo-focus-grid.is-collapsed'));
+        $assert('Collapsed desktop width contract defined (48px)', str_contains($demoCss, '--focus-inspector-width: 48px'));
+        $assert('Expanded desktop width contract defined (360px)', str_contains($demoCss, '--focus-inspector-width: 360px'));
+        preg_match('/function setFocusInspectorCollapsed\s*\([^)]*\)\s*\{([\s\S]*?)\n  \}/', $demoJs, $fnMatches);
+        $toggleFnBody = $fnMatches[1] ?? '';
+        $assert('Toggle function does not modify mining result or rule data', !empty($toggleFnBody) && !str_contains($toggleFnBody, 'lastMiningResult') && !str_contains($toggleFnBody, 'selectedRule ='));
+        $assert('Toggle triggers Focus chart resize with transition handling', str_contains($demoJs, 'resizeFocusChartOnTransition') && str_contains($demoJs, 'resize()'));
+        $assert('Selected point does not force inspector open', str_contains($demoJs, 'displayRuleDetail') && !str_contains($demoJs, 'displayRuleDetail(rule) { setFocusInspectorCollapsed(false); }'));
+        $assert('Inspector state persists across 2D/3D mode switching', str_contains($demoJs, 'setFocusMode') && !str_contains($demoJs, 'focusInspectorCollapsed = false'));
+        $assert('Focus modal close resets inspector state to expanded', str_contains($demoJs, 'hidden.bs.modal') && str_contains($demoJs, 'setFocusInspectorCollapsed(false)'));
+        $assert('Keyboard shortcut M exists in JS and toolbar hint', str_contains($demoJs, "e.key === 'm' || e.key === 'M'") && str_contains($publicIndex, '<kbd>M</kbd> Metrics'));
+        $assert('Keyboard shortcut M ignores input, textarea, select, and editable elements', str_contains($demoJs, 'isEditable') && str_contains($demoJs, "tag === 'input'") && str_contains($demoJs, "tag === 'textarea'"));
+        $assert('Mobile responsive rules specify 100% width and hide vertical rail', str_contains($demoCss, '@media (max-width: 991.98px)') && str_contains($demoCss, '.demo-focus-rail-indicator') && str_contains($demoCss, 'display: none !important'));
+        $assert('No new API request exists in demo JS', !str_contains($demoJs, '$.ajax') && !str_contains($demoJs, 'fetch(') && !str_contains($demoJs, 'XMLHttpRequest'));
+        $assert('Canonical isolation preserved (zero files added in src/ or config/)', !file_exists(__DIR__ . '/../../src/DemoVisualizations.php') && !file_exists(__DIR__ . '/../../config/demo.php'));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

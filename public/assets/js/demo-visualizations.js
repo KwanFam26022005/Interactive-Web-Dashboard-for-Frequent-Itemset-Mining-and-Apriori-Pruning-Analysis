@@ -18,6 +18,7 @@
     focusMode: '2d',         // '2d' | '3d'
     focusAutoRotate: false,
     focusModalOpen: false,
+    focusInspectorCollapsed: false,
     selectedRule: null,
     aprioriLevelIndex: 0,
     aprioriTimer: null,
@@ -234,6 +235,18 @@
           // Ignore if 3D not available
         }
       }
+    },
+
+    toggleFocusInspector: function () {
+      toggleFocusInspector();
+    },
+
+    setFocusInspectorCollapsed: function (collapsed) {
+      setFocusInspectorCollapsed(collapsed);
+    },
+
+    isFocusInspectorCollapsed: function () {
+      return state.focusInspectorCollapsed;
     }
   };
 
@@ -332,6 +345,7 @@
     $('#demo-rulespace-focus-modal').on('hidden.bs.modal', function () {
       state.focusModalOpen = false;
       FIMDemoVisualizations.stopFocusAutoRotate();
+      setFocusInspectorCollapsed(false);
       if (state.selectedRule) {
         displayRuleDetail(state.selectedRule);
       }
@@ -344,6 +358,19 @@
     $('.demo-focus-mode').on('click', function () {
       var mode = $(this).attr('data-mode');
       setFocusMode(mode);
+    });
+
+    // Focus Inspector collapse toggle
+    $('#demo-focus-inspector-toggle').on('click', function () {
+      toggleFocusInspector();
+    });
+
+    // Collapsed rail indicator click/activate
+    $('#demo-focus-rail-indicator').on('click keydown', function (e) {
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+      setFocusInspectorCollapsed(false);
+      $('#demo-focus-inspector-toggle').trigger('focus');
     });
 
     // Focus 3D Camera Controls
@@ -364,7 +391,8 @@
     $(document).off('keydown.fimFocus').on('keydown.fimFocus', function (e) {
       if (!state.focusModalOpen) return;
       var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      var isEditable = e.target && (e.target.isContentEditable || $(e.target).attr('contenteditable') === 'true');
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || isEditable) return;
 
       if (e.key === '1') {
         setFocusMode('2d');
@@ -374,6 +402,9 @@
         if (state.focusMode === '3d') {
           resetFocus3DCamera();
         }
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        toggleFocusInspector();
       }
     });
   }
@@ -1712,6 +1743,84 @@
   // -------------------------------------------------------------------------
   // 8. Rule Space Focus Workspace (Dedicated Fullscreen Analytical Mode)
   // -------------------------------------------------------------------------
+  function toggleFocusInspector() {
+    setFocusInspectorCollapsed(!state.focusInspectorCollapsed);
+  }
+
+  function setFocusInspectorCollapsed(collapsed) {
+    state.focusInspectorCollapsed = !!collapsed;
+
+    var $grid = $('#demo-focus-grid');
+    var $toggle = $('#demo-focus-inspector-toggle');
+    var $icon = $toggle.find('.demo-focus-toggle-icon');
+    var $rail = $('#demo-focus-rail-indicator');
+
+    if (state.focusInspectorCollapsed) {
+      $grid.addClass('is-collapsed');
+      $toggle.attr('aria-expanded', 'false')
+             .attr('aria-label', 'Expand rule detail panel')
+             .attr('title', 'Expand rule detail panel');
+      $icon.text('\u203A');
+      $rail.removeClass('d-none');
+    } else {
+      $grid.removeClass('is-collapsed');
+      $toggle.attr('aria-expanded', 'true')
+             .attr('aria-label', 'Collapse rule detail panel')
+             .attr('title', 'Collapse rule detail panel');
+      $icon.text('\u2039');
+      $rail.addClass('d-none');
+    }
+
+    if ($toggle.is(':focus') || document.activeElement === $toggle[0]) {
+      $toggle.trigger('focus');
+    }
+
+    resizeFocusChartOnTransition();
+  }
+
+  function resizeFocusChartOnTransition() {
+    function doResize() {
+      if (state.focusMode === '3d' && chartInstances.focus3d) {
+        chartInstances.focus3d.resize();
+      } else if (state.focusMode === '2d' && chartInstances.focus2d) {
+        chartInstances.focus2d.resize();
+      }
+    }
+
+    if (isReducedMotion()) {
+      doResize();
+      return;
+    }
+
+    var resized = false;
+    var $grid = $('#demo-focus-grid');
+
+    var onTransitionEnd = function (e) {
+      if (e && e.target && e.target !== $grid[0] && !$(e.target).hasClass('demo-focus-detail-pane')) {
+        return;
+      }
+      if (!resized) {
+        resized = true;
+        $grid.off('transitionend.fimFocus');
+        doResize();
+      }
+    };
+
+    $grid.off('transitionend.fimFocus').on('transitionend.fimFocus', onTransitionEnd);
+
+    if (window.requestAnimationFrame) {
+      window.requestAnimationFrame(doResize);
+    }
+
+    setTimeout(function () {
+      if (!resized) {
+        resized = true;
+        $grid.off('transitionend.fimFocus');
+        doResize();
+      }
+    }, 220);
+  }
+
   function updateFocusContext(data) {
     var $ctx = $('#demo-focus-context');
     if (!data || !data.summary) {
