@@ -337,6 +337,20 @@ final class VisualizationBenchmarkTest
             }
         }
 
+        // 14. UI Presentation & Static Harness Contract Tests
+        $assert('Harness UI specifies #chart-stage width exactly 800px', preg_match('/#chart-stage\s*\{[^}]*width:\s*800px/s', $indexHtml) === 1);
+        $assert('Harness UI specifies #chart-stage height exactly 500px', preg_match('/#chart-stage\s*\{[^}]*height:\s*500px/s', $indexHtml) === 1);
+        $assert('Harness UI retains #btn-preflight with runPreflight()', str_contains($indexHtml, 'id="btn-preflight"') && str_contains($indexHtml, 'onclick="runPreflight()"'));
+        $assert('Harness UI retains #btn-smoke with startBenchmark(true)', str_contains($indexHtml, 'id="btn-smoke"') && str_contains($indexHtml, 'onclick="startBenchmark(true)"'));
+        $assert('Harness UI retains #btn-formal with startBenchmark(false)', str_contains($indexHtml, 'id="btn-formal"') && str_contains($indexHtml, 'onclick="startBenchmark(false)"'));
+        $assert('Harness UI retains #btn-export with exportCsv()', str_contains($indexHtml, 'id="btn-export"') && str_contains($indexHtml, 'onclick="exportCsv()"'));
+        $assert('Harness UI retains Current Observation presentation area', str_contains($indexHtml, 'Current Observation') && str_contains($indexHtml, 'obs-library') && str_contains($indexHtml, 'obs-render'));
+        $assert('Harness UI retains Execution Log disclosure', str_contains($indexHtml, 'Execution Log') && str_contains($indexHtml, 'toggleLog()'));
+        $assert('Harness UI retains Summary Results container and renderSummaryTable', str_contains($indexHtml, 'id="summary-container"') && str_contains($indexHtml, 'renderSummaryTable'));
+        $assert('Harness UI enforces Smoke sanity check warning note contract', str_contains($indexHtml, 'Smoke results are pipeline sanity checks, not formal RQ3 evidence.'));
+        $assert('Harness UI introduces no external CDN references', !preg_match('/https?:\/\/(?:cdn|cdnjs|unpkg|jsdelivr)/i', $indexHtml));
+        $assert('benchmark.js engine file is clean and unmodified', trim((string)shell_exec('git diff --name-only experiments/visualization/benchmark.js')) === '');
+
         return [
             'passed' => $passed,
             'failed' => $failed,
