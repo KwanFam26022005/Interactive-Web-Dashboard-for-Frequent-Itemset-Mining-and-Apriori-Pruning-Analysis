@@ -301,6 +301,27 @@ class DemoVisualizationContractTest
         $assert('demo-visualizations.js implements setRulesSubview', str_contains($demoJs, 'setRulesSubview'));
         $assert('demo-visualizations.js tracks rulesSubview in state', str_contains($demoJs, "rulesSubview: 'network'"));
 
+        // -----------------------------------------------------------------
+        // Stage H: Rule Space Focus Workspace Contracts
+        // -----------------------------------------------------------------
+        $assert('Focus Mode button exists in index.php', str_contains($publicIndex, 'id="demo-open-focus-btn"'));
+        $assert('Fullscreen modal exists in index.php', str_contains($publicIndex, 'id="demo-rulespace-focus-modal"') && str_contains($publicIndex, 'modal-fullscreen'));
+        $assert('Focus modal has accessible title', str_contains($publicIndex, 'id="demo-focus-modal-title"') && str_contains($publicIndex, 'aria-labelledby="demo-focus-modal-title"'));
+        $assert('Dedicated Focus 2D container exists', str_contains($publicIndex, 'id="demo-focus-rulespace-2d"'));
+        $assert('Dedicated Focus 3D container exists', str_contains($publicIndex, 'id="demo-focus-rulespace-3d"'));
+        $assert('Dedicated Focus chart registry entries exist in demo-visualizations.js', str_contains($demoJs, 'focus2d: null') && str_contains($demoJs, 'focus3d: null'));
+        $assert('Focus Mode consumes existing authoritative mining result', str_contains($demoJs, 'renderFocusRuleSpace') && str_contains($demoJs, 'state.lastMiningResult'));
+        $assert('No AJAX request added in demo-visualizations.js', !str_contains($demoJs, '$.ajax') && !str_contains($demoJs, 'fetch('));
+        $assert('Focus 2D mapping: support, confidence, lift', str_contains($demoJs, 'renderFocusRuleSpace2D') && str_contains($demoJs, '[Number(rule.support), Number(rule.confidence), liftVal]'));
+        $assert('Focus 3D mapping: support, confidence, lift', str_contains($demoJs, 'renderFocusRuleSpace3D') && str_contains($demoJs, "xAxis3D:") && str_contains($demoJs, "yAxis3D:") && str_contains($demoJs, "zAxis3D:"));
+        $focus3DDisclaimer = 'WebGL presentation enhancement — excluded from the formal RQ3 D3/Chart.js/ECharts Canvas benchmark.';
+        $assert('Focus 3D scientific disclaimer present in index.php', str_contains($publicIndex, $focus3DDisclaimer));
+        $assert('Focus 3D Auto Rotate defaults to OFF', str_contains($demoJs, 'focusAutoRotate: false'));
+        $assert('Modal close stops Focus Auto Rotate', str_contains($demoJs, 'hidden.bs.modal') && str_contains($demoJs, 'stopFocusAutoRotate'));
+        $assert('Focus 2D/3D mode switching invokes resize', str_contains($demoJs, 'setFocusMode') && str_contains($demoJs, 'resize()'));
+        $assert('Focus Selected Rule Detail container exists', str_contains($publicIndex, 'id="demo-focus-rule-detail"') && str_contains($demoJs, 'displayRuleDetail'));
+        $assert('Focus WebGL fallback container and graceful handling exist', str_contains($publicIndex, 'id="demo-focus-3d-fallback"') && str_contains($demoJs, 'renderFocusRuleSpace3D') && str_contains($demoJs, 'catch (e)'));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

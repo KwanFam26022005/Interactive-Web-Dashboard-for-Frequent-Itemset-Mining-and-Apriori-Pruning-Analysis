@@ -238,8 +238,81 @@
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
   #demo-panel .demo-chart-container *,
-  #demo-panel .demo-metrics-strip * {
+  #demo-panel .demo-metrics-strip *,
+  #demo-rulespace-focus-modal * {
     transition: none !important;
     animation: none !important;
   }
 }
+
+/* ── Rule Space Focus Mode Fullscreen Workspace ── */
+.modal-fullscreen .demo-focus-content {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--fim-bg, #f4f6f9);
+}
+
+.demo-focus-toolbar {
+  background-color: #ffffff;
+}
+
+.demo-focus-body {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#demo-focus-grid {
+  height: 100%;
+}
+
+.demo-focus-chart-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.demo-focus-chart {
+  background-color: #ffffff;
+  border: 1px solid var(--fim-border-color, #e2e8f0);
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+}
+
+.demo-focus-detail-pane {
+  height: 100%;
+}
+
+.demo-focus-detail-pane .card {
+  height: 100%;
+  background-color: #ffffff;
+}
+
+#demo-focus-rule-detail {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.demo-focus-mode.active {
+  background-color: var(--fim-primary, #2563eb);
+  border-color: var(--fim-primary, #2563eb);
+  color: #ffffff;
+}
+
+@media (max-width: 991.98px) {
+  .modal-fullscreen .demo-focus-content {
+    height: auto;
+    min-height: 100vh;
+  }
+  .demo-focus-body {
+    overflow-y: auto;
+  }
+  #demo-focus-rule-detail {
+    max-height: 350px;
+  }
+}
+

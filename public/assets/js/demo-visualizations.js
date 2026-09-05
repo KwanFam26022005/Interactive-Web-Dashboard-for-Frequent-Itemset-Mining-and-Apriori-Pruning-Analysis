@@ -15,6 +15,10 @@
     lastMiningResult: null,
     rulesLimit: '10',        // '10' | '20' | 'all'
     rulespaceMode: '2d',     // '2d' | '3d'
+    focusMode: '2d',         // '2d' | '3d'
+    focusAutoRotate: false,
+    focusModalOpen: false,
+    selectedRule: null,
     aprioriLevelIndex: 0,
     aprioriTimer: null,
     autoRotate: false,
@@ -25,7 +29,9 @@
     sankey: null,
     network: null,
     rulespace2d: null,
-    rulespace3d: null
+    rulespace3d: null,
+    focus2d: null,
+    focus3d: null
   };
 
   // Check reduced motion preference
@@ -60,9 +66,24 @@
       // Stop any running animations/timers before updating
       this.stopAprioriPlayback();
       this.stopAutoRotate();
+      this.stopFocusAutoRotate();
 
       state.lastMiningResult = miningResult;
       state.aprioriLevelIndex = 0;
+
+      // Validate selected rule against new rules list
+      var validSelected = null;
+      if (state.selectedRule && miningResult.rules) {
+        var antStr = formatItemset(state.selectedRule.antecedent);
+        var conStr = formatItemset(state.selectedRule.consequent);
+        $.each(miningResult.rules, function (i, r) {
+          if (formatItemset(r.antecedent) === antStr && formatItemset(r.consequent) === conStr) {
+            validSelected = r;
+            return false;
+          }
+        });
+      }
+      state.selectedRule = validSelected;
 
       // Reveal the demo panel
       $('#demo-panel').removeClass('d-none');
@@ -74,6 +95,12 @@
 
       // Re-render currently active view
       renderCurrentView();
+
+      // If Focus Mode modal is open, refresh its context and charts
+      if (state.focusModalOpen) {
+        updateFocusContext(miningResult);
+        renderFocusRuleSpace();
+      }
     },
 
     /**
@@ -82,9 +109,11 @@
     reset: function () {
       this.stopAprioriPlayback();
       this.stopAutoRotate();
+      this.stopFocusAutoRotate();
 
       state.lastMiningResult = null;
       state.aprioriLevelIndex = 0;
+      state.selectedRule = null;
 
       $('#demo-panel').addClass('d-none');
       $('#demo-overview-prompt').removeClass('d-none');
@@ -95,6 +124,8 @@
       if (chartInstances.network) chartInstances.network.clear();
       if (chartInstances.rulespace2d) chartInstances.rulespace2d.clear();
       if (chartInstances.rulespace3d) chartInstances.rulespace3d.clear();
+      if (chartInstances.focus2d) chartInstances.focus2d.clear();
+      if (chartInstances.focus3d) chartInstances.focus3d.clear();
 
       this.setView('overview');
     },
@@ -114,6 +145,12 @@
       }
       if (chartInstances.rulespace3d && $('#demo-rulespace-3d-chart').is(':visible')) {
         chartInstances.rulespace3d.resize();
+      }
+      if (chartInstances.focus2d && $('#demo-focus-rulespace-2d').is(':visible')) {
+        chartInstances.focus2d.resize();
+      }
+      if (chartInstances.focus3d && $('#demo-focus-rulespace-3d').is(':visible')) {
+        chartInstances.focus3d.resize();
       }
     },
 
@@ -169,6 +206,24 @@
       if (chartInstances.rulespace3d) {
         try {
           chartInstances.rulespace3d.setOption({
+            grid3D: {
+              viewControl: {
+                autoRotate: false
+              }
+            }
+          });
+        } catch (e) {
+          // Ignore if 3D not available
+        }
+      }
+    },
+
+    stopFocusAutoRotate: function () {
+      state.focusAutoRotate = false;
+      $('#demo-focus-3d-auto-rotate').text('Auto Rotate: OFF').removeClass('btn-primary').addClass('btn-outline-secondary');
+      if (chartInstances.focus3d) {
+        try {
+          chartInstances.focus3d.setOption({
             grid3D: {
               viewControl: {
                 autoRotate: false
@@ -252,6 +307,74 @@
 
     $('#demo-3d-auto-rotate').on('click', function () {
       toggle3DAutoRotate();
+    });
+
+    // Rule Space Focus Mode Modal Lifecycle
+    $('#demo-rulespace-focus-modal').off('show.bs.modal shown.bs.modal hidden.bs.modal');
+
+    $('#demo-rulespace-focus-modal').on('show.bs.modal', function () {
+      state.focusMode = state.rulespaceMode || '2d';
+    });
+
+    $('#demo-rulespace-focus-modal').on('shown.bs.modal', function () {
+      state.focusModalOpen = true;
+      updateFocusContext(state.lastMiningResult);
+      setFocusMode(state.focusMode);
+      setTimeout(function () {
+        if (state.focusMode === '3d' && chartInstances.focus3d) {
+          chartInstances.focus3d.resize();
+        } else if (state.focusMode === '2d' && chartInstances.focus2d) {
+          chartInstances.focus2d.resize();
+        }
+      }, 100);
+    });
+
+    $('#demo-rulespace-focus-modal').on('hidden.bs.modal', function () {
+      state.focusModalOpen = false;
+      FIMDemoVisualizations.stopFocusAutoRotate();
+      if (state.selectedRule) {
+        displayRuleDetail(state.selectedRule);
+      }
+      setTimeout(function () {
+        FIMDemoVisualizations.resize();
+      }, 50);
+    });
+
+    // Focus Mode dimension toggle
+    $('.demo-focus-mode').on('click', function () {
+      var mode = $(this).attr('data-mode');
+      setFocusMode(mode);
+    });
+
+    // Focus 3D Camera Controls
+    $('#demo-focus-3d-reset-view').on('click', function () {
+      resetFocus3DCamera();
+    });
+
+    $('#demo-focus-3d-auto-rotate').on('click', function () {
+      toggleFocus3DAutoRotate();
+    });
+
+    // Fallback switch to 2D
+    $('#demo-focus-fallback-switch-2d').on('click', function () {
+      setFocusMode('2d');
+    });
+
+    // Optional keyboard shortcuts when Focus modal is active
+    $(document).off('keydown.fimFocus').on('keydown.fimFocus', function (e) {
+      if (!state.focusModalOpen) return;
+      var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+      if (e.key === '1') {
+        setFocusMode('2d');
+      } else if (e.key === '2') {
+        setFocusMode('3d');
+      } else if (e.key === 'r' || e.key === 'R') {
+        if (state.focusMode === '3d') {
+          resetFocus3DCamera();
+        }
+      }
     });
   }
 
@@ -1410,8 +1533,16 @@
   }
 
   function displayRuleDetail(rule) {
-    var $panel = $('#demo-3d-rule-detail');
-    $panel.empty().removeClass('d-none');
+    if (!rule) return;
+    state.selectedRule = rule;
+
+    renderRuleDetailTable(rule, $('#demo-3d-rule-detail'));
+    renderRuleDetailTable(rule, $('#demo-focus-rule-detail'));
+  }
+
+  function renderRuleDetailTable(rule, $container) {
+    if (!$container || $container.length === 0) return;
+    $container.empty().removeClass('d-none');
 
     var antStr = formatItemset(rule.antecedent);
     var conStr = formatItemset(rule.consequent);
@@ -1440,7 +1571,7 @@
     });
 
     $table.append($tbody);
-    $panel.append($table);
+    $container.append($table);
   }
 
   function reset3DCamera() {
@@ -1510,6 +1641,382 @@
     setTimeout(function () {
       FIMDemoVisualizations.resize();
     }, 50);
+  }
+
+  // -------------------------------------------------------------------------
+  // 8. Rule Space Focus Workspace (Dedicated Fullscreen Analytical Mode)
+  // -------------------------------------------------------------------------
+  function updateFocusContext(data) {
+    var $ctx = $('#demo-focus-context');
+    if (!data || !data.summary) {
+      $ctx.empty();
+      return;
+    }
+    var datasetName = $('#dataset-select option:selected').text() || 'Active Dataset';
+    datasetName = $.trim(datasetName);
+    var txnCount = data.summary.total_transactions != null ? Number(data.summary.total_transactions).toLocaleString() : '—';
+    var supp = data.parameters && data.parameters.min_support != null ? Number(data.parameters.min_support).toFixed(2) : '—';
+    var conf = data.parameters && data.parameters.min_confidence != null ? Number(data.parameters.min_confidence).toFixed(2) : '—';
+    var rulesCount = data.rules ? data.rules.length : 0;
+    var runId = data.summary.run_id ? ' · Run #' + data.summary.run_id : '';
+
+    $ctx.text(datasetName + ' · ' + txnCount + ' txns · support=' + supp + ' · confidence=' + conf + ' · ' + rulesCount + ' returned rules' + runId);
+  }
+
+  function setFocusMode(mode) {
+    state.focusMode = mode;
+    $('.demo-focus-mode').removeClass('active').attr('aria-pressed', 'false');
+    $('.demo-focus-mode[data-mode="' + mode + '"]').addClass('active').attr('aria-pressed', 'true');
+
+    if (mode === '3d') {
+      $('#demo-focus-rulespace-2d').addClass('d-none');
+      $('#demo-focus-rulespace-3d').removeClass('d-none');
+      $('#demo-focus-3d-controls').removeClass('d-none');
+      $('#demo-focus-3d-disclaimer').removeClass('d-none');
+      $('#demo-focus-axis-info').addClass('d-none');
+      renderFocusRuleSpace();
+    } else {
+      FIMDemoVisualizations.stopFocusAutoRotate();
+      $('#demo-focus-rulespace-3d').addClass('d-none');
+      $('#demo-focus-rulespace-2d').removeClass('d-none');
+      $('#demo-focus-3d-controls').addClass('d-none');
+      $('#demo-focus-3d-disclaimer').addClass('d-none');
+      $('#demo-focus-axis-info').removeClass('d-none');
+      $('#demo-focus-3d-fallback').addClass('d-none');
+      renderFocusRuleSpace();
+    }
+    setTimeout(function () {
+      if (mode === '3d' && chartInstances.focus3d) {
+        chartInstances.focus3d.resize();
+      } else if (mode === '2d' && chartInstances.focus2d) {
+        chartInstances.focus2d.resize();
+      }
+    }, 50);
+  }
+
+  function renderFocusRuleSpace() {
+    var data = state.lastMiningResult;
+    var rules = (data && data.rules) ? data.rules : [];
+
+    if (rules.length === 0) {
+      $('#demo-focus-rulespace-2d').addClass('d-none');
+      $('#demo-focus-rulespace-3d').addClass('d-none');
+      $('#demo-focus-grid').addClass('d-none');
+      $('#demo-focus-empty').removeClass('d-none');
+      $('#demo-focus-rule-detail').empty();
+      $('.demo-focus-mode, #demo-focus-3d-reset-view, #demo-focus-3d-auto-rotate').prop('disabled', true);
+      return;
+    }
+
+    $('#demo-focus-empty').addClass('d-none');
+    $('#demo-focus-grid').removeClass('d-none');
+    $('.demo-focus-mode, #demo-focus-3d-reset-view, #demo-focus-3d-auto-rotate').prop('disabled', false);
+
+    if (state.focusMode === '3d') {
+      renderFocusRuleSpace3D(rules);
+    } else {
+      renderFocusRuleSpace2D(rules);
+    }
+
+    if (state.selectedRule) {
+      displayRuleDetail(state.selectedRule);
+    } else if (rules.length > 0) {
+      displayRuleDetail(rules[0]);
+    }
+  }
+
+  function renderFocusRuleSpace2D(rules) {
+    var container = document.getElementById('demo-focus-rulespace-2d');
+    if (!container) return;
+
+    if (!chartInstances.focus2d) {
+      chartInstances.focus2d = echarts.init(container);
+    }
+
+    var scatterData = [];
+    var maxLift = 1.0;
+
+    $.each(rules, function (idx, rule) {
+      var liftVal = Number(rule.lift);
+      if (liftVal > maxLift) maxLift = liftVal;
+      scatterData.push({
+        value: [Number(rule.support), Number(rule.confidence), liftVal],
+        rawRule: rule
+      });
+    });
+
+    var prefersReduced = isReducedMotion();
+
+    var option = {
+      title: {
+        text: '2D Association Rule Space (Support \u00d7 Confidence)',
+        subtext: 'Bubble Size & Color \u221D Lift | Fullscreen Focus Workspace (' + rules.length + ' rules)',
+        left: '2%',
+        top: '1%',
+        textStyle: { fontSize: 14, fontWeight: 600, color: '#1e293b' },
+        subtextStyle: { fontSize: 12, color: '#64748b' }
+      },
+      tooltip: {
+        trigger: 'item',
+        renderMode: 'richText',
+        formatter: function (params) {
+          var raw = params.data ? params.data.rawRule : null;
+          if (!raw) return '';
+          return 'Rule: ' + formatItemset(raw.antecedent) + ' \u2192 ' + formatItemset(raw.consequent) + '\n' +
+            'Support: ' + (Number(raw.support) * 100).toFixed(4) + '% (' + Number(raw.support_count).toLocaleString() + ' txns)\n' +
+            'Confidence: ' + (Number(raw.confidence) * 100).toFixed(2) + '%\n' +
+            'Lift: ' + Number(raw.lift).toFixed(4);
+        }
+      },
+      grid: {
+        left: '4%',
+        right: '12%',
+        bottom: '8%',
+        top: '12%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Support',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 0,
+        max: 1,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        splitLine: { lineStyle: { color: '#f1f5f9' } }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Confidence',
+        min: 0,
+        max: 1,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        splitLine: { lineStyle: { color: '#f1f5f9' } }
+      },
+      visualMap: {
+        dimension: 2,
+        min: 0.5,
+        max: Math.max(2, Math.ceil(maxLift)),
+        calculable: true,
+        orient: 'vertical',
+        right: '1%',
+        top: 'center',
+        text: ['High Lift', 'Low Lift'],
+        textStyle: { fontSize: 11, color: '#64748b' },
+        inRange: {
+          color: ['#38bdf8', '#818cf8', '#ef4444']
+        }
+      },
+      animation: !prefersReduced,
+      animationDuration: prefersReduced ? 0 : 500,
+      series: [
+        {
+          name: 'Focus Rules 2D',
+          type: 'scatter',
+          data: scatterData,
+          symbolSize: function (val) {
+            var lift = val[2];
+            var clamped = Math.max(0.1, Math.min(lift, 20));
+            return Math.sqrt(clamped) * 16;
+          }
+        }
+      ]
+    };
+
+    chartInstances.focus2d.setOption(option, true);
+
+    chartInstances.focus2d.off('click');
+    chartInstances.focus2d.on('click', function (params) {
+      if (params.data && params.data.rawRule) {
+        displayRuleDetail(params.data.rawRule);
+      }
+    });
+  }
+
+  function renderFocusRuleSpace3D(rules) {
+    var container = document.getElementById('demo-focus-rulespace-3d');
+    if (!container) return;
+
+    try {
+      if (!chartInstances.focus3d) {
+        chartInstances.focus3d = echarts.init(container);
+      }
+
+      var scatter3DData = [];
+      var maxLift = 1.0;
+
+      $.each(rules, function (idx, rule) {
+        var liftVal = Number(rule.lift);
+        if (liftVal > maxLift) maxLift = liftVal;
+        scatter3DData.push({
+          value: [Number(rule.support), Number(rule.confidence), liftVal],
+          rawRule: rule
+        });
+      });
+
+      var maxZ = Math.max(2.0, Math.ceil(maxLift * 1.1));
+      var prefersReduced = isReducedMotion();
+      var effectiveAutoRotate = prefersReduced ? false : state.focusAutoRotate;
+
+      var option = {
+        title: {
+          text: '3D Association Rule Space (Support \u00d7 Confidence \u00d7 Lift)',
+          subtext: 'Interactive WebGL Geometry: Drag to Rotate | Wheel to Zoom | Fullscreen Focus Workspace (' + rules.length + ' rules)',
+          left: '2%',
+          top: '1%',
+          textStyle: { fontSize: 14, fontWeight: 600, color: '#1e293b' },
+          subtextStyle: { fontSize: 12, color: '#64748b' }
+        },
+        tooltip: {
+          show: true,
+          renderMode: 'richText',
+          formatter: function (params) {
+            var raw = params.data ? params.data.rawRule : null;
+            if (!raw) return '';
+            return 'Rule: ' + formatItemset(raw.antecedent) + ' \u2192 ' + formatItemset(raw.consequent) + '\n' +
+              'Support: ' + (Number(raw.support) * 100).toFixed(4) + '% (' + Number(raw.support_count).toLocaleString() + ' txns)\n' +
+              'Confidence: ' + (Number(raw.confidence) * 100).toFixed(2) + '%\n' +
+              'Lift: ' + Number(raw.lift).toFixed(4);
+          }
+        },
+        visualMap: {
+          show: true,
+          dimension: 2,
+          min: 0,
+          max: maxZ,
+          inRange: {
+            color: ['#38bdf8', '#fbbf24', '#ef4444']
+          },
+          text: ['High', 'Low'],
+          textStyle: { color: '#64748b', fontSize: 11 },
+          right: '2%',
+          top: 'center'
+        },
+        xAxis3D: {
+          type: 'value',
+          name: 'Support',
+          min: 0,
+          max: 1,
+          nameTextStyle: { color: '#1e293b', fontSize: 12 }
+        },
+        yAxis3D: {
+          type: 'value',
+          name: 'Confidence',
+          min: 0,
+          max: 1,
+          nameTextStyle: { color: '#1e293b', fontSize: 12 }
+        },
+        zAxis3D: {
+          type: 'value',
+          name: 'Lift',
+          min: 0,
+          max: maxZ,
+          nameTextStyle: { color: '#1e293b', fontSize: 12 }
+        },
+        grid3D: {
+          boxWidth: 150,
+          boxDepth: 120,
+          boxHeight: 120,
+          viewControl: {
+            autoRotate: effectiveAutoRotate,
+            autoRotateSpeed: 10,
+            alpha: 25,
+            beta: 40,
+            distance: 155,
+            minDistance: 40,
+            maxDistance: 400
+          },
+          light: {
+            main: {
+              intensity: 1.2,
+              shadow: false
+            },
+            ambient: {
+              intensity: 0.6
+            }
+          }
+        },
+        series: [
+          {
+            name: 'Focus Rules 3D',
+            type: 'scatter3D',
+            data: scatter3DData,
+            symbolSize: 12,
+            itemStyle: {
+              opacity: 0.85
+            },
+            emphasis: {
+              itemStyle: {
+                color: '#f59e0b',
+                borderColor: '#1e293b',
+                borderWidth: 2
+              }
+            }
+          }
+        ]
+      };
+
+      chartInstances.focus3d.setOption(option, true);
+      $('#demo-focus-3d-fallback').addClass('d-none');
+      $('#demo-focus-rulespace-3d').removeClass('d-none');
+      $('#demo-focus-3d-reset-view, #demo-focus-3d-auto-rotate').prop('disabled', false);
+
+      chartInstances.focus3d.off('click');
+      chartInstances.focus3d.on('click', function (params) {
+        if (params.data && params.data.rawRule) {
+          displayRuleDetail(params.data.rawRule);
+        }
+      });
+    } catch (e) {
+      $('#demo-focus-rulespace-3d').addClass('d-none');
+      $('#demo-focus-3d-fallback').removeClass('d-none');
+      $('#demo-focus-3d-reset-view, #demo-focus-3d-auto-rotate').prop('disabled', true);
+    }
+  }
+
+  function resetFocus3DCamera() {
+    if (!chartInstances.focus3d) return;
+    try {
+      chartInstances.focus3d.setOption({
+        grid3D: {
+          viewControl: {
+            alpha: 25,
+            beta: 40,
+            distance: 155
+          }
+        }
+      });
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  function toggleFocus3DAutoRotate() {
+    if (isReducedMotion()) {
+      FIMDemoVisualizations.stopFocusAutoRotate();
+      return;
+    }
+    if (!chartInstances.focus3d) return;
+
+    state.focusAutoRotate = !state.focusAutoRotate;
+
+    if (state.focusAutoRotate) {
+      $('#demo-focus-3d-auto-rotate').text('Auto Rotate: ON').removeClass('btn-outline-secondary').addClass('btn-primary');
+    } else {
+      $('#demo-focus-3d-auto-rotate').text('Auto Rotate: OFF').removeClass('btn-primary').addClass('btn-outline-secondary');
+    }
+
+    try {
+      chartInstances.focus3d.setOption({
+        grid3D: {
+          viewControl: {
+            autoRotate: state.focusAutoRotate
+          }
+        }
+      });
+    } catch (e) {
+      // Ignore
+    }
   }
 
   // Expose to global window

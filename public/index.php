@@ -420,6 +420,13 @@
                     </div>
                   </div>
                 </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" id="demo-open-focus-btn" class="btn btn-outline-primary btn-sm"
+                          data-bs-toggle="modal" data-bs-target="#demo-rulespace-focus-modal"
+                          aria-label="Open Rule Space Focus Mode">
+                    &#x26F6; Focus Rule Space
+                  </button>
+                </div>
               </div>
 
               <!-- 3D Academic Notice -->
@@ -474,6 +481,107 @@
     </section>
 
   </main>
+
+  <!-- Rule Space Focus Mode Fullscreen Workspace Modal -->
+  <div class="modal fade" id="demo-rulespace-focus-modal" tabindex="-1" aria-labelledby="demo-focus-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content demo-focus-content">
+        <!-- Focus Header -->
+        <div class="modal-header py-2 px-3 border-bottom d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <h2 class="modal-title h5 mb-0 fw-bold" id="demo-focus-modal-title">Rule Space Focus Workspace</h2>
+            <span class="text-muted small">|</span>
+            <div id="demo-focus-context" class="demo-focus-context text-muted small font-monospace" aria-live="polite">
+              <!-- e.g. UCI Mushroom · 8,124 transactions · min_supp=0.50 · min_conf=0.60 · 20 rules -->
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+
+        <!-- Focus Toolbar -->
+        <div class="modal-header py-2 px-3 bg-light border-bottom demo-focus-toolbar d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-semibold small text-muted">Dimension Mode:</span>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Focus Dimension Mode">
+              <button type="button" class="btn btn-outline-secondary demo-focus-mode active" data-mode="2d" aria-pressed="true">
+                2D Scatter
+              </button>
+              <button type="button" class="btn btn-outline-secondary demo-focus-mode" data-mode="3d" aria-pressed="false">
+                3D Explore
+              </button>
+            </div>
+            <div id="demo-focus-3d-controls" class="d-none">
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" id="demo-focus-3d-reset-view" class="btn btn-outline-secondary btn-sm" aria-label="Reset 3D Camera View">
+                  Reset View
+                </button>
+                <button type="button" id="demo-focus-3d-auto-rotate" class="btn btn-outline-secondary btn-sm" aria-label="Toggle Camera Auto-Rotation">
+                  Auto Rotate: OFF
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2 text-muted small">
+            <span class="d-none d-md-inline">Shortcuts: <kbd>1</kbd> 2D, <kbd>2</kbd> 3D, <kbd>R</kbd> Reset View, <kbd>Esc</kbd> Close</span>
+          </div>
+        </div>
+
+        <!-- Focus Body -->
+        <div class="modal-body p-3 demo-focus-body d-flex flex-column">
+          <!-- Empty State if rules.length === 0 -->
+          <div id="demo-focus-empty" class="demo-empty-state d-none my-auto">
+            No association rules are available for this mining result.
+          </div>
+
+          <!-- Main Focus Grid: ~75-80% chart, ~20-25% detail -->
+          <div class="row g-3 flex-grow-1" id="demo-focus-grid">
+            <!-- Chart Area: ~75-80% -->
+            <div class="col-12 col-lg-8 col-xl-9 demo-focus-chart-pane d-flex flex-column">
+              <div id="demo-focus-rulespace-2d" class="demo-focus-chart flex-grow-1" style="min-height: 520px; width: 100%;"></div>
+              <div id="demo-focus-rulespace-3d" class="demo-focus-chart flex-grow-1 d-none" style="min-height: 520px; width: 100%;"></div>
+              <div id="demo-focus-3d-fallback" class="demo-empty-state d-none text-danger border rounded p-4 my-auto">
+                <div class="mb-2 fw-semibold">3D visualization is unavailable in this environment.</div>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="demo-focus-fallback-switch-2d">
+                  Switch to 2D
+                </button>
+              </div>
+            </div>
+
+            <!-- Selected Rule Detail: ~20-25% -->
+            <div class="col-12 col-lg-4 col-xl-3 demo-focus-detail-pane">
+              <div class="card h-100 border bg-light">
+                <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                  <span class="fw-semibold small">Selected Rule Detail</span>
+                  <span class="badge bg-primary-subtle text-primary small">Deep Inspection</span>
+                </div>
+                <div class="card-body p-2 overflow-auto" id="demo-focus-rule-detail" aria-live="polite">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Focus Footer -->
+        <div class="modal-footer py-2 px-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span id="demo-focus-axis-info" class="text-muted small">
+              2D Axis Mapping: X = Support &middot; Y = Confidence &middot; Bubble Size &amp; Color &prop; Lift
+            </span>
+            <div id="demo-focus-3d-disclaimer" class="demo-scientific-notice d-none">
+              <span class="badge bg-secondary me-1">Academic Notice</span>
+              WebGL presentation enhancement — excluded from the formal RQ3 D3/Chart.js/ECharts Canvas benchmark.
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">
+            Close Focus
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Vendored Local Offline Assets -->
   <script src="assets/vendor/jquery/jquery.min.js"></script>
