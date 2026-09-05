@@ -144,6 +144,62 @@ class DemoVisualizationContractTest
         $assert('index.php has #demo-network-reset button', str_contains($publicIndex, 'id="demo-network-reset"'));
         $assert('index.php has .demo-network-filter buttons', str_contains($publicIndex, 'demo-network-filter'));
 
+        // -----------------------------------------------------------------
+        // Stage E: 2D / 3D Association-Rule Explorer Contracts
+        // -----------------------------------------------------------------
+        $echartsGlPath = $repoRoot . '/public/assets/vendor/echarts-gl/echarts-gl.min.js';
+        $vendorManifestPath = $repoRoot . '/public/assets/vendor/echarts-gl/VENDOR_MANIFEST.json';
+
+        $assert('Local ECharts-GL JS file exists', file_exists($echartsGlPath));
+        $assert('ECharts-GL VENDOR_MANIFEST.json exists', file_exists($vendorManifestPath));
+
+        $manifestContent = file_exists($vendorManifestPath) ? file_get_contents($vendorManifestPath) : '';
+        $manifestJson = json_decode($manifestContent, true);
+        $assert('VENDOR_MANIFEST.json is valid JSON', is_array($manifestJson));
+        $assert('VENDOR_MANIFEST.json package is echarts-gl', ($manifestJson['package'] ?? '') === 'echarts-gl');
+        $assert('VENDOR_MANIFEST.json version is 2.0.9', ($manifestJson['version'] ?? '') === '2.0.9');
+        $assert('VENDOR_MANIFEST.json file matches echarts-gl.min.js', ($manifestJson['file'] ?? '') === 'echarts-gl.min.js');
+
+        // Verify physical SHA-256 hash match
+        $actualGlHash = file_exists($echartsGlPath) ? hash_file('sha256', $echartsGlPath) : '';
+        $manifestGlHash = strtolower($manifestJson['sha256'] ?? '');
+        $assert('ECharts-GL physical SHA-256 matches manifest hash', $actualGlHash === $manifestGlHash && strlen($actualGlHash) === 64);
+
+        // Load order verification: ECharts -> ECharts-GL -> demo-visualizations.js -> app.js
+        $posGl = strpos($publicIndex, 'assets/vendor/echarts-gl/echarts-gl.min.js');
+        $assert(
+            'Script loading order: ECharts before ECharts-GL before demo-visualizations.js',
+            $posEcharts !== false && $posGl !== false && $posDemoJs !== false &&
+            $posEcharts < $posGl && $posGl < $posDemoJs
+        );
+
+        // 2D & 3D Mode Controls in index.php
+        $assert('2D Scatter mode is default active', str_contains($publicIndex, 'demo-rulespace-mode active" data-mode="2d"'));
+        $assert('3D Explore mode button exists', str_contains($publicIndex, 'data-mode="3d"'));
+        $assert('3D Reset View button exists', str_contains($publicIndex, 'id="demo-3d-reset-view"'));
+        $assert('3D Auto Rotate button exists', str_contains($publicIndex, 'id="demo-3d-auto-rotate"'));
+        $assert('3D Rule Detail panel container exists', str_contains($publicIndex, 'id="demo-3d-rule-detail"'));
+        $assert('3D Fallback container exists', str_contains($publicIndex, 'id="demo-3d-fallback"'));
+        $assert('2D Rule Space container exists', str_contains($publicIndex, 'id="demo-rulespace-2d-chart"'));
+        $assert('3D Rule Space container exists', str_contains($publicIndex, 'id="demo-rulespace-3d-chart"'));
+
+        // Mandatory 3D Disclaimer Contract
+        $mandatory3DDisclaimer = '3D/WebGL demo enhancement — not part of the formal RQ3 D3/Chart.js/ECharts Canvas benchmark.';
+        $assert('Mandatory 3D disclaimer present in index.php', str_contains($publicIndex, $mandatory3DDisclaimer));
+
+        // 3D Axis Mapping Contracts in demo-visualizations.js
+        $assert('3D X-axis mapped to Support [0..1]', str_contains($demoJs, "name: 'Support'") && str_contains($demoJs, "xAxis3D:"));
+        $assert('3D Y-axis mapped to Confidence [0..1]', str_contains($demoJs, "name: 'Confidence'") && str_contains($demoJs, "yAxis3D:"));
+        $assert('3D Z-axis mapped to Lift', str_contains($demoJs, "name: 'Lift'") && str_contains($demoJs, "zAxis3D:"));
+        $assert('3D data mapped from [support, confidence, lift]', str_contains($demoJs, '[Number(rule.support), Number(rule.confidence), liftVal]'));
+
+        // Fallback & Safety Contracts
+        $assert('3D runtime fallback handling via try-catch', str_contains($demoJs, 'renderRuleSpace3D') && str_contains($demoJs, 'catch (e)'));
+        $assert('3D fallback message text matches requirement in JS and HTML', str_contains($demoJs, '3D visualization is unavailable in this environment') && str_contains($publicIndex, '3D visualization is unavailable in this environment'));
+        $assert('Auto Rotate defaults to OFF', str_contains($demoJs, 'autoRotate: false'));
+        $assert('Reduced-motion prevents Auto Rotate in 3D', str_contains($demoJs, 'prefersReduced ? false : state.autoRotate'));
+        $assert('No external CDN URLs used in demo JS', !str_contains($demoJs, 'http://') && !str_contains($demoJs, 'https://'));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

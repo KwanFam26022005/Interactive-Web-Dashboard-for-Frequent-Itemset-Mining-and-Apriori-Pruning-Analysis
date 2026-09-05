@@ -405,6 +405,7 @@
   <script src="assets/vendor/jquery/jquery.min.js"></script>
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="assets/vendor/echarts/echarts.min.js"></script>
+  <script src="assets/vendor/echarts-gl/echarts-gl.min.js"></script>
   <script src="assets/js/demo-visualizations.js"></script>
   <script src="assets/js/app.js"></script>
 </body>

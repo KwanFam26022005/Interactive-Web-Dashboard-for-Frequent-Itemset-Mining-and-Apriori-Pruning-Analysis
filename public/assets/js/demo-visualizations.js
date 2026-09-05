@@ -785,8 +785,380 @@
     chartInstances.network.setOption(option, true);
   }
 
+  // -------------------------------------------------------------------------
+  // 7. Rule Space Explorer — 2D & 3D (Stage E)
+  // -------------------------------------------------------------------------
   function renderRuleSpace() {
-    // Will be fully implemented in Stage E
+    var data = state.lastMiningResult;
+    var rules = (data && data.rules) ? data.rules : [];
+
+    if (rules.length === 0) {
+      $('#demo-rulespace-2d-chart').addClass('d-none');
+      $('#demo-rulespace-3d-chart').addClass('d-none');
+      $('#demo-rulespace-empty').removeClass('d-none');
+      $('#demo-3d-rule-detail').addClass('d-none').empty();
+      return;
+    }
+
+    $('#demo-rulespace-empty').addClass('d-none');
+
+    if (state.rulespaceMode === '3d') {
+      renderRuleSpace3D(rules);
+    } else {
+      renderRuleSpace2D(rules);
+    }
+  }
+
+  /**
+   * Dedicated Demo 2D Rule Space Scatter Plot
+   * X: Support (0..1), Y: Confidence (0..1), Color/Size: Lift
+   * Completely isolated from the standard dashboard #rule-chart.
+   */
+  function renderRuleSpace2D(rules) {
+    var container = document.getElementById('demo-rulespace-2d-chart');
+    if (!container) return;
+
+    if (!chartInstances.rulespace2d) {
+      chartInstances.rulespace2d = echarts.init(container);
+    }
+
+    var scatterData = [];
+    var maxLift = 1.0;
+
+    $.each(rules, function (idx, rule) {
+      var liftVal = Number(rule.lift);
+      if (liftVal > maxLift) maxLift = liftVal;
+      scatterData.push({
+        value: [Number(rule.support), Number(rule.confidence), liftVal],
+        rawRule: rule
+      });
+    });
+
+    var prefersReduced = isReducedMotion();
+
+    var option = {
+      title: {
+        text: '2D Association Rule Space (Support \u00d7 Confidence)',
+        subtext: 'Bubble Size & Color \u221D Lift | Dedicated Presentation Exploration Chart',
+        left: 'center',
+        top: '1%',
+        textStyle: { fontSize: 13, fontWeight: 600, color: '#1e293b' },
+        subtextStyle: { fontSize: 11, color: '#64748b' }
+      },
+      tooltip: {
+        trigger: 'item',
+        renderMode: 'richText',
+        formatter: function (params) {
+          var raw = params.data ? params.data.rawRule : null;
+          if (!raw) return '';
+          return 'Rule: ' + formatItemset(raw.antecedent) + ' \u2192 ' + formatItemset(raw.consequent) + '\n' +
+            'Support: ' + (Number(raw.support) * 100).toFixed(4) + '% (' + Number(raw.support_count).toLocaleString() + ' txns)\n' +
+            'Confidence: ' + (Number(raw.confidence) * 100).toFixed(2) + '%\n' +
+            'Lift: ' + Number(raw.lift).toFixed(4);
+        }
+      },
+      grid: {
+        left: '5%',
+        right: '12%',
+        bottom: '8%',
+        top: '18%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Support',
+        nameLocation: 'middle',
+        nameGap: 26,
+        min: 0,
+        max: 1,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        splitLine: { lineStyle: { color: '#f1f5f9' } }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Confidence',
+        min: 0,
+        max: 1,
+        axisLine: { lineStyle: { color: '#cbd5e1' } },
+        splitLine: { lineStyle: { color: '#f1f5f9' } }
+      },
+      visualMap: {
+        dimension: 2,
+        min: 0.5,
+        max: Math.max(2, Math.ceil(maxLift)),
+        calculable: true,
+        orient: 'vertical',
+        right: '0%',
+        top: 'center',
+        text: ['High Lift', 'Low Lift'],
+        textStyle: { fontSize: 10, color: '#64748b' },
+        inRange: {
+          color: ['#38bdf8', '#818cf8', '#ef4444']
+        }
+      },
+      animation: !prefersReduced,
+      animationDuration: prefersReduced ? 0 : 500,
+      series: [
+        {
+          name: 'Rules 2D',
+          type: 'scatter',
+          data: scatterData,
+          symbolSize: function (val) {
+            var lift = val[2];
+            var clamped = Math.max(0.1, Math.min(lift, 20));
+            return Math.sqrt(clamped) * 12;
+          }
+        }
+      ]
+    };
+
+    chartInstances.rulespace2d.setOption(option, true);
+
+    // Click handler to show detail
+    chartInstances.rulespace2d.off('click');
+    chartInstances.rulespace2d.on('click', function (params) {
+      if (params.data && params.data.rawRule) {
+        displayRuleDetail(params.data.rawRule);
+      }
+    });
+  }
+
+  /**
+   * 3D WebGL Rule Space Explorer (scatter3D)
+   * X: Support (0..1), Y: Confidence (0..1), Z: Lift (0..max)
+   * Formal safety: Presentation demo enhancement only, not part of formal RQ3 benchmark.
+   */
+  function renderRuleSpace3D(rules) {
+    var container = document.getElementById('demo-rulespace-3d-chart');
+    if (!container) return;
+
+    // Check runtime WebGL / ECharts-GL initialization
+    try {
+      if (!chartInstances.rulespace3d) {
+        chartInstances.rulespace3d = echarts.init(container);
+      }
+
+      var scatter3DData = [];
+      var maxLift = 1.0;
+
+      $.each(rules, function (idx, rule) {
+        var liftVal = Number(rule.lift);
+        if (liftVal > maxLift) maxLift = liftVal;
+        scatter3DData.push({
+          value: [Number(rule.support), Number(rule.confidence), liftVal],
+          rawRule: rule
+        });
+      });
+
+      var maxZ = Math.max(2.0, Math.ceil(maxLift * 1.1));
+      var prefersReduced = isReducedMotion();
+
+      // Ensure auto-rotate complies with reduced motion
+      var effectiveAutoRotate = prefersReduced ? false : state.autoRotate;
+
+      var option = {
+        title: {
+          text: '3D Association Rule Space (Support \u00d7 Confidence \u00d7 Lift)',
+          subtext: 'Interactive WebGL Geometry: Drag to Rotate | Wheel to Zoom | Click/Hover Point for Details',
+          left: 'center',
+          top: '1%',
+          textStyle: { fontSize: 13, fontWeight: 600, color: '#1e293b' },
+          subtextStyle: { fontSize: 11, color: '#64748b' }
+        },
+        tooltip: {
+          show: true,
+          renderMode: 'richText',
+          formatter: function (params) {
+            var raw = params.data ? params.data.rawRule : null;
+            if (!raw) return '';
+            return 'Rule: ' + formatItemset(raw.antecedent) + ' \u2192 ' + formatItemset(raw.consequent) + '\n' +
+              'Support: ' + (Number(raw.support) * 100).toFixed(4) + '% (' + Number(raw.support_count).toLocaleString() + ' txns)\n' +
+              'Confidence: ' + (Number(raw.confidence) * 100).toFixed(2) + '%\n' +
+              'Lift: ' + Number(raw.lift).toFixed(4);
+          }
+        },
+        visualMap: {
+          show: true,
+          dimension: 2,
+          min: 0,
+          max: maxZ,
+          inRange: {
+            color: ['#38bdf8', '#fbbf24', '#ef4444']
+          },
+          text: ['High', 'Low'],
+          textStyle: { color: '#64748b', fontSize: 10 },
+          right: '2%',
+          top: 'center'
+        },
+        xAxis3D: {
+          type: 'value',
+          name: 'Support',
+          min: 0,
+          max: 1,
+          nameTextStyle: { color: '#1e293b', fontSize: 11 }
+        },
+        yAxis3D: {
+          type: 'value',
+          name: 'Confidence',
+          min: 0,
+          max: 1,
+          nameTextStyle: { color: '#1e293b', fontSize: 11 }
+        },
+        zAxis3D: {
+          type: 'value',
+          name: 'Lift',
+          min: 0,
+          max: maxZ,
+          nameTextStyle: { color: '#1e293b', fontSize: 11 }
+        },
+        grid3D: {
+          boxWidth: 100,
+          boxDepth: 80,
+          boxHeight: 80,
+          viewControl: {
+            autoRotate: effectiveAutoRotate,
+            autoRotateSpeed: 10,
+            alpha: 25,
+            beta: 40,
+            distance: 180,
+            minDistance: 40,
+            maxDistance: 400
+          },
+          light: {
+            main: {
+              intensity: 1.2,
+              shadow: false
+            },
+            ambient: {
+              intensity: 0.6
+            }
+          }
+        },
+        series: [
+          {
+            name: 'Rules 3D',
+            type: 'scatter3D',
+            data: scatter3DData,
+            symbolSize: 10,
+            itemStyle: {
+              opacity: 0.85
+            },
+            emphasis: {
+              itemStyle: {
+                color: '#f59e0b',
+                borderColor: '#1e293b',
+                borderWidth: 2
+              }
+            }
+          }
+        ]
+      };
+
+      chartInstances.rulespace3d.setOption(option, true);
+      state.glAvailable = true;
+      $('#demo-3d-fallback').addClass('d-none');
+      $('#demo-rulespace-3d-chart').removeClass('d-none');
+      $('#demo-3d-reset-view, #demo-3d-auto-rotate').prop('disabled', false);
+
+      // Rule selection detail panel sync
+      chartInstances.rulespace3d.off('click');
+      chartInstances.rulespace3d.on('click', function (params) {
+        if (params.data && params.data.rawRule) {
+          displayRuleDetail(params.data.rawRule);
+        }
+      });
+
+      // Also display detail for the first rule if not yet displayed
+      if (rules.length > 0) {
+        displayRuleDetail(rules[0]);
+      }
+
+    } catch (e) {
+      // Graceful runtime fallback if WebGL fails in this environment
+      state.glAvailable = false;
+      $('#demo-rulespace-3d-chart').addClass('d-none');
+      $('#demo-3d-fallback').text('3D visualization is unavailable in this environment.').removeClass('d-none');
+      $('#demo-3d-reset-view, #demo-3d-auto-rotate').prop('disabled', true);
+    }
+  }
+
+  function displayRuleDetail(rule) {
+    var $panel = $('#demo-3d-rule-detail');
+    $panel.empty().removeClass('d-none');
+
+    var antStr = formatItemset(rule.antecedent);
+    var conStr = formatItemset(rule.consequent);
+
+    var $table = $('<table>').addClass('table table-sm table-borderless align-middle mb-0');
+    var $tbody = $('<tbody>');
+
+    var rows = [
+      ['Selected Rule', antStr + ' \u2192 ' + conStr],
+      ['Antecedent (LHS)', antStr],
+      ['Consequent (RHS)', conStr],
+      ['Support', (Number(rule.support) * 100).toFixed(4) + '% (' + Number(rule.support_count).toLocaleString() + ' transactions)'],
+      ['Confidence', (Number(rule.confidence) * 100).toFixed(2) + '%'],
+      ['Lift', Number(rule.lift).toFixed(4)]
+    ];
+
+    $.each(rows, function (i, r) {
+      var $tr = $('<tr>');
+      var $th = $('<th>').addClass('text-muted py-1 small').css('width', '25%').text(r[0]);
+      var $td = $('<td>').addClass('py-1 small font-monospace').text(r[1]);
+      if (r[0] === 'Selected Rule') {
+        $td.addClass('fw-bold text-primary');
+      }
+      $tr.append($th).append($td);
+      $tbody.append($tr);
+    });
+
+    $table.append($tbody);
+    $panel.append($table);
+  }
+
+  function reset3DCamera() {
+    if (!chartInstances.rulespace3d || !state.glAvailable) return;
+    try {
+      chartInstances.rulespace3d.setOption({
+        grid3D: {
+          viewControl: {
+            alpha: 25,
+            beta: 40,
+            distance: 180
+          }
+        }
+      });
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  function toggle3DAutoRotate() {
+    if (isReducedMotion()) {
+      FIMDemoVisualizations.stopAutoRotate();
+      return;
+    }
+    if (!chartInstances.rulespace3d || !state.glAvailable) return;
+
+    state.autoRotate = !state.autoRotate;
+
+    if (state.autoRotate) {
+      $('#demo-3d-auto-rotate').text('Auto Rotate: ON').removeClass('btn-outline-secondary').addClass('btn-primary');
+    } else {
+      $('#demo-3d-auto-rotate').text('Auto Rotate: OFF').removeClass('btn-primary').addClass('btn-outline-secondary');
+    }
+
+    try {
+      chartInstances.rulespace3d.setOption({
+        grid3D: {
+          viewControl: {
+            autoRotate: state.autoRotate
+          }
+        }
+      });
+    } catch (e) {
+      // Ignore
+    }
   }
 
   function setRulespaceMode(mode) {
@@ -801,6 +1173,7 @@
       $('#demo-rulespace-3d-chart').addClass('d-none');
       $('#demo-rulespace-2d-chart').removeClass('d-none');
       $('#demo-3d-reset-view, #demo-3d-auto-rotate, #demo-3d-disclaimer').addClass('d-none');
+      $('#demo-3d-fallback').addClass('d-none');
       renderRuleSpace();
     }
     setTimeout(function () {
@@ -808,15 +1181,8 @@
     }, 50);
   }
 
-  function reset3DCamera() {
-    // Will be implemented in Stage E
-  }
-
-  function toggle3DAutoRotate() {
-    // Will be implemented in Stage E
-  }
-
   // Expose to global window
   window.FIMDemoVisualizations = FIMDemoVisualizations;
 
 })(jQuery, window.echarts);
+
