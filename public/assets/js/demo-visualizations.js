@@ -150,6 +150,8 @@
         clearInterval(state.aprioriTimer);
         state.aprioriTimer = null;
       }
+      $('#demo-apriori-play').removeClass('active btn-success').addClass('btn-outline-success');
+      $('#demo-apriori-pause').prop('disabled', true);
     },
 
     stopAutoRotate: function () {
@@ -470,10 +472,23 @@
         renderMode: 'richText',
         formatter: function (params) {
           if (params.dataType === 'edge') {
-            var pct = generated > 0 ? ((params.value / generated) * 100).toFixed(2) + '%' : '100%';
-            return 'Flow: ' + params.data.source + ' \u2192 ' + params.data.target + '\n' +
-              'Count: ' + Number(params.value).toLocaleString() + ' candidates\n' +
-              'Share of Generated: ' + pct;
+            var src = params.data.source;
+            var tgt = params.data.target;
+            var val = Number(params.value);
+            var labelText = 'Share of Generated';
+            var denom = generated;
+
+            // Edges originating from Evaluated must use evaluated as denominator
+            if (src === 'Evaluated') {
+              labelText = 'Share of Evaluated';
+              denom = evaluated;
+            }
+
+            var pctText = denom > 0 ? ((val / denom) * 100).toFixed(2) + '%' : '0.00%';
+
+            return 'Flow: ' + src + ' \u2192 ' + tgt + '\n' +
+              'Count: ' + val.toLocaleString() + ' candidates\n' +
+              labelText + ': ' + pctText;
           }
           return 'Stage: ' + params.name + '\n' +
             'Value: ' + Number(params.value).toLocaleString() + ' candidates';
@@ -643,36 +658,67 @@
     $('#demo-network-chart').removeClass('d-none');
 
     // Build node map and directed edges
-    // Node = Complete itemset side (e.g. {milk, bread}), NOT individual items!
-    // Shared itemsets reuse the exact same node.
+    // Derive node roles across all active rules before construction:
+    // Categories: 0: Antecedent only (LHS), 1: Consequent only (RHS), 2: Both (LHS & RHS)
+    var itemsetRoles = {};
+    $.each(rules, function (idx, rule) {
+      var antKey = formatItemset(rule.antecedent);
+      var conKey = formatItemset(rule.consequent);
+
+      if (!itemsetRoles[antKey]) {
+        itemsetRoles[antKey] = { isAntecedent: false, isConsequent: false };
+      }
+      itemsetRoles[antKey].isAntecedent = true;
+
+      if (!itemsetRoles[conKey]) {
+        itemsetRoles[conKey] = { isAntecedent: false, isConsequent: false };
+      }
+      itemsetRoles[conKey].isConsequent = true;
+    });
+
+    var roleCategoryNames = [
+      'Antecedent only (LHS)',
+      'Consequent only (RHS)',
+      'Both (LHS & RHS)'
+    ];
+
     var nodeMap = {};
+    var nodes = [];
+
+    for (var key in itemsetRoles) {
+      if (!itemsetRoles.hasOwnProperty(key)) continue;
+      var role = itemsetRoles[key];
+      var catIndex = 0;
+      var nodeColor = '#3b82f6';
+
+      if (role.isAntecedent && role.isConsequent) {
+        catIndex = 2;
+        nodeColor = '#8b5cf6'; // Violet for Both
+      } else if (role.isConsequent) {
+        catIndex = 1;
+        nodeColor = '#10b981'; // Green for Consequent only
+      } else {
+        catIndex = 0;
+        nodeColor = '#3b82f6'; // Blue for Antecedent only
+      }
+
+      var nodeObj = {
+        id: key,
+        name: key,
+        category: catIndex,
+        symbolSize: 26,
+        itemStyle: { color: nodeColor },
+        label: { show: true, fontSize: 10, color: '#1e293b' }
+      };
+      nodeMap[key] = nodeObj;
+      nodes.push(nodeObj);
+    }
+
     var edges = [];
 
     $.each(rules, function (idx, rule) {
       var antKey = formatItemset(rule.antecedent);
       var conKey = formatItemset(rule.consequent);
-
-      if (!nodeMap[antKey]) {
-        nodeMap[antKey] = {
-          id: antKey,
-          name: antKey,
-          category: 0,
-          symbolSize: 26,
-          itemStyle: { color: '#3b82f6' },
-          label: { show: true, fontSize: 10, color: '#1e293b' }
-        };
-      }
-
-      if (!nodeMap[conKey]) {
-        nodeMap[conKey] = {
-          id: conKey,
-          name: conKey,
-          category: 1,
-          symbolSize: 26,
-          itemStyle: { color: '#10b981' },
-          label: { show: true, fontSize: 10, color: '#1e293b' }
-        };
-      }
 
       // Monotonic presentation transforms
       // Width: 1.5px to 6.0px based on confidence
@@ -699,8 +745,6 @@
         rawRule: rule
       });
     });
-
-    var nodes = Object.values(nodeMap);
 
     if (!chartInstances.network) {
       var container = document.getElementById('demo-network-chart');
@@ -735,12 +779,14 @@
               'Confidence: ' + (Number(r.confidence) * 100).toFixed(2) + '%\n' +
               'Lift: ' + Number(r.lift).toFixed(4);
           }
-          return 'Itemset Side: ' + params.name;
+          var catLabel = params.data && params.data.category !== undefined ?
+            roleCategoryNames[params.data.category] : '';
+          return 'Itemset Side: ' + params.name + (catLabel ? '\nRole: ' + catLabel : '');
         }
       },
       legend: [
         {
-          data: ['Antecedent (LHS)', 'Consequent (RHS)'],
+          data: ['Antecedent only (LHS)', 'Consequent only (RHS)', 'Both (LHS & RHS)'],
           top: '8%',
           textStyle: { fontSize: 11, color: '#475569' }
         }
@@ -773,8 +819,9 @@
             }
           },
           categories: [
-            { name: 'Antecedent (LHS)', itemStyle: { color: '#3b82f6' } },
-            { name: 'Consequent (RHS)', itemStyle: { color: '#10b981' } }
+            { name: 'Antecedent only (LHS)', itemStyle: { color: '#3b82f6' } },
+            { name: 'Consequent only (RHS)', itemStyle: { color: '#10b981' } },
+            { name: 'Both (LHS & RHS)', itemStyle: { color: '#8b5cf6' } }
           ],
           data: nodes,
           links: edges

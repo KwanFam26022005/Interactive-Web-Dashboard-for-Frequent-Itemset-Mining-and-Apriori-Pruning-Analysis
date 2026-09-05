@@ -410,12 +410,37 @@
   // 5. Mining Result Rendering & KPI Mapping
   // -------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------
+  // KPI Animation Lifecycle & Frame Registry
+  // -------------------------------------------------------------------------
+  var kpiAnimationRegistry = {}; // key (e.g. element id) -> requestAnimationFrame ID
+
+  function cancelKpiAnimation(elemKey) {
+    if (kpiAnimationRegistry[elemKey]) {
+      cancelAnimationFrame(kpiAnimationRegistry[elemKey]);
+      delete kpiAnimationRegistry[elemKey];
+    }
+  }
+
+  function cancelAllKpiAnimations() {
+    for (var key in kpiAnimationRegistry) {
+      if (kpiAnimationRegistry.hasOwnProperty(key)) {
+        cancelAnimationFrame(kpiAnimationRegistry[key]);
+      }
+    }
+    kpiAnimationRegistry = {};
+  }
+
   /**
    * Animates a numeric KPI value with count-up transition (~400-600ms).
+   * Cancels any prior animation for the element before starting.
    * Respects prefers-reduced-motion: if enabled, immediately sets final text.
    * Guarantees the final text is identical to direct formatFn(targetVal).
    */
   function animateKpiValue($elem, targetVal, formatFn, duration) {
+    var elemKey = $elem.attr('id') || 'kpi_anon';
+    cancelKpiAnimation(elemKey);
+
     if (targetVal === null || targetVal === undefined) {
       $elem.text('N/A');
       return;
@@ -437,12 +462,13 @@
       var currentVal = startVal + (targetVal - startVal) * easeProgress;
       if (progress < 1) {
         $elem.text(formatFn(currentVal));
-        requestAnimationFrame(step);
+        kpiAnimationRegistry[elemKey] = requestAnimationFrame(step);
       } else {
         $elem.text(formatFn(targetVal)); // EXACT final value
+        delete kpiAnimationRegistry[elemKey];
       }
     }
-    requestAnimationFrame(step);
+    kpiAnimationRegistry[elemKey] = requestAnimationFrame(step);
   }
 
   function renderMiningResult(data) {
@@ -505,6 +531,7 @@
 
   function clearMiningResult() {
     state.lastMiningResult = null;
+    cancelAllKpiAnimations();
 
     $('#kpi-panel').addClass('d-none');
     $('#viz-panel').addClass('d-none');

@@ -127,7 +127,7 @@ class DemoVisualizationContractTest
         $assert('demo-visualizations.js defines formatItemset helper', str_contains($demoJs, 'function formatItemset'));
         $assert('formatItemset wraps with braces and commas', str_contains($demoJs, "'{' + items.join(', ') + '}'"));
         $assert('Node identity preserves multi-item side via formatItemset', str_contains($demoJs, 'var antKey = formatItemset(rule.antecedent)'));
-        $assert('Shared itemsets reuse the same node via nodeMap', str_contains($demoJs, 'if (!nodeMap[antKey])') && str_contains($demoJs, 'if (!nodeMap[conKey])'));
+        $assert('Shared itemsets reuse the same node via nodeMap', str_contains($demoJs, 'itemsetRoles[antKey]') && str_contains($demoJs, 'itemsetRoles[conKey]') && str_contains($demoJs, 'nodeMap[key] = nodeObj'));
         $assert('One directed edge per rule', str_contains($demoJs, 'edges.push(') && str_contains($demoJs, 'rawRule: rule'));
         $assert('Edge width is monotonic transform of confidence', str_contains($demoJs, 'Math.max(1.5, Math.min(6, 1.5 + conf * 4.5))'));
         $assert('Edge opacity is monotonic transform of support', str_contains($demoJs, 'Math.max(0.35, Math.min(0.95, 0.35 + supp * 0.6))'));
@@ -217,6 +217,39 @@ class DemoVisualizationContractTest
         $assert('Guide documents troubleshooting for zero rules', str_contains($guideContent, 'No association rules are available for this mining result'));
         $assert('Guide documents troubleshooting for WebGL fallback', str_contains($guideContent, '3D visualization is unavailable in this environment'));
         $assert('Guide documents canonical formal research separation', str_contains($guideContent, 'Canonical File Integrity Guarantee'));
+
+        // -----------------------------------------------------------------
+        // Stage F1: Semantic and Lifecycle Hardening Contracts
+        // -----------------------------------------------------------------
+        $assert(
+            'Sankey tooltip distinguishes Evaluated source and displays Share of Evaluated vs Share of Generated',
+            str_contains($demoJs, "src === 'Evaluated'") &&
+            str_contains($demoJs, "'Share of Evaluated'") &&
+            str_contains($demoJs, "'Share of Generated'")
+        );
+        $assert(
+            'Rule Network defines 3 categories and derives roles before constructing nodes',
+            str_contains($demoJs, "'Antecedent only (LHS)'") &&
+            str_contains($demoJs, "'Consequent only (RHS)'") &&
+            str_contains($demoJs, "'Both (LHS & RHS)'") &&
+            str_contains($demoJs, 'itemsetRoles') &&
+            str_contains($demoJs, 'role.isAntecedent && role.isConsequent')
+        );
+        $assert(
+            'KPI count-up animation uses central frame registry and cancels previous frame',
+            str_contains($appJs, 'kpiAnimationRegistry') &&
+            str_contains($appJs, 'cancelKpiAnimation(elemKey)') &&
+            str_contains($appJs, 'cancelAnimationFrame')
+        );
+        $assert(
+            'clearMiningResult cancels all pending KPI animations',
+            str_contains($appJs, 'cancelAllKpiAnimations()')
+        );
+        $assert(
+            'stopAprioriPlayback resets play button state and disables pause button',
+            str_contains($demoJs, "$('#demo-apriori-play').removeClass('active btn-success').addClass('btn-outline-success')") &&
+            str_contains($demoJs, "$('#demo-apriori-pause').prop('disabled', true)")
+        );
 
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
