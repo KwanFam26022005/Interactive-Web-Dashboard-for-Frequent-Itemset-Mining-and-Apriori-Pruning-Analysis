@@ -11,6 +11,7 @@
   var state = {
     initialized: false,
     currentView: 'overview', // 'overview' | 'apriori' | 'rules'
+    rulesSubview: 'network', // 'network' | 'rulespace'
     lastMiningResult: null,
     rulesLimit: '10',        // '10' | '20' | 'all'
     rulespaceMode: '2d',     // '2d' | '3d'
@@ -102,10 +103,18 @@
      * Resizes any initialized demo charts.
      */
     resize: function () {
-      if (chartInstances.sankey) chartInstances.sankey.resize();
-      if (chartInstances.network) chartInstances.network.resize();
-      if (chartInstances.rulespace2d) chartInstances.rulespace2d.resize();
-      if (chartInstances.rulespace3d) chartInstances.rulespace3d.resize();
+      if (chartInstances.sankey && $('#demo-sankey-chart').is(':visible')) {
+        chartInstances.sankey.resize();
+      }
+      if (chartInstances.network && $('#demo-network-chart').is(':visible')) {
+        chartInstances.network.resize();
+      }
+      if (chartInstances.rulespace2d && $('#demo-rulespace-2d-chart').is(':visible')) {
+        chartInstances.rulespace2d.resize();
+      }
+      if (chartInstances.rulespace3d && $('#demo-rulespace-3d-chart').is(':visible')) {
+        chartInstances.rulespace3d.resize();
+      }
     },
 
     /**
@@ -183,12 +192,33 @@
       FIMDemoVisualizations.setView(view);
     });
 
+    // Overview card CTA jump-to-view buttons
+    $('#demo-overview-stats').on('click', '[data-jump-view]', function () {
+      var view = $(this).attr('data-jump-view');
+      FIMDemoVisualizations.setView(view);
+    });
+
     // Apriori flow navigation controls
     $('#demo-apriori-prev').on('click', onAprioriPrev);
     $('#demo-apriori-next').on('click', onAprioriNext);
     $('#demo-apriori-play').on('click', onAprioriPlay);
     $('#demo-apriori-pause').on('click', onAprioriPause);
     $('#demo-apriori-restart').on('click', onAprioriRestart);
+
+    // Apriori clickable level navigation strip
+    $('#demo-apriori-levels-strip').on('click', '.demo-level-pill', function () {
+      var idx = Number($(this).attr('data-level-index'));
+      if (!isNaN(idx) && state.lastMiningResult && state.lastMiningResult.levels) {
+        state.aprioriLevelIndex = idx;
+        renderAprioriFlow();
+      }
+    });
+
+    // Explore rules secondary navigation (Network vs Rule Space)
+    $('.demo-rules-subnav').on('click', function () {
+      var subview = $(this).attr('data-rules-subview');
+      setRulesSubview(subview);
+    });
 
     // Rule network filtering controls
     $('.demo-network-filter').on('click', function () {
@@ -225,6 +255,31 @@
     });
   }
 
+  function setRulesSubview(subview) {
+    if (subview !== 'network' && subview !== 'rulespace') {
+      return;
+    }
+    state.rulesSubview = subview;
+
+    $('.demo-rules-subnav').removeClass('active').attr('aria-selected', 'false');
+    $('.demo-rules-subnav[data-rules-subview="' + subview + '"]').addClass('active').attr('aria-selected', 'true');
+
+    if (subview === 'network') {
+      $('#demo-subview-rulespace').addClass('d-none');
+      $('#demo-subview-network').removeClass('d-none');
+      FIMDemoVisualizations.stopAutoRotate();
+      renderRuleNetwork();
+    } else {
+      $('#demo-subview-network').addClass('d-none');
+      $('#demo-subview-rulespace').removeClass('d-none');
+      renderRuleSpace();
+    }
+
+    setTimeout(function () {
+      FIMDemoVisualizations.resize();
+    }, 60);
+  }
+
   // -------------------------------------------------------------------------
   // 4. View Rendering Dispatcher
   // -------------------------------------------------------------------------
@@ -247,24 +302,67 @@
     var $stats = $('#demo-overview-stats');
     $stats.empty();
 
-    var $row = $('<div>').addClass('row g-2 text-center');
+    var levelCount = data.levels ? data.levels.length : 0;
+    var pruningRatioText = sum.pruning_ratio !== null ? (Number(sum.pruning_ratio) * 100).toFixed(2) + '%' : 'N/A';
+    var rulesCountText = Number(sum.rules_count).toLocaleString();
 
-    var cards = [
-      { label: 'Apriori Levels', value: (data.levels ? data.levels.length : 0) },
-      { label: 'Frequent Sets', value: Number(sum.frequent_itemsets).toLocaleString() },
-      { label: 'Rules Found', value: Number(sum.rules_count).toLocaleString() },
-      { label: 'Pruning Ratio', value: sum.pruning_ratio !== null ? (Number(sum.pruning_ratio) * 100).toFixed(2) + '%' : 'N/A' }
-    ];
+    var $row = $('<div>').addClass('row g-3');
 
-    $.each(cards, function (i, c) {
-      var $col = $('<div>').addClass('col-6 col-md-3');
-      var $card = $('<div>').addClass('card bg-light border p-2');
-      $card.append($('<div>').addClass('text-muted small fw-semibold').text(c.label));
-      $card.append($('<div>').addClass('fs-5 fw-bold font-monospace text-dark').text(c.value));
-      $col.append($card);
-      $row.append($col);
-    });
+    // Card 1: Explain Apriori
+    var $col1 = $('<div>').addClass('col-md-6');
+    var $card1 = $('<div>').addClass('demo-overview-card');
+    $card1.append(
+      $('<div>').addClass('d-flex justify-content-between align-items-center mb-2').append(
+        $('<h3>').addClass('demo-overview-card-title mb-0').text('Explain Apriori Flow'),
+        $('<span>').addClass('badge bg-primary-subtle text-primary border border-primary-subtle').text(levelCount + ' Levels')
+      ),
+      $('<p>').addClass('text-muted small mb-3').text('Step-by-step interactive inspection of candidate generation, pruning ratios, and mass flow conservation across mining levels.'),
+      $('<div>').addClass('d-flex align-items-center gap-3 mb-3 p-2 bg-light rounded border').append(
+        $('<div>').append(
+          $('<div>').addClass('text-muted small').text('Levels Generated'),
+          $('<div>').addClass('fw-bold font-monospace fs-6 text-dark').text(levelCount)
+        ),
+        $('<div>').addClass('vr mx-2'),
+        $('<div>').append(
+          $('<div>').addClass('text-muted small').text('Overall Pruning Ratio'),
+          $('<div>').addClass('fw-bold font-monospace fs-6 text-primary').text(pruningRatioText)
+        )
+      ),
+      $('<button>').addClass('btn btn-outline-primary btn-sm px-3 fw-semibold w-100')
+        .attr('type', 'button')
+        .attr('data-jump-view', 'apriori')
+        .html('Launch Apriori Explainer &rarr;')
+    );
+    $col1.append($card1);
 
+    // Card 2: Explore Rules
+    var $col2 = $('<div>').addClass('col-md-6');
+    var $card2 = $('<div>').addClass('demo-overview-card');
+    $card2.append(
+      $('<div>').addClass('d-flex justify-content-between align-items-center mb-2').append(
+        $('<h3>').addClass('demo-overview-card-title mb-0').text('Explore Association Rules'),
+        $('<span>').addClass('badge bg-success-subtle text-success border border-success-subtle').text(rulesCountText + ' Rules')
+      ),
+      $('<p>').addClass('text-muted small mb-3').text('Multi-perspective analysis of extracted rules through force-directed topology and 2D/3D Support-Confidence-Lift rule space.'),
+      $('<div>').addClass('d-flex align-items-center gap-3 mb-3 p-2 bg-light rounded border').append(
+        $('<div>').append(
+          $('<div>').addClass('text-muted small').text('Rules Extracted'),
+          $('<div>').addClass('fw-bold font-monospace fs-6 text-dark').text(rulesCountText)
+        ),
+        $('<div>').addClass('vr mx-2'),
+        $('<div>').append(
+          $('<div>').addClass('text-muted small').text('Available Views'),
+          $('<div>').addClass('fw-semibold small text-success').text('Network / 2D / 3D')
+        )
+      ),
+      $('<button>').addClass('btn btn-outline-primary btn-sm px-3 fw-semibold w-100')
+        .attr('type', 'button')
+        .attr('data-jump-view', 'rules')
+        .html('Explore Association Rules &rarr;')
+    );
+    $col2.append($card2);
+
+    $row.append($col1, $col2);
     $stats.append($row);
   }
 
@@ -348,37 +446,43 @@
       return;
     }
 
-    // Render safe metrics strip
+    // Render clickable level navigation strip
+    var $strip = $('#demo-apriori-levels-strip');
+    $strip.empty();
+    $.each(levels, function (i, l) {
+      var isActive = (i === curIdx);
+      var btnClass = isActive ? 'btn-primary active' : 'btn-outline-secondary';
+      var $pill = $('<button>')
+        .attr('type', 'button')
+        .addClass('btn btn-sm demo-level-pill ' + btnClass)
+        .attr('data-level-index', i)
+        .attr('aria-pressed', isActive ? 'true' : 'false')
+        .text('k=' + l.k);
+      $strip.append($pill);
+    });
+
+    // Render compact metric chips
     $metrics.empty();
-    var $table = $('<table>').addClass('table table-sm table-borderless align-middle mb-0 text-center');
-    var $thead = $('<thead>').addClass('text-muted small border-bottom');
-    $thead.append(
-      $('<tr>').append(
-        $('<th>').text('Level (k)'),
-        $('<th>').text('Source'),
-        $('<th>').text('Generated'),
-        $('<th>').text('Pruned'),
-        $('<th>').text('Evaluated'),
-        $('<th>').text('Frequent'),
-        $('<th>').text('Infrequent'),
-        $('<th>').text('Pruning Ratio')
-      )
-    );
-    var $tbody = $('<tbody>');
-    $tbody.append(
-      $('<tr>').append(
-        $('<td>').addClass('fw-bold').text('k=' + k),
-        $('<td>').text(source),
-        $('<td>').addClass('fw-bold').text(generated.toLocaleString()),
-        $('<td>').addClass('text-danger fw-bold').text(pruned.toLocaleString()),
-        $('<td>').addClass('text-primary fw-bold').text(evaluated.toLocaleString()),
-        $('<td>').addClass('text-success fw-bold').text(frequent.toLocaleString()),
-        $('<td>').addClass('text-warning fw-bold').text(infrequent.toLocaleString()),
-        $('<td>').text(pruningRatioText)
-      )
-    );
-    $table.append($thead).append($tbody);
-    $metrics.append($table);
+    var $grid = $('<div>').addClass('demo-metrics-grid');
+    var chips = [
+      { label: 'Level (k)', val: 'k=' + k, cls: 'text-dark' },
+      { label: 'Source', val: source, cls: 'text-dark' },
+      { label: 'Generated', val: generated.toLocaleString(), cls: 'text-dark' },
+      { label: 'Pruned', val: pruned.toLocaleString(), cls: 'text-danger' },
+      { label: 'Evaluated', val: evaluated.toLocaleString(), cls: 'text-primary' },
+      { label: 'Frequent', val: frequent.toLocaleString(), cls: 'text-success' },
+      { label: 'Infrequent', val: infrequent.toLocaleString(), cls: 'text-warning' },
+      { label: 'Pruning Ratio', val: pruningRatioText, cls: 'text-dark' }
+    ];
+    $.each(chips, function (i, c) {
+      var $chip = $('<div>').addClass('demo-metric-chip');
+      $chip.append(
+        $('<div>').addClass('demo-metric-chip-label').text(c.label),
+        $('<div>').addClass('demo-metric-chip-val ' + c.cls).text(c.val)
+      );
+      $grid.append($chip);
+    });
+    $metrics.append($grid);
 
     // Initialize or get Sankey chart
     if (!chartInstances.sankey) {
@@ -598,7 +702,7 @@
   }
 
   // -------------------------------------------------------------------------
-  // 6. Explore Rules (Stubs for Stage B, fleshed in Stage D & E)
+  // 6. Explore Rules — Network & Rule Space Subviews
   // -------------------------------------------------------------------------
   function renderExploreRules() {
     var data = state.lastMiningResult;
@@ -610,6 +714,8 @@
       $('#demo-rulespace-2d-chart').addClass('d-none');
       $('#demo-rulespace-3d-chart').addClass('d-none');
       $('#demo-rulespace-empty').removeClass('d-none');
+      $('#demo-3d-rule-detail').addClass('d-none').empty();
+      $('#demo-network-side-panel').empty();
       $('.demo-network-filter, #demo-network-reset, .demo-rulespace-mode, #demo-3d-reset-view, #demo-3d-auto-rotate').prop('disabled', true);
       return;
     }
@@ -617,15 +723,152 @@
     $('.demo-network-filter, #demo-network-reset, .demo-rulespace-mode, #demo-3d-reset-view, #demo-3d-auto-rotate').prop('disabled', false);
     $('#demo-network-empty').addClass('d-none');
     $('#demo-rulespace-empty').addClass('d-none');
-    $('#demo-network-chart').removeClass('d-none');
 
-    renderRuleNetwork();
-    renderRuleSpace();
+    // Show active subview
+    if (state.rulesSubview === 'network') {
+      $('#demo-subview-rulespace').addClass('d-none');
+      $('#demo-subview-network').removeClass('d-none');
+      renderRuleNetwork();
+    } else {
+      $('#demo-subview-network').addClass('d-none');
+      $('#demo-subview-rulespace').removeClass('d-none');
+      renderRuleSpace();
+    }
   }
 
   function formatItemset(items) {
     if (!items || !Array.isArray(items)) return '{}';
     return '{' + items.join(', ') + '}';
+  }
+
+  function renderRuleDetailCard(rule, $container, headerText) {
+    if (!rule || !$container || $container.length === 0) return;
+    $container.empty().removeClass('d-none');
+
+    var antStr = formatItemset(rule.antecedent);
+    var conStr = formatItemset(rule.consequent);
+
+    var $card = $('<div>').addClass('demo-rule-detail-card');
+    if (headerText) {
+      $card.append($('<div>').addClass('fw-bold text-primary mb-2 small pb-1 border-bottom').text(headerText));
+    }
+
+    var $table = $('<table>').addClass('table table-sm table-borderless demo-rule-detail-table align-middle mb-0');
+    var $tbody = $('<tbody>');
+
+    var rows = [
+      ['Selected Rule', antStr + ' \u2192 ' + conStr],
+      ['Antecedent (LHS)', antStr],
+      ['Consequent (RHS)', conStr],
+      ['Support', (Number(rule.support) * 100).toFixed(4) + '% (' + Number(rule.support_count).toLocaleString() + ' txns)'],
+      ['Confidence', (Number(rule.confidence) * 100).toFixed(2) + '%'],
+      ['Lift', Number(rule.lift).toFixed(4)]
+    ];
+
+    $.each(rows, function (i, r) {
+      var $tr = $('<tr>');
+      var $th = $('<th>').addClass('text-muted py-1 small').css('width', '35%').text(r[0]);
+      var $td = $('<td>').addClass('py-1 small font-monospace').text(r[1]);
+      if (r[0] === 'Selected Rule') {
+        $td.addClass('fw-bold text-primary');
+      }
+      $tr.append($th).append($td);
+      $tbody.append($tr);
+    });
+
+    $table.append($tbody);
+    $card.append($table);
+    $container.append($card);
+  }
+
+  function renderNetworkGuidance() {
+    var $panel = $('#demo-network-side-panel');
+    $panel.empty();
+    var $guidance = $('<div>').addClass('p-1');
+    $guidance.append(
+      $('<div>').addClass('fw-bold text-dark small mb-1').text('Network Interpretation'),
+      $('<p>').addClass('text-muted small mb-2').text('Nodes represent complete itemset sides (LHS/RHS). Directed arrows represent implication rules.'),
+      $('<div>').addClass('mb-3').append(
+        $('<div>').addClass('fw-semibold small text-muted mb-1').text('Node Role Palette:'),
+        $('<div>').addClass('demo-side-panel-legend mb-1').append(
+          $('<span>').addClass('demo-legend-dot').css('background-color', '#3b82f6'),
+          $('<span>').text('Antecedent only (LHS)')
+        ),
+        $('<div>').addClass('demo-side-panel-legend mb-1').append(
+          $('<span>').addClass('demo-legend-dot').css('background-color', '#10b981'),
+          $('<span>').text('Consequent only (RHS)')
+        ),
+        $('<div>').addClass('demo-side-panel-legend mb-1').append(
+          $('<span>').addClass('demo-legend-dot').css('background-color', '#8b5cf6'),
+          $('<span>').text('Both (LHS & RHS)')
+        )
+      ),
+      $('<div>').addClass('border-top pt-2 text-muted small').append(
+        $('<div>').addClass('mb-1').html('&bull; <strong>Arrow Width</strong> &prop; Confidence'),
+        $('<div>').addClass('mb-1').html('&bull; <strong>Opacity</strong> &prop; Support'),
+        $('<div>').html('&bull; <em>Click any node or edge to inspect exact metrics.</em>')
+      )
+    );
+    $panel.append($guidance);
+  }
+
+  function renderNodeDetail(itemsetName, catIndex, activeRules) {
+    var $panel = $('#demo-network-side-panel');
+    $panel.empty();
+
+    var roleNames = ['Antecedent only (LHS)', 'Consequent only (RHS)', 'Both (LHS & RHS)'];
+    var roleColors = ['#3b82f6', '#10b981', '#8b5cf6'];
+    var catName = roleNames[catIndex] || 'Unknown';
+    var catColor = roleColors[catIndex] || '#64748b';
+
+    var incidentRules = [];
+    $.each(activeRules, function (i, r) {
+      var ant = formatItemset(r.antecedent);
+      var con = formatItemset(r.consequent);
+      if (ant === itemsetName || con === itemsetName) {
+        incidentRules.push(r);
+      }
+    });
+
+    var $card = $('<div>').addClass('demo-rule-detail-card');
+    $card.append($('<div>').addClass('fw-bold text-dark mb-2 small pb-1 border-bottom').text('Selected Itemset Node'));
+
+    var $table = $('<table>').addClass('table table-sm table-borderless demo-rule-detail-table align-middle mb-2');
+    var $tbody = $('<tbody>');
+    $tbody.append(
+      $('<tr>').append($('<th>').text('Itemset'), $('<td>').addClass('fw-bold font-monospace text-primary').text(itemsetName)),
+      $('<tr>').append($('<th>').text('Role'), $('<td>').append($('<span>').addClass('badge').css('background-color', catColor).text(catName))),
+      $('<tr>').append($('<th>').text('Degree'), $('<td>').addClass('font-monospace').text(incidentRules.length + ' incident rule(s)'))
+    );
+    $table.append($tbody);
+    $card.append($table);
+
+    if (incidentRules.length > 0) {
+      $card.append($('<div>').addClass('fw-semibold small text-muted mb-1').text('Connected Rules:'));
+      var $list = $('<div>').addClass('list-group list-group-flush small');
+      $.each(incidentRules.slice(0, 5), function (i, r) {
+        var ruleStr = formatItemset(r.antecedent) + ' \u2192 ' + formatItemset(r.consequent);
+        var $item = $('<div>').addClass('list-group-item px-1 py-1 border-0 font-monospace text-truncate');
+        $item.attr('title', ruleStr);
+        $item.text(ruleStr);
+        $list.append($item);
+      });
+      if (incidentRules.length > 5) {
+        $list.append($('<div>').addClass('text-muted font-italic ps-1').text('... and ' + (incidentRules.length - 5) + ' more'));
+      }
+      $card.append($list);
+    }
+
+    $card.append(
+      $('<button>').addClass('btn btn-outline-secondary btn-sm w-100 mt-2')
+        .attr('type', 'button')
+        .text('Show Legend & Guide')
+        .on('click', function () {
+          renderNetworkGuidance();
+        })
+    );
+
+    $panel.append($card);
   }
 
   function renderRuleNetwork() {
@@ -684,6 +927,11 @@
 
     var nodeMap = {};
     var nodes = [];
+    var totalUniqueNodes = 0;
+    for (var k in itemsetRoles) {
+      if (itemsetRoles.hasOwnProperty(k)) totalUniqueNodes++;
+    }
+    var showNodeLabels = totalUniqueNodes <= 18;
 
     for (var key in itemsetRoles) {
       if (!itemsetRoles.hasOwnProperty(key)) continue;
@@ -708,7 +956,7 @@
         category: catIndex,
         symbolSize: 26,
         itemStyle: { color: nodeColor },
-        label: { show: true, fontSize: 10, color: '#1e293b' }
+        label: { show: showNodeLabels, fontSize: 10, color: '#1e293b' }
       };
       nodeMap[key] = nodeObj;
       nodes.push(nodeObj);
@@ -758,12 +1006,18 @@
 
     var prefersReduced = isReducedMotion();
 
+    // Adaptive force parameters based on node count
+    var nodeCount = nodes.length;
+    var repulsionVal = nodeCount <= 15 ? 320 : (nodeCount <= 30 ? 220 : 140);
+    var edgeLenMin = nodeCount <= 15 ? 90 : 60;
+    var edgeLenMax = nodeCount <= 15 ? 180 : 120;
+
     var option = {
       title: {
         text: 'Association Rule Network (' + rules.length + ' rules displayed)',
         subtext: 'Node = Complete Itemset Side | Directed Edge = Rule | Width \u221D Confidence | Opacity \u221D Support',
-        left: 'center',
-        top: '1%',
+        left: '2%',
+        top: '2%',
         textStyle: { fontSize: 13, fontWeight: 600, color: '#1e293b' },
         subtextStyle: { fontSize: 11, color: '#64748b' }
       },
@@ -787,7 +1041,9 @@
       legend: [
         {
           data: ['Antecedent only (LHS)', 'Consequent only (RHS)', 'Both (LHS & RHS)'],
-          top: '8%',
+          right: '2%',
+          top: '2%',
+          orient: 'horizontal',
           textStyle: { fontSize: 11, color: '#475569' }
         }
       ],
@@ -798,22 +1054,28 @@
           name: 'Association Rules',
           type: 'graph',
           layout: 'force',
-          top: '18%',
-          bottom: '8%',
-          left: '5%',
-          right: '5%',
+          top: '12%',
+          bottom: '5%',
+          left: '4%',
+          right: '4%',
           roam: true,
           draggable: true,
           force: {
-            repulsion: 260,
+            repulsion: repulsionVal,
             gravity: 0.12,
-            edgeLength: [90, 180],
+            edgeLength: [edgeLenMin, edgeLenMax],
             friction: 0.6
           },
           edgeSymbol: ['none', 'arrow'],
           edgeSymbolSize: [4, 10],
           emphasis: {
             focus: 'adjacency',
+            label: {
+              show: true,
+              fontSize: 11,
+              fontWeight: 'bold',
+              color: '#0f172a'
+            },
             lineStyle: {
               width: 5
             }
@@ -830,6 +1092,19 @@
     };
 
     chartInstances.network.setOption(option, true);
+
+    // Initial side panel display: guidance & legend
+    renderNetworkGuidance();
+
+    // Click handler to display rule or node inspection
+    chartInstances.network.off('click');
+    chartInstances.network.on('click', function (params) {
+      if (params.dataType === 'edge' && params.data && params.data.rawRule) {
+        renderRuleDetailCard(params.data.rawRule, $('#demo-network-side-panel'), 'Selected Rule (Network)');
+      } else if (params.dataType === 'node') {
+        renderNodeDetail(params.name, params.data ? params.data.category : 0, rules);
+      }
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -887,8 +1162,8 @@
       title: {
         text: '2D Association Rule Space (Support \u00d7 Confidence)',
         subtext: 'Bubble Size & Color \u221D Lift | Dedicated Presentation Exploration Chart',
-        left: 'center',
-        top: '1%',
+        left: '2%',
+        top: '2%',
         textStyle: { fontSize: 13, fontWeight: 600, color: '#1e293b' },
         subtextStyle: { fontSize: 11, color: '#64748b' }
       },
@@ -905,10 +1180,10 @@
         }
       },
       grid: {
-        left: '5%',
+        left: '4%',
         right: '12%',
         bottom: '8%',
-        top: '18%',
+        top: '14%',
         containLabel: true
       },
       xAxis: {
@@ -961,6 +1236,11 @@
 
     chartInstances.rulespace2d.setOption(option, true);
 
+    // Auto-display details for top rule in side panel
+    if (rules.length > 0) {
+      displayRuleDetail(rules[0]);
+    }
+
     // Click handler to show detail
     chartInstances.rulespace2d.off('click');
     chartInstances.rulespace2d.on('click', function (params) {
@@ -1007,8 +1287,8 @@
         title: {
           text: '3D Association Rule Space (Support \u00d7 Confidence \u00d7 Lift)',
           subtext: 'Interactive WebGL Geometry: Drag to Rotate | Wheel to Zoom | Click/Hover Point for Details',
-          left: 'center',
-          top: '1%',
+          left: '2%',
+          top: '2%',
           textStyle: { fontSize: 13, fontWeight: 600, color: '#1e293b' },
           subtextStyle: { fontSize: 11, color: '#64748b' }
         },
@@ -1059,15 +1339,15 @@
           nameTextStyle: { color: '#1e293b', fontSize: 11 }
         },
         grid3D: {
-          boxWidth: 100,
-          boxDepth: 80,
-          boxHeight: 80,
+          boxWidth: 130,
+          boxDepth: 105,
+          boxHeight: 105,
           viewControl: {
             autoRotate: effectiveAutoRotate,
             autoRotateSpeed: 10,
             alpha: 25,
             beta: 40,
-            distance: 180,
+            distance: 160,
             minDistance: 40,
             maxDistance: 400
           },
@@ -1171,7 +1451,7 @@
           viewControl: {
             alpha: 25,
             beta: 40,
-            distance: 180
+            distance: 160
           }
         }
       });
@@ -1213,12 +1493,16 @@
     if (mode === '3d') {
       $('#demo-rulespace-2d-chart').addClass('d-none');
       $('#demo-rulespace-3d-chart').removeClass('d-none');
+      $('#demo-3d-controls-group').removeClass('d-none');
+      $('#demo-3d-disclaimer-row').removeClass('d-none');
       $('#demo-3d-reset-view, #demo-3d-auto-rotate, #demo-3d-disclaimer').removeClass('d-none');
       renderRuleSpace();
     } else {
       FIMDemoVisualizations.stopAutoRotate();
       $('#demo-rulespace-3d-chart').addClass('d-none');
       $('#demo-rulespace-2d-chart').removeClass('d-none');
+      $('#demo-3d-controls-group').addClass('d-none');
+      $('#demo-3d-disclaimer-row').addClass('d-none');
       $('#demo-3d-reset-view, #demo-3d-auto-rotate, #demo-3d-disclaimer').addClass('d-none');
       $('#demo-3d-fallback').addClass('d-none');
       renderRuleSpace();

@@ -169,32 +169,34 @@
 
     $('#run-mining-btn').prop('disabled', state.mining);
 
-    var $table = $('<table>').addClass('table table-sm table-borderless align-middle mb-0');
-    var $tbody = $('<tbody>');
+    // Primary quick metadata
+    var $quick = $('<div>').addClass('d-flex flex-wrap align-items-center gap-3 mb-1');
+    $quick.append(
+      $('<span>').addClass('badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1').text('Format: ' + current.format),
+      $('<span>').addClass('text-dark small').append(
+        $('<strong>').text(Number(current.transaction_count).toLocaleString()),
+        $('<span>').addClass('text-muted ms-1').text('txns')
+      ),
+      $('<span>').addClass('text-dark small').append(
+        $('<strong>').text(Number(current.unique_item_count).toLocaleString()),
+        $('<span>').addClass('text-muted ms-1').text('unique items')
+      ),
+      $('<span>').addClass('text-muted small').text(Number(current.byte_size).toLocaleString() + ' bytes')
+    );
 
-    var rows = [
-      ['Dataset ID', String(current.id)],
-      ['Name', String(current.name)],
-      ['Format Profile', String(current.format)],
-      ['Source Filename', String(current.source_filename)],
-      ['Transactions', Number(current.transaction_count).toLocaleString()],
-      ['Unique Items', Number(current.unique_item_count).toLocaleString()],
-      ['Byte Size', Number(current.byte_size).toLocaleString() + ' bytes'],
-      ['SHA-256', String(current.sha256)],
-      ['Created At (UTC)', String(current.created_at)]
-    ];
+    // Collapsible secondary details
+    var $details = $('<details>').addClass('mt-1');
+    var $summary = $('<summary>').addClass('text-muted small').css('cursor', 'pointer').text('Extended Details (SHA-256, Source, Timestamp)');
+    var $detailBody = $('<div>').addClass('mt-1 pt-1 border-top small text-muted font-monospace');
+    $detailBody.append(
+      $('<div>').text('ID: ' + current.id + ' | Name: ' + current.name),
+      $('<div>').text('Source: ' + current.source_filename),
+      $('<div>').text('SHA-256: ' + current.sha256),
+      $('<div>').text('Created: ' + current.created_at)
+    );
+    $details.append($summary).append($detailBody);
 
-    $.each(rows, function (i, row) {
-      var $tr = $('<tr>');
-      var $th = $('<th>').addClass('text-muted py-1 small').text(row[0]);
-      var $td = $('<td>').addClass('py-1 small').addClass(row[0] === 'SHA-256' ? 'font-monospace' : '');
-      $td.text(row[1]);
-      $tr.append($th).append($td);
-      $tbody.append($tr);
-    });
-
-    $table.append($tbody);
-    $meta.append($table);
+    $meta.append($quick).append($details);
   }
 
   function getSelectedDatasetRecord() {
@@ -262,6 +264,15 @@
         // Reset file input
         $('#upload-file').val('');
         $('#upload-name').val('');
+
+        // Dismiss modal if open
+        var modalEl = document.getElementById('importDatasetModal');
+        if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+          var modalInstance = window.bootstrap.Modal.getInstance(modalEl);
+          if (modalInstance) {
+            modalInstance.hide();
+          }
+        }
 
         // Refresh list asynchronously, then select newly created dataset
         loadDatasets(newDatasetId);

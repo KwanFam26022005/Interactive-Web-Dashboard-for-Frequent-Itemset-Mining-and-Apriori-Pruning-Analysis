@@ -251,6 +251,56 @@ class DemoVisualizationContractTest
             str_contains($demoJs, "$('#demo-apriori-pause').prop('disabled', true)")
         );
 
+        // -----------------------------------------------------------------
+        // Stage G: UI/UX Layout Refinement Contracts
+        // -----------------------------------------------------------------
+        $appCssPath = $repoRoot . '/public/assets/css/app.css';
+        $appCss = file_exists($appCssPath) ? file_get_contents($appCssPath) : '';
+
+        // App Container & Shell Layout
+        $assert('index.php contains .app-container centered wrapper', str_contains($publicIndex, 'app-container'));
+        $assert('app.css defines .app-container with max-width', str_contains($appCss, '.app-container') && str_contains($appCss, 'max-width: 1720px'));
+
+        // Compact Dataset Panel & Import Modal
+        $assert('index.php contains import dataset modal trigger', str_contains($publicIndex, 'data-bs-target="#importDatasetModal"'));
+        $assert('index.php contains #importDatasetModal', str_contains($publicIndex, 'id="importDatasetModal"'));
+        $assert('Import modal contains #upload-form', str_contains($publicIndex, 'id="upload-form"'));
+        $assert('Import modal contains #upload-format', str_contains($publicIndex, 'id="upload-format"'));
+        $assert('Import modal contains #upload-name', str_contains($publicIndex, 'id="upload-name"'));
+        $assert('Import modal contains #upload-file', str_contains($publicIndex, 'id="upload-file"'));
+        $assert('Import modal contains #upload-submit', str_contains($publicIndex, 'id="upload-submit"'));
+        $assert('Import modal contains #upload-warnings', str_contains($publicIndex, 'id="upload-warnings"'));
+
+        // Mining Controls Toolbar & KPI Cards
+        $assert('Mining panel contains #run-mining-btn', str_contains($publicIndex, 'id="run-mining-btn"'));
+        $assert('KPI panel contains structured .kpi-value and .kpi-label', str_contains($publicIndex, 'kpi-value') && str_contains($publicIndex, 'kpi-label'));
+
+        // Visualizations 58%/42% Grid Layout
+        $assert('Standard visualization panel uses col-lg-7 and col-lg-5 grid', str_contains($publicIndex, 'col-lg-7') && str_contains($publicIndex, 'col-lg-5'));
+
+        // Explore Rules Nested Secondary Navigation & Subviews
+        $assert('Explore Rules contains .demo-rules-subnav secondary buttons', str_contains($publicIndex, 'demo-rules-subnav'));
+        $assert('Explore Rules subnav defines network subview', str_contains($publicIndex, 'data-rules-subview="network"'));
+        $assert('Explore Rules subnav defines rulespace subview', str_contains($publicIndex, 'data-rules-subview="rulespace"'));
+        $assert('Explore Rules contains #demo-subview-network subview', str_contains($publicIndex, 'id="demo-subview-network"'));
+        $assert('Explore Rules contains #demo-subview-rulespace subview', str_contains($publicIndex, 'id="demo-subview-rulespace"'));
+        $assert('Rule Network contains #demo-network-side-panel', str_contains($publicIndex, 'id="demo-network-side-panel"'));
+        $assert('Rule Space contains #demo-rulespace-side-panel', str_contains($publicIndex, 'id="demo-rulespace-side-panel"'));
+
+        // Apriori Flow Navigation Strip
+        $assert('Explain Apriori contains #demo-apriori-levels-strip', str_contains($publicIndex, 'id="demo-apriori-levels-strip"'));
+
+        // 3D Geometry Tuned & Disclaimer
+        $assert('3D grid3D tuned box dimensions: boxWidth 130', str_contains($demoJs, 'boxWidth: 130'));
+        $assert('3D grid3D tuned box dimensions: boxDepth 105', str_contains($demoJs, 'boxDepth: 105'));
+        $assert('3D grid3D tuned box dimensions: boxHeight 105', str_contains($demoJs, 'boxHeight: 105'));
+        $assert('3D grid3D tuned camera distance: 160', str_contains($demoJs, 'distance: 160'));
+        $assert('3D scientific disclaimer styled as demo-scientific-notice', str_contains($publicIndex, 'demo-scientific-notice'));
+
+        // JS methods for secondary navigation
+        $assert('demo-visualizations.js implements setRulesSubview', str_contains($demoJs, 'setRulesSubview'));
+        $assert('demo-visualizations.js tracks rulesSubview in state', str_contains($demoJs, "rulesSubview: 'network'"));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }
