@@ -200,6 +200,24 @@ class DemoVisualizationContractTest
         $assert('Reduced-motion prevents Auto Rotate in 3D', str_contains($demoJs, 'prefersReduced ? false : state.autoRotate'));
         $assert('No external CDN URLs used in demo JS', !str_contains($demoJs, 'http://') && !str_contains($demoJs, 'https://'));
 
+        // -----------------------------------------------------------------
+        // Stage F: Documentation & Regression Freeze Contracts
+        // -----------------------------------------------------------------
+        $guidePath = $repoRoot . '/docs/demo/INTERACTIVE_DEMO.md';
+        $assert('docs/demo/INTERACTIVE_DEMO.md exists', file_exists($guidePath));
+
+        $guideContent = file_exists($guidePath) ? file_get_contents($guidePath) : '';
+        $assert('Guide documents migration command', str_contains($guideContent, 'php database/migrate.php development'));
+        $assert('Guide documents PHP server command', str_contains($guideContent, 'php -S 127.0.0.1:8000 -t public'));
+        $assert('Guide documents dashboard URL', str_contains($guideContent, 'http://127.0.0.1:8000/'));
+        $assert('Guide documents Tiny scenario', str_contains($guideContent, 'Scenario A: Tiny Synthetic Fixture'));
+        $assert('Guide documents Mushroom scenario', str_contains($guideContent, 'Scenario B: UCI Mushroom Benchmark'));
+        $assert('Guide documents 3D disclaimer meaning', str_contains($guideContent, 'Academic & Scientific Boundary'));
+        $assert('Guide affirms formal RQ3 must not be rerun', str_contains($guideContent, 'Formal benchmark scripts (RQ1, RQ2, RQ3) must never be rerun for demo purposes'));
+        $assert('Guide documents troubleshooting for zero rules', str_contains($guideContent, 'No association rules are available for this mining result'));
+        $assert('Guide documents troubleshooting for WebGL fallback', str_contains($guideContent, '3D visualization is unavailable in this environment'));
+        $assert('Guide documents canonical formal research separation', str_contains($guideContent, 'Canonical File Integrity Guarantee'));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }
