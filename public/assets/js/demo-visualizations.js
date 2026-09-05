@@ -267,15 +267,255 @@
   }
 
   // -------------------------------------------------------------------------
-  // 5. Apriori Flow Explainer (Stubs for Stage B, fleshed in Stage C)
+  // 5. Apriori Flow Explainer (Stage C)
   // -------------------------------------------------------------------------
   function renderAprioriFlow() {
     var data = state.lastMiningResult;
+    var $metrics = $('#demo-apriori-metrics');
+    var $label = $('#demo-apriori-level-label');
+
     if (!data || !data.levels || data.levels.length === 0) {
-      $('#demo-apriori-metrics').html('<span class="text-muted">No levels available in mining result.</span>');
+      $metrics.html('<div class="text-muted text-center py-2">No levels generated in Apriori execution.</div>');
+      $label.text('Level —');
+      $('#demo-apriori-prev, #demo-apriori-next, #demo-apriori-play, #demo-apriori-pause, #demo-apriori-restart').prop('disabled', true);
+      if (chartInstances.sankey) {
+        chartInstances.sankey.clear();
+      }
       return;
     }
-    // Will be fully implemented in Stage C
+
+    var levels = data.levels;
+    var totalLevels = levels.length;
+
+    // Clamp level index
+    if (state.aprioriLevelIndex < 0) state.aprioriLevelIndex = 0;
+    if (state.aprioriLevelIndex >= totalLevels) state.aprioriLevelIndex = totalLevels - 1;
+
+    var curIdx = state.aprioriLevelIndex;
+    var lvl = levels[curIdx];
+
+    // Update control states
+    $('#demo-apriori-prev').prop('disabled', curIdx === 0);
+    $('#demo-apriori-next').prop('disabled', curIdx === totalLevels - 1);
+    $('#demo-apriori-play').prop('disabled', curIdx === totalLevels - 1 || isReducedMotion());
+    $('#demo-apriori-pause').prop('disabled', !state.aprioriTimer);
+    $('#demo-apriori-restart').prop('disabled', false);
+
+    $label.text('Level k=' + lvl.k + ' (' + lvl.source + ') [' + (curIdx + 1) + '/' + totalLevels + ']');
+
+    // Authoritative metrics
+    var k = lvl.k;
+    var source = lvl.source;
+    var generated = Number(lvl.generated);
+    var pruned = Number(lvl.pruned);
+    var evaluated = Number(lvl.evaluated);
+    var frequent = Number(lvl.frequent);
+    var infrequent = evaluated - frequent;
+    var pruningRatio = lvl.pruning_ratio;
+    var pruningRatioText = pruningRatio === null ? 'N/A' : (Number(pruningRatio) * 100).toFixed(2) + '%';
+
+    // -----------------------------------------------------------------------
+    // Invariant Verification (Do NOT fabricate flow if violated)
+    // 1. generated === pruned + evaluated
+    // 2. frequent <= evaluated
+    // 3. infrequent >= 0
+    // -----------------------------------------------------------------------
+    var inv1 = (generated === pruned + evaluated);
+    var inv2 = (frequent <= evaluated);
+    var inv3 = (infrequent >= 0);
+
+    if (!inv1 || !inv2 || !inv3) {
+      FIMDemoVisualizations.stopAprioriPlayback();
+      var errDiv = $('<div>').addClass('alert alert-danger mb-0 py-2');
+      errDiv.append($('<strong>').text('Level integrity check failed. '));
+      errDiv.append($('<span>').text(
+        'Offending values: k=' + k +
+        ', generated=' + generated +
+        ', pruned=' + pruned +
+        ', evaluated=' + evaluated +
+        ', frequent=' + frequent +
+        ', infrequent=' + infrequent +
+        ' (Violations: ' + (!inv1 ? 'generated != pruned + evaluated; ' : '') +
+        (!inv2 ? 'frequent > evaluated; ' : '') +
+        (!inv3 ? 'infrequent < 0;' : '') + ')'
+      ));
+      $metrics.empty().append(errDiv);
+      if (chartInstances.sankey) {
+        chartInstances.sankey.clear();
+      }
+      return;
+    }
+
+    // Render safe metrics strip
+    $metrics.empty();
+    var $table = $('<table>').addClass('table table-sm table-borderless align-middle mb-0 text-center');
+    var $thead = $('<thead>').addClass('text-muted small border-bottom');
+    $thead.append(
+      $('<tr>').append(
+        $('<th>').text('Level (k)'),
+        $('<th>').text('Source'),
+        $('<th>').text('Generated'),
+        $('<th>').text('Pruned'),
+        $('<th>').text('Evaluated'),
+        $('<th>').text('Frequent'),
+        $('<th>').text('Infrequent'),
+        $('<th>').text('Pruning Ratio')
+      )
+    );
+    var $tbody = $('<tbody>');
+    $tbody.append(
+      $('<tr>').append(
+        $('<td>').addClass('fw-bold').text('k=' + k),
+        $('<td>').text(source),
+        $('<td>').addClass('fw-bold').text(generated.toLocaleString()),
+        $('<td>').addClass('text-danger fw-bold').text(pruned.toLocaleString()),
+        $('<td>').addClass('text-primary fw-bold').text(evaluated.toLocaleString()),
+        $('<td>').addClass('text-success fw-bold').text(frequent.toLocaleString()),
+        $('<td>').addClass('text-warning fw-bold').text(infrequent.toLocaleString()),
+        $('<td>').text(pruningRatioText)
+      )
+    );
+    $table.append($thead).append($tbody);
+    $metrics.append($table);
+
+    // Initialize or get Sankey chart
+    if (!chartInstances.sankey) {
+      var container = document.getElementById('demo-sankey-chart');
+      if (container) {
+        chartInstances.sankey = echarts.init(container);
+      }
+    }
+    if (!chartInstances.sankey) {
+      return;
+    }
+
+    // Prepare Sankey data and links for this SINGLE level
+    // Generated -> Pruned (value: pruned)
+    // Generated -> Evaluated (value: evaluated)
+    // Evaluated -> Frequent (value: frequent)
+    // Evaluated -> Infrequent (value: infrequent)
+    // Note: Acutely single level: NO cross-level mass flow across k.
+    var nodes = [
+      { name: 'Generated', itemStyle: { color: '#64748b' } },
+      { name: 'Pruned', itemStyle: { color: '#ef4444' } },
+      { name: 'Evaluated', itemStyle: { color: '#3b82f6' } },
+      { name: 'Frequent', itemStyle: { color: '#10b981' } },
+      { name: 'Infrequent', itemStyle: { color: '#f59e0b' } }
+    ];
+
+    var links = [];
+
+    // Only include links with positive value so ECharts Sankey builds valid flow geometry
+    if (pruned > 0) {
+      links.push({
+        source: 'Generated',
+        target: 'Pruned',
+        value: pruned,
+        lineStyle: { color: '#fca5a5' }
+      });
+    }
+    if (evaluated > 0) {
+      links.push({
+        source: 'Generated',
+        target: 'Evaluated',
+        value: evaluated,
+        lineStyle: { color: '#93c5fd' }
+      });
+    }
+    if (frequent > 0) {
+      links.push({
+        source: 'Evaluated',
+        target: 'Frequent',
+        value: frequent,
+        lineStyle: { color: '#6ee7b7' }
+      });
+    }
+    if (infrequent > 0) {
+      links.push({
+        source: 'Evaluated',
+        target: 'Infrequent',
+        value: infrequent,
+        lineStyle: { color: '#fde68a' }
+      });
+    }
+
+    if (links.length === 0) {
+      chartInstances.sankey.setOption({
+        title: {
+          text: 'No candidate flows at Level k=' + k,
+          left: 'center',
+          top: 'middle',
+          textStyle: { color: '#94a3b8', fontSize: 13 }
+        },
+        series: []
+      }, true);
+      return;
+    }
+
+    var prefersReduced = isReducedMotion();
+    var animDur = prefersReduced ? 0 : 400;
+
+    var option = {
+      title: {
+        text: 'Apriori Level k=' + k + ' Flow (' + source + ')',
+        subtext: 'Mass Invariants: Generated = Pruned + Evaluated | Evaluated = Frequent + Infrequent',
+        left: 'center',
+        top: '2%',
+        textStyle: { fontSize: 13, fontWeight: 600, color: '#1e293b' },
+        subtextStyle: { fontSize: 11, color: '#64748b' }
+      },
+      tooltip: {
+        trigger: 'item',
+        triggerOn: 'mousemove',
+        renderMode: 'richText',
+        formatter: function (params) {
+          if (params.dataType === 'edge') {
+            var pct = generated > 0 ? ((params.value / generated) * 100).toFixed(2) + '%' : '100%';
+            return 'Flow: ' + params.data.source + ' \u2192 ' + params.data.target + '\n' +
+              'Count: ' + Number(params.value).toLocaleString() + ' candidates\n' +
+              'Share of Generated: ' + pct;
+          }
+          return 'Stage: ' + params.name + '\n' +
+            'Value: ' + Number(params.value).toLocaleString() + ' candidates';
+        }
+      },
+      animation: !prefersReduced,
+      animationDuration: animDur,
+      animationEasing: 'cubicOut',
+      series: [
+        {
+          type: 'sankey',
+          layout: 'none',
+          top: '16%',
+          bottom: '10%',
+          left: '8%',
+          right: '8%',
+          nodeWidth: 24,
+          nodeGap: 18,
+          draggable: false,
+          emphasis: {
+            focus: 'adjacency'
+          },
+          label: {
+            position: 'right',
+            formatter: function (p) {
+              return p.name + ' (' + Number(p.value).toLocaleString() + ')';
+            },
+            color: '#1e293b',
+            fontWeight: 600,
+            fontSize: 11
+          },
+          lineStyle: {
+            curveness: 0.5,
+            opacity: 0.45
+          },
+          data: nodes,
+          links: links
+        }
+      ]
+    };
+
+    chartInstances.sankey.setOption(option, true);
   }
 
   function onAprioriPrev() {
@@ -295,15 +535,49 @@
   }
 
   function onAprioriPlay() {
-    // Will be fully implemented in Stage C
+    if (isReducedMotion()) return;
+    if (!state.lastMiningResult || !state.lastMiningResult.levels) return;
+
+    var levels = state.lastMiningResult.levels;
+    if (levels.length <= 1) return;
+
+    FIMDemoVisualizations.stopAprioriPlayback();
+
+    // If already at end, restart from level 0
+    if (state.aprioriLevelIndex >= levels.length - 1) {
+      state.aprioriLevelIndex = 0;
+      renderAprioriFlow();
+    }
+
+    $('#demo-apriori-play').addClass('active btn-success').removeClass('btn-outline-success');
+    $('#demo-apriori-pause').prop('disabled', false);
+
+    // Cadence: 1200ms per level
+    state.aprioriTimer = setInterval(function () {
+      if (!state.lastMiningResult || !state.lastMiningResult.levels) {
+        FIMDemoVisualizations.stopAprioriPlayback();
+        return;
+      }
+      var lvls = state.lastMiningResult.levels;
+      if (state.aprioriLevelIndex < lvls.length - 1) {
+        state.aprioriLevelIndex++;
+        renderAprioriFlow();
+      } else {
+        // At final level: stop automatically, do NOT loop forever
+        FIMDemoVisualizations.stopAprioriPlayback();
+      }
+    }, 1200);
   }
 
   function onAprioriPause() {
     FIMDemoVisualizations.stopAprioriPlayback();
+    $('#demo-apriori-play').removeClass('active btn-success').addClass('btn-outline-success');
+    $('#demo-apriori-pause').prop('disabled', true);
   }
 
   function onAprioriRestart() {
     FIMDemoVisualizations.stopAprioriPlayback();
+    $('#demo-apriori-play').removeClass('active btn-success').addClass('btn-outline-success');
     state.aprioriLevelIndex = 0;
     renderAprioriFlow();
   }

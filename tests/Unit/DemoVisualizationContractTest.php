@@ -90,6 +90,37 @@ class DemoVisualizationContractTest
         $assert('app.js checks prefers-reduced-motion in animateKpiValue', str_contains($appJs, 'prefers-reduced-motion'));
         $assert('renderItemsetsChart respects prefers-reduced-motion', str_contains($appJs, 'animationDurationUpdate'));
 
+        // -----------------------------------------------------------------
+        // Stage C: Apriori Flow Explainer Contracts
+        // -----------------------------------------------------------------
+        $assert('demo-visualizations.js derives infrequent count', str_contains($demoJs, 'infrequent = evaluated - frequent'));
+        $assert('demo-visualizations.js enforces generated === pruned + evaluated', str_contains($demoJs, 'generated === pruned + evaluated'));
+        $assert('demo-visualizations.js enforces frequent <= evaluated', str_contains($demoJs, 'frequent <= evaluated'));
+        $assert('demo-visualizations.js enforces non-negative infrequent', str_contains($demoJs, 'infrequent >= 0'));
+        $assert('demo-visualizations.js displays level integrity failure notice', str_contains($demoJs, 'Level integrity check failed'));
+        $assert('demo-visualizations.js handles empty levels', str_contains($demoJs, 'No levels generated in Apriori execution'));
+
+        // Single level Sankey links verification (no cross-level link)
+        $assert('Sankey link Generated -> Pruned exists', str_contains($demoJs, "source: 'Generated'") && str_contains($demoJs, "target: 'Pruned'"));
+        $assert('Sankey link Generated -> Evaluated exists', str_contains($demoJs, "target: 'Evaluated'"));
+        $assert('Sankey link Evaluated -> Frequent exists', str_contains($demoJs, "target: 'Frequent'"));
+        $assert('Sankey link Evaluated -> Infrequent exists', str_contains($demoJs, "target: 'Infrequent'"));
+        $assert('No cross-level mass flow across k', !str_contains($demoJs, "Frequent(k)") && !str_contains($demoJs, "Generated(k+1)"));
+
+        // Controls exist in HTML and JS
+        $assert('index.php has #demo-apriori-prev button', str_contains($publicIndex, 'id="demo-apriori-prev"'));
+        $assert('index.php has #demo-apriori-next button', str_contains($publicIndex, 'id="demo-apriori-next"'));
+        $assert('index.php has #demo-apriori-play button', str_contains($publicIndex, 'id="demo-apriori-play"'));
+        $assert('index.php has #demo-apriori-pause button', str_contains($publicIndex, 'id="demo-apriori-pause"'));
+        $assert('index.php has #demo-apriori-restart button', str_contains($publicIndex, 'id="demo-apriori-restart"'));
+        $assert('index.php has #demo-apriori-metrics element', str_contains($publicIndex, 'id="demo-apriori-metrics"'));
+        $assert('index.php has #demo-sankey-chart container', str_contains($publicIndex, 'id="demo-sankey-chart"'));
+
+        // Playback timer & cleanup contracts
+        $assert('demo-visualizations.js cleans up timer on stop', str_contains($demoJs, 'clearInterval(state.aprioriTimer)'));
+        $assert('demo-visualizations.js sets apriori cadence to 1200ms', str_contains($demoJs, '1200'));
+        $assert('demo-visualizations.js stops automatically at final level', str_contains($demoJs, 'state.aprioriLevelIndex < lvls.length - 1'));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }
