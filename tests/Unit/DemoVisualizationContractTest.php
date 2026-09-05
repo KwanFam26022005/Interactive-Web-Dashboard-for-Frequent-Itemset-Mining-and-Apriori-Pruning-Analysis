@@ -322,6 +322,10 @@ class DemoVisualizationContractTest
         $assert('Focus Selected Rule Detail container exists', str_contains($publicIndex, 'id="demo-focus-rule-detail"') && str_contains($demoJs, 'displayRuleDetail'));
         $assert('Focus WebGL fallback container and graceful handling exist', str_contains($publicIndex, 'id="demo-focus-3d-fallback"') && str_contains($demoJs, 'renderFocusRuleSpace3D') && str_contains($demoJs, 'catch (e)'));
 
+        // Collapsible Metrics Optimization Contracts
+        $assert('Collapsible metrics elements implemented in demo-visualizations.js', str_contains($demoJs, 'demo-metrics-collapsible') && str_contains($demoJs, 'demo-collapsible-summary'));
+        $assert('Collapsible metrics styled in demo-visualizations.css', str_contains($demoCss, '.demo-metrics-collapsible') && str_contains($demoCss, '.demo-collapsible-summary'));
+
         return ['passed' => $passed, 'failed' => $failed, 'results' => $results];
     }
 }

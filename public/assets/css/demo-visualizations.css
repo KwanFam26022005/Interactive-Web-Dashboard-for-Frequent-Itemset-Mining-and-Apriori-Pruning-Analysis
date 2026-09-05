@@ -205,6 +205,54 @@
   font-weight: 600;
 }
 
+/* ── Collapsible Metrics & Interpretation Panels ── */
+.demo-metrics-collapsible {
+  border: 1px solid var(--fim-border-color, #e2e8f0);
+  border-radius: 6px;
+  background-color: #ffffff;
+  padding: 0.35rem 0.5rem;
+  margin-bottom: 0.5rem;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.demo-metrics-collapsible[open] {
+  background-color: #f8fafc;
+}
+
+.demo-collapsible-summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: var(--fim-text-main, #1e293b);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0.15rem 0;
+  outline: none;
+}
+
+.demo-collapsible-summary::-webkit-details-marker {
+  display: none;
+}
+
+.demo-collapsible-summary:hover {
+  color: var(--fim-primary, #2563eb);
+}
+
+.demo-collapsible-summary::after {
+  content: "▾";
+  font-size: 0.8rem;
+  color: #64748b;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.demo-metrics-collapsible:not([open]) .demo-collapsible-summary::after {
+  transform: rotate(-90deg);
+}
+
 /* ── Responsive Rules ── */
 @media (max-width: 991.98px) {
   #demo-network-side-panel,

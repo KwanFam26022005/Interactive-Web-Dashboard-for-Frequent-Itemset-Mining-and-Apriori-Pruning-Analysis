@@ -870,28 +870,46 @@
 
     var antStr = formatItemset(rule.antecedent);
     var conStr = formatItemset(rule.consequent);
+    var suppPct = (Number(rule.support) * 100).toFixed(2) + '%';
+    var confPct = (Number(rule.confidence) * 100).toFixed(2) + '%';
+    var liftVal = Number(rule.lift).toFixed(4);
+    var txnCount = Number(rule.support_count).toLocaleString();
 
     var $card = $('<div>').addClass('demo-rule-detail-card');
     if (headerText) {
       $card.append($('<div>').addClass('fw-bold text-primary mb-2 small pb-1 border-bottom').text(headerText));
     }
 
-    var $table = $('<table>').addClass('table table-sm table-borderless demo-rule-detail-table align-middle mb-0');
+    $card.append(
+      $('<div>').addClass('fw-bold text-dark font-monospace small mb-1 text-break').text(antStr + ' \u2192 ' + conStr),
+      $('<div>').addClass('d-flex flex-wrap gap-1 mb-2').append(
+        $('<span>').addClass('badge bg-light text-dark border').html('Supp: <strong>' + suppPct + '</strong>'),
+        $('<span>').addClass('badge bg-light text-dark border').html('Conf: <strong>' + confPct + '</strong>'),
+        $('<span>').addClass('badge bg-light text-dark border').html('Lift: <strong>' + liftVal + '</strong>')
+      )
+    );
+
+    // Collapsible Detailed Metrics
+    var $details = $('<details>').addClass('demo-metrics-collapsible mb-2').attr('open', 'open');
+    var $summary = $('<summary>').addClass('demo-collapsible-summary')
+      .html('<span>Detailed Metric Parameters</span>');
+
+    var $table = $('<table>').addClass('table table-sm table-borderless demo-rule-detail-table align-middle mb-0 mt-1');
     var $tbody = $('<tbody>');
 
     var rows = [
       ['Selected Rule', antStr + ' \u2192 ' + conStr],
       ['Antecedent (LHS)', antStr],
       ['Consequent (RHS)', conStr],
-      ['Support', (Number(rule.support) * 100).toFixed(4) + '% (' + Number(rule.support_count).toLocaleString() + ' txns)'],
+      ['Support', (Number(rule.support) * 100).toFixed(4) + '% (' + txnCount + ' txns)'],
       ['Confidence', (Number(rule.confidence) * 100).toFixed(2) + '%'],
-      ['Lift', Number(rule.lift).toFixed(4)]
+      ['Lift', liftVal]
     ];
 
     $.each(rows, function (i, r) {
       var $tr = $('<tr>');
       var $th = $('<th>').addClass('text-muted py-1 small').css('width', '35%').text(r[0]);
-      var $td = $('<td>').addClass('py-1 small font-monospace').text(r[1]);
+      var $td = $('<td>').addClass('py-1 small font-monospace text-break').text(r[1]);
       if (r[0] === 'Selected Rule') {
         $td.addClass('fw-bold text-primary');
       }
@@ -900,7 +918,18 @@
     });
 
     $table.append($tbody);
-    $card.append($table);
+    $details.append($summary).append($table);
+    $card.append($details);
+
+    $card.append(
+      $('<button>').addClass('btn btn-outline-secondary btn-sm w-100 mt-2')
+        .attr('type', 'button')
+        .text('Show Legend & Guide')
+        .on('click', function () {
+          renderNetworkGuidance();
+        })
+    );
+
     $container.append($card);
   }
 
@@ -910,28 +939,40 @@
     var $guidance = $('<div>').addClass('p-1');
     $guidance.append(
       $('<div>').addClass('fw-bold text-dark small mb-1').text('Network Interpretation'),
-      $('<p>').addClass('text-muted small mb-2').text('Nodes represent complete itemset sides (LHS/RHS). Directed arrows represent implication rules.'),
-      $('<div>').addClass('mb-3').append(
-        $('<div>').addClass('fw-semibold small text-muted mb-1').text('Node Role Palette:'),
-        $('<div>').addClass('demo-side-panel-legend mb-1').append(
-          $('<span>').addClass('demo-legend-dot').css('background-color', '#3b82f6'),
-          $('<span>').text('Antecedent only (LHS)')
-        ),
-        $('<div>').addClass('demo-side-panel-legend mb-1').append(
-          $('<span>').addClass('demo-legend-dot').css('background-color', '#10b981'),
-          $('<span>').text('Consequent only (RHS)')
-        ),
-        $('<div>').addClass('demo-side-panel-legend mb-1').append(
-          $('<span>').addClass('demo-legend-dot').css('background-color', '#8b5cf6'),
-          $('<span>').text('Both (LHS & RHS)')
-        )
+      $('<p>').addClass('text-muted small mb-2').text('Nodes represent complete itemset sides (LHS/RHS). Directed arrows represent implication rules.')
+    );
+
+    // Collapsible 1: Node Role Palette
+    var $paletteDetails = $('<details>').addClass('demo-metrics-collapsible mb-2').attr('open', 'open');
+    var $paletteSummary = $('<summary>').addClass('demo-collapsible-summary').html('<span>Node Role Palette</span>');
+    var $paletteContent = $('<div>').addClass('pt-1').append(
+      $('<div>').addClass('demo-side-panel-legend mb-1').append(
+        $('<span>').addClass('demo-legend-dot').css('background-color', '#3b82f6'),
+        $('<span>').text('Antecedent only (LHS)')
       ),
-      $('<div>').addClass('border-top pt-2 text-muted small').append(
-        $('<div>').addClass('mb-1').html('&bull; <strong>Arrow Width</strong> &prop; Confidence'),
-        $('<div>').addClass('mb-1').html('&bull; <strong>Opacity</strong> &prop; Support'),
-        $('<div>').html('&bull; <em>Click any node or edge to inspect exact metrics.</em>')
+      $('<div>').addClass('demo-side-panel-legend mb-1').append(
+        $('<span>').addClass('demo-legend-dot').css('background-color', '#10b981'),
+        $('<span>').text('Consequent only (RHS)')
+      ),
+      $('<div>').addClass('demo-side-panel-legend mb-1').append(
+        $('<span>').addClass('demo-legend-dot').css('background-color', '#8b5cf6'),
+        $('<span>').text('Both (LHS & RHS)')
       )
     );
+    $paletteDetails.append($paletteSummary).append($paletteContent);
+    $guidance.append($paletteDetails);
+
+    // Collapsible 2: Visual Metric Encodings
+    var $encDetails = $('<details>').addClass('demo-metrics-collapsible mb-2').attr('open', 'open');
+    var $encSummary = $('<summary>').addClass('demo-collapsible-summary').html('<span>Visual Metric Encodings</span>');
+    var $encContent = $('<div>').addClass('pt-1 text-muted small').append(
+      $('<div>').addClass('mb-1').html('&bull; <strong>Arrow Width</strong> &prop; Confidence'),
+      $('<div>').addClass('mb-1').html('&bull; <strong>Opacity</strong> &prop; Support'),
+      $('<div>').html('&bull; <em>Click any node or edge to inspect exact metrics.</em>')
+    );
+    $encDetails.append($encSummary).append($encContent);
+    $guidance.append($encDetails);
+
     $panel.append($guidance);
   }
 
@@ -959,7 +1000,7 @@
     var $table = $('<table>').addClass('table table-sm table-borderless demo-rule-detail-table align-middle mb-2');
     var $tbody = $('<tbody>');
     $tbody.append(
-      $('<tr>').append($('<th>').text('Itemset'), $('<td>').addClass('fw-bold font-monospace text-primary').text(itemsetName)),
+      $('<tr>').append($('<th>').text('Itemset'), $('<td>').addClass('fw-bold font-monospace text-primary text-break').text(itemsetName)),
       $('<tr>').append($('<th>').text('Role'), $('<td>').append($('<span>').addClass('badge').css('background-color', catColor).text(catName))),
       $('<tr>').append($('<th>').text('Degree'), $('<td>').addClass('font-monospace').text(incidentRules.length + ' incident rule(s)'))
     );
@@ -967,8 +1008,9 @@
     $card.append($table);
 
     if (incidentRules.length > 0) {
-      $card.append($('<div>').addClass('fw-semibold small text-muted mb-1').text('Connected Rules:'));
-      var $list = $('<div>').addClass('list-group list-group-flush small');
+      var $connDetails = $('<details>').addClass('demo-metrics-collapsible mb-2').attr('open', 'open');
+      var $connSummary = $('<summary>').addClass('demo-collapsible-summary').html('<span>Connected Rules (' + incidentRules.length + ')</span>');
+      var $list = $('<div>').addClass('list-group list-group-flush small pt-1');
       $.each(incidentRules.slice(0, 5), function (i, r) {
         var ruleStr = formatItemset(r.antecedent) + ' \u2192 ' + formatItemset(r.consequent);
         var $item = $('<div>').addClass('list-group-item px-1 py-1 border-0 font-monospace text-truncate');
@@ -979,7 +1021,8 @@
       if (incidentRules.length > 5) {
         $list.append($('<div>').addClass('text-muted font-italic ps-1').text('... and ' + (incidentRules.length - 5) + ' more'));
       }
-      $card.append($list);
+      $connDetails.append($connSummary).append($list);
+      $card.append($connDetails);
     }
 
     $card.append(
@@ -1546,23 +1589,45 @@
 
     var antStr = formatItemset(rule.antecedent);
     var conStr = formatItemset(rule.consequent);
+    var suppPct = (Number(rule.support) * 100).toFixed(2) + '%';
+    var confPct = (Number(rule.confidence) * 100).toFixed(2) + '%';
+    var liftVal = Number(rule.lift).toFixed(4);
+    var txnCount = Number(rule.support_count).toLocaleString();
 
-    var $table = $('<table>').addClass('table table-sm table-borderless align-middle mb-0');
+    // Top rule implication banner with quick metric chips
+    var $header = $('<div>').addClass('demo-rule-detail-header mb-2 pb-2 border-bottom');
+    $header.append(
+      $('<div>').addClass('small text-muted fw-semibold mb-1').text('Selected Rule:'),
+      $('<div>').addClass('fw-bold text-primary font-monospace small mb-2 text-break').text(antStr + ' \u2192 ' + conStr),
+      $('<div>').addClass('d-flex flex-wrap gap-1').append(
+        $('<span>').addClass('badge bg-light text-dark border').html('Supp: <strong>' + suppPct + '</strong>'),
+        $('<span>').addClass('badge bg-light text-dark border').html('Conf: <strong>' + confPct + '</strong>'),
+        $('<span>').addClass('badge bg-light text-dark border').html('Lift: <strong>' + liftVal + '</strong>')
+      )
+    );
+    $container.append($header);
+
+    // Collapsible Detailed Metrics Section
+    var $details = $('<details>').addClass('demo-metrics-collapsible mb-1').attr('open', 'open');
+    var $summary = $('<summary>').addClass('demo-collapsible-summary')
+      .html('<span>Detailed Metric Parameters</span>');
+
+    var $table = $('<table>').addClass('table table-sm table-borderless demo-rule-detail-table align-middle mb-0 mt-1');
     var $tbody = $('<tbody>');
 
     var rows = [
       ['Selected Rule', antStr + ' \u2192 ' + conStr],
       ['Antecedent (LHS)', antStr],
       ['Consequent (RHS)', conStr],
-      ['Support', (Number(rule.support) * 100).toFixed(4) + '% (' + Number(rule.support_count).toLocaleString() + ' transactions)'],
+      ['Support', (Number(rule.support) * 100).toFixed(4) + '% (' + txnCount + ' transactions)'],
       ['Confidence', (Number(rule.confidence) * 100).toFixed(2) + '%'],
-      ['Lift', Number(rule.lift).toFixed(4)]
+      ['Lift', liftVal]
     ];
 
     $.each(rows, function (i, r) {
       var $tr = $('<tr>');
-      var $th = $('<th>').addClass('text-muted py-1 small').css('width', '25%').text(r[0]);
-      var $td = $('<td>').addClass('py-1 small font-monospace').text(r[1]);
+      var $th = $('<th>').addClass('text-muted py-1 small').css('width', '35%').text(r[0]);
+      var $td = $('<td>').addClass('py-1 small font-monospace text-break').text(r[1]);
       if (r[0] === 'Selected Rule') {
         $td.addClass('fw-bold text-primary');
       }
@@ -1571,7 +1636,8 @@
     });
 
     $table.append($tbody);
-    $container.append($table);
+    $details.append($summary).append($table);
+    $container.append($details);
   }
 
   function reset3DCamera() {
